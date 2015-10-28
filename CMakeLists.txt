@@ -12,7 +12,7 @@ add_library(paraconf
 )
 target_link_libraries(paraconf mpi yaml)
 target_include_directories(paraconf
-	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/>
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
 )
 
 configure_file(cmake/ParaconfConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/ParaconfConfigVersion.cmake" @ONLY)
