@@ -24,4 +24,4 @@
 
 include("${CMAKE_CURRENT_LIST_DIR}/FindMPI.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/FindLibYaml.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/ParaconfLib.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/paraconf.cmake")

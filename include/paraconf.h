@@ -35,10 +35,12 @@ extern "C" {
 typedef enum {
 	/// no error
 	PC_OK=0,
+	PC_NOT_IMPLEMENTED,
 	/// a parameter value is invalid
 	PC_INVALID_PARAMETER,
 	/// unexpected type found for a node
-	PC_INVALID_NODE_TYPE
+	PC_INVALID_NODE_TYPE,
+	PC_NODE_NOT_FOUND
 } PC_status;
 
 /** Looks for a node in a yaml document given a ypath index
@@ -48,7 +50,7 @@ typedef enum {
  * \param[out] value the node found
  * \return error status
  */
-PC_status PC_get(yaml_node_t *document, const char *index, yaml_node_t *value);
+PC_status PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value);
 
 /** Looks for an integer value in a yaml document given a ypath index
  * 
@@ -57,7 +59,7 @@ PC_status PC_get(yaml_node_t *document, const char *index, yaml_node_t *value);
  * \param[out] value the integer value found
  * \return error status
  */
-PC_status PC_get_int(yaml_node_t *document, const char *index, int *value);
+PC_status PC_get_int(yaml_document_t* document, yaml_node_t* node, const char *index, int *value);
 
 /** Looks for a floating point value in a yaml document given a ypath index
  * 
@@ -66,7 +68,7 @@ PC_status PC_get_int(yaml_node_t *document, const char *index, int *value);
  * \param[out] value the floating point value found
  * \return error status
  */
-PC_status PC_get_double(yaml_node_t *document, const char *index, double *value);
+PC_status PC_get_double(yaml_document_t* document, yaml_node_t* node, const char *index, double *value);
 
 /** Looks for a character string value in a yaml document given a ypath index
  * 
@@ -75,9 +77,17 @@ PC_status PC_get_double(yaml_node_t *document, const char *index, double *value)
  * \param[out] value the character string value found
  * \return error status
  */
-PC_status PC_get_string(yaml_node_t *document, const char *index, char *value);
+PC_status PC_get_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value);
 
-PC_status PC_broadcast(yaml_node_t *document, int count, int root, MPI_Comm comm);
+/** Broadcasts yaml documents over MPI
+ * 
+ * \param[in,out] document an array of documents that should already be allocated.
+ *                         Their content will be copied from the root node.
+ * \param[in] count the number of documents in the array
+ * \param[in] root the rank of the root node
+ * \param[in] comm the set of precesses over wich to broadcast
+ */
+PC_status PC_broadcast(yaml_document_t* document, yaml_node_t* node, int count, int root, MPI_Comm comm);
 
 #ifdef __cplusplus
 }

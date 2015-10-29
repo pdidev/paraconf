@@ -8,18 +8,19 @@ find_package(LibYaml REQUIRED)
 file(READ VERSION Paraconf_VERSION)
 
 add_library(paraconf
-	src/paraconf.c
+	src/api.c
 )
 target_link_libraries(paraconf mpi yaml)
 target_include_directories(paraconf
-	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/>
 )
 
-configure_file(cmake/ParaconfConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/ParaconfConfigVersion.cmake" @ONLY)
-configure_file(cmake/ParaconfConfig.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/ParaconfConfig.cmake" @ONLY)
+configure_file(cmake/paraconfConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/paraconfConfigVersion.cmake" @ONLY)
 
 install(TARGETS paraconf
-	EXPORT ParaconfLib
+	EXPORT paraconf
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	PUBLIC_HEADER DESTINATION include
@@ -28,11 +29,11 @@ install(TARGETS paraconf
 install(FILES include/paraconf.h
 	DESTINATION include
 )
-install(EXPORT ParaconfLib DESTINATION "lib/CMake/Paraconf" )
+install(EXPORT paraconf DESTINATION "lib/CMake/paraconf" )
 install(FILES
 		"cmake/FindMPI.cmake"
 		"cmake/FindLibYaml.cmake"
-		"${CMAKE_CURRENT_BINARY_DIR}/ParaconfConfigVersion.cmake"
-		"${CMAKE_CURRENT_BINARY_DIR}/ParaconfConfig.cmake"
-	DESTINATION "lib/CMake/Paraconf"
+		"cmake/paraconfConfig.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/paraconfConfigVersion.cmake"
+	DESTINATION "lib/CMake/paraconf"
 )
