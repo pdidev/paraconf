@@ -25,23 +25,24 @@
 #ifndef PARACONF_H__
 #define PARACONF_H__
 
-#include <yaml.h>
-#include <mpi.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <yaml.h>
+#include <mpi.h>
+
+#include "paraconf_export.h"
+
 typedef enum {
 	/// no error
 	PC_OK=0,
-	PC_NOT_IMPLEMENTED,
 	/// a parameter value is invalid
 	PC_INVALID_PARAMETER,
 	/// unexpected type found for a node
 	PC_INVALID_NODE_TYPE,
 	PC_NODE_NOT_FOUND
-} PC_status;
+} PC_status_t;
 
 /** Looks for a node in a yaml document given a ypath index
  * 
@@ -50,7 +51,16 @@ typedef enum {
  * \param[out] value the node found
  * \return error status
  */
-PC_status PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value);
+PC_status_t PARACONF_EXPORT PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value);
+
+/** Looks for a sequence or mapping node in a yaml document given a ypath index and returns its size/length
+ * 
+ * \param[in] document the yaml document
+ * \param[in] index the ypath index
+ * \param[out] value the number of elements in the mapping/sequence
+ * \return error status
+ */
+PC_status_t PARACONF_EXPORT PC_get_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len);
 
 /** Looks for an integer value in a yaml document given a ypath index
  * 
@@ -59,7 +69,7 @@ PC_status PC_get(yaml_document_t* document, yaml_node_t* node, const char* index
  * \param[out] value the integer value found
  * \return error status
  */
-PC_status PC_get_int(yaml_document_t* document, yaml_node_t* node, const char *index, int *value);
+PC_status_t PARACONF_EXPORT PC_get_int(yaml_document_t* document, yaml_node_t* node, const char *index, int *value);
 
 /** Looks for a floating point value in a yaml document given a ypath index
  * 
@@ -68,7 +78,7 @@ PC_status PC_get_int(yaml_document_t* document, yaml_node_t* node, const char *i
  * \param[out] value the floating point value found
  * \return error status
  */
-PC_status PC_get_double(yaml_document_t* document, yaml_node_t* node, const char *index, double *value);
+PC_status_t PARACONF_EXPORT PC_get_double(yaml_document_t* document, yaml_node_t* node, const char *index, double *value);
 
 /** Looks for a character string value in a yaml document given a ypath index
  * 
@@ -77,7 +87,7 @@ PC_status PC_get_double(yaml_document_t* document, yaml_node_t* node, const char
  * \param[out] value the character string value found
  * \return error status
  */
-PC_status PC_get_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value);
+PC_status_t PARACONF_EXPORT PC_get_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value);
 
 /** Broadcasts yaml documents over MPI
  * 
@@ -87,7 +97,7 @@ PC_status PC_get_string(yaml_document_t* document, yaml_node_t* node, const char
  * \param[in] root the rank of the root node
  * \param[in] comm the set of precesses over wich to broadcast
  */
-PC_status PC_broadcast(yaml_document_t* document, yaml_node_t* node, int count, int root, MPI_Comm comm);
+PC_status_t PARACONF_EXPORT PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm);
 
 #ifdef __cplusplus
 }
