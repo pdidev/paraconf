@@ -16,9 +16,8 @@ option(USE_SYSTEM_YAML
 )
 
 
-# used modules
+# dependancies
 
-include(GenerateExportHeader)
 find_package(MPI REQUIRED)
 if("${USE_SYSTEM_YAML}")
 	find_package(LibYaml REQUIRED)
@@ -32,12 +31,13 @@ endif()
 file(READ VERSION Paraconf_VERSION)
 
 
-# actual library description
+# the actual library
 
 add_library(paraconf
 	src/api.c
 	src/ytype.c
 )
+include(GenerateExportHeader)
 generate_export_header(paraconf)
 set_target_properties(paraconf PROPERTIES C_VISIBILITY_PRESET hidden)
 target_include_directories(paraconf
