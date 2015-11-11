@@ -39,12 +39,14 @@ add_library(paraconf
 )
 include(GenerateExportHeader)
 generate_export_header(paraconf)
-set_target_properties(paraconf PROPERTIES C_VISIBILITY_PRESET hidden)
+set_target_properties(paraconf PROPERTIES
+	C_VISIBILITY_PRESET hidden
+)
 target_include_directories(paraconf
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>
-		$<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/>
+# 		$<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include/> # redundant w. INCLUDES DESTINATION below?
 )
 target_link_libraries(paraconf mpi yaml)
 
@@ -57,19 +59,18 @@ configure_file(cmake/paraconfConfigVersion.cmake.in
 )
 install(TARGETS paraconf
 	EXPORT paraconf
-	ARCHIVE DESTINATION lib
-	LIBRARY DESTINATION lib
-	PUBLIC_HEADER DESTINATION include
-	INCLUDES DESTINATION include
+	ARCHIVE DESTINATION lib INCLUDES DESTINATION include
+	LIBRARY DESTINATION lib INCLUDES DESTINATION include
 )
 install(FILES include/paraconf.h
 	DESTINATION include
 )
 install(EXPORT paraconf DESTINATION "lib/CMake/paraconf" )
 install(FILES
-		"cmake/FindMPI.cmake"
-		"cmake/FindLibYaml.cmake"
+		"${MPI_CONFIG}"
+		"${LibYaml_CONFIG}"
 		"cmake/paraconfConfig.cmake"
 		"${CMAKE_CURRENT_BINARY_DIR}/paraconfConfigVersion.cmake"
 	DESTINATION "lib/CMake/paraconf"
 )
+set(paraconf_CONFIG "${CMAKE_PREFIX_PATH}/lib/CMake/paraconf/paraconfConfig.cmake")

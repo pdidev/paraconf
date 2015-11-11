@@ -38,7 +38,8 @@ install(FILES include/yaml.h
 )
 install(EXPORT yaml DESTINATION "lib/CMake/yaml" )
 install(FILES
-		"cmake/yamlConfig.cmake"
+		"cmake/LibYamlConfig.cmake"
 		"${CMAKE_CURRENT_BINARY_DIR}/yamlConfigVersion.cmake"
 	DESTINATION "lib/CMake/yaml"
 )
+set(LibYaml_CONFIG "${CMAKE_PREFIX_PATH}/lib/CMake/yaml/LibYamlConfig.cmake" PARENT_SCOPE)

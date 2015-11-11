@@ -46,22 +46,16 @@
 if(NOT TARGET yaml)
 
 # include this to handle the QUIETLY and REQUIRED arguments
+
 include(FindPackageHandleStandardArgs)
 include(GetPrerequisites)
 find_package(PkgConfig)
 
 pkg_check_modules(LibYaml QUIET yaml-0.1)
-# message("<LibYaml_LIBRARIES>=${LibYaml_LIBRARIES}")
-# message("<LibYaml_LIBRARY_DIRS>=${LibYaml_LIBRARY_DIRS}")
-# message("<LibYaml_LDFLAGS>=${LibYaml_LDFLAGS}")
-# message("<LibYaml_LDFLAGS_OTHER>=${LibYaml_LDFLAGS_OTHER}")
-# message("<LibYaml_INCLUDE_DIRS>=${LibYaml_INCLUDE_DIRS}")
-# message("<LibYaml_CFLAGS>=${LibYaml_CFLAGS}")
-# message("<LibYaml_CFLAGS_OTHER>=${LibYaml_CFLAGS_OTHER}")
 
 
 # Create imported target
-add_library(yaml UNKNOWN IMPORTED)
+
 list(GET LibYaml_LIBRARIES 0 _LibYaml_LIBRARY_NAME)
 set(_LibYaml_LIBRARIES_OTHER "${LibYaml_LIBRARIES}")
 if(NOT "${_LibYaml_LIBRARIES_OTHER}" MATCHES "^ *$")
@@ -70,12 +64,9 @@ endif()
 find_library(_LibYaml_LIBRARY "${_LibYaml_LIBRARY_NAME}" HINTS ${_LibYaml_LIBRARY_DIRS})
 list(APPEND LibYaml_CFLAGS ${LibYaml_CFLAGS_OTHER})
 list(APPEND LibYaml_LDFLAGS ${LibYaml_LDFLAGS_OTHER})
-set_target_properties(yaml PROPERTIES
-  IMPORTED_LOCATION             "${_LibYaml_LIBRARY}"
-  INTERFACE_COMPILE_OPTIONS     "${LibYaml_CFLAGS}"
-  INTERFACE_INCLUDE_DIRECTORIES "${LibYaml_INCLUDE_DIRS}"
-  INTERFACE_LINK_LIBRARIES      "${_LibYaml_LIBRARIES_OTHER};${LibYaml_LDFLAGS}"
-)
+configure_file(${CMAKE_CURRENT_LIST_DIR}/LibYamlConfig.cmake.in LibYamlConfig.cmake)
+include(${CMAKE_CURRENT_BINARY_DIR}/LibYamlConfig.cmake)
+set(LibYaml_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/LibYamlConfig.cmake")
 
 find_package_handle_standard_args(LibYaml DEFAULT_MSG LibYaml_LIBRARIES)
 
