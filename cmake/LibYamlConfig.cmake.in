@@ -1,8 +1,0 @@
-
-add_library(yaml UNKNOWN IMPORTED)
-set_target_properties(yaml PROPERTIES
-  IMPORTED_LOCATION             "${_LibYaml_LIBRARY}"
-  INTERFACE_COMPILE_OPTIONS     "${LibYaml_CFLAGS}"
-  INTERFACE_INCLUDE_DIRECTORIES "${LibYaml_INCLUDE_DIRS}"
-  INTERFACE_LINK_LIBRARIES      "${_LibYaml_LIBRARIES_OTHER};${LibYaml_LDFLAGS}"
-)

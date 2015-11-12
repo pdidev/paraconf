@@ -64,9 +64,15 @@ endif()
 find_library(_LibYaml_LIBRARY "${_LibYaml_LIBRARY_NAME}" HINTS ${_LibYaml_LIBRARY_DIRS})
 list(APPEND LibYaml_CFLAGS ${LibYaml_CFLAGS_OTHER})
 list(APPEND LibYaml_LDFLAGS ${LibYaml_LDFLAGS_OTHER})
-configure_file(${CMAKE_CURRENT_LIST_DIR}/LibYamlConfig.cmake.in LibYamlConfig.cmake)
-include(${CMAKE_CURRENT_BINARY_DIR}/LibYamlConfig.cmake)
-set(LibYaml_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/LibYamlConfig.cmake")
+
+add_library(yaml UNKNOWN IMPORTED)
+set_target_properties(yaml PROPERTIES
+  IMPORTED_LOCATION             "${_LibYaml_LIBRARY}"
+  INTERFACE_COMPILE_OPTIONS     "${LibYaml_CFLAGS}"
+  INTERFACE_INCLUDE_DIRECTORIES "${LibYaml_INCLUDE_DIRS}"
+  INTERFACE_LINK_LIBRARIES      "${_LibYaml_LIBRARIES_OTHER};${LibYaml_LDFLAGS}"
+)
+
 
 find_package_handle_standard_args(LibYaml DEFAULT_MSG LibYaml_LIBRARIES)
 

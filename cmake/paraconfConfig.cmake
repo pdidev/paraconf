@@ -22,6 +22,8 @@
 # THE SOFTWARE.
 ################################################################################
 
-include("${CMAKE_CURRENT_LIST_DIR}/MPIConfig.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/LibYamlConfig.cmake")
+include(CMakeFindDependencyMacro)
+# find_dependency(MPI)
+find_dependency(LibYaml)
+
 include("${CMAKE_CURRENT_LIST_DIR}/paraconf.cmake")
