@@ -38,6 +38,17 @@ PC_status_t PC_as_len(yaml_document_t* document, yaml_node_t* value_node, int* l
 	case YAML_MAPPING_NODE: {
 		*len = value_node->data.mapping.pairs.top - value_node->data.mapping.pairs.start;
 	} break;
+	case YAML_SCALAR_NODE: {
+		switch ( value_node->data.scalar.style ) {
+		case YAML_SINGLE_QUOTED_SCALAR_STYLE:
+		case YAML_DOUBLE_QUOTED_SCALAR_STYLE: {
+			*len = value_node->data.scalar.length-2;
+		} break;
+		default: {
+			*len = value_node->data.scalar.length;
+		} break;
+		}
+	} break;
 	default: {
 		return PC_INVALID_NODE_TYPE;
 	} break;
@@ -65,20 +76,33 @@ PC_status_t PC_as_int(yaml_document_t* document, yaml_node_t* node, int* value)
 	return PC_OK;
 }
 
-PC_status_t PC_as_string(yaml_document_t* document, yaml_node_t* value_node, char** value)
+PC_status_t PC_as_string(yaml_document_t* document, yaml_node_t* value_node, char** value, int* value_len)
 {
 	if ( value_node->type != YAML_SCALAR_NODE ) return PC_INVALID_NODE_TYPE;
+	
+	int len; PC_status_t res = PC_as_len(document, value_node, &len); if (res) return res;
+	if ( !value_len ) {
+		if ( *value ) *value = malloc(len+1);
+		else *value = realloc(*value, len+1);
+	} else if ( *value_len > len || -(*value_len) > len ) {
+		// ok, nothing to do here
+	} else if ( *value_len < 0 ) {
+		if ( *value ) *value = malloc(len+1);
+		else *value = realloc(*value, len+1);
+		*value_len = len+1;
+	} else {
+		return PC_ERR_BUFFER_SIZE;
+	}
+	
 	switch ( value_node->data.scalar.style ) {
 	case YAML_SINGLE_QUOTED_SCALAR_STYLE:
 	case YAML_DOUBLE_QUOTED_SCALAR_STYLE: {
-		*value = malloc(value_node->data.scalar.length-2+1);
-		strncpy(*value, value_node->data.scalar.value, value_node->data.scalar.length-2+1);
-		assert((*value)[value_node->data.scalar.length-2]==0);
+		strncpy(*value, value_node->data.scalar.value, len+1);
+		assert((*value)[len]==0);
 	} break;
 	default: {
-		*value = malloc(value_node->data.scalar.length+1);
-		strncpy(*value, value_node->data.scalar.value, value_node->data.scalar.length+1);
-		assert((*value)[value_node->data.scalar.length]==0);
+		strncpy(*value, value_node->data.scalar.value, len+1);
+		assert((*value)[len]==0);
 	} break;
 	}
 	return PC_OK;

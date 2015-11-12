@@ -41,7 +41,9 @@ typedef enum {
 	PC_INVALID_PARAMETER,
 	/// unexpected type found for a node
 	PC_INVALID_NODE_TYPE,
-	PC_NODE_NOT_FOUND
+	PC_NODE_NOT_FOUND,
+	/// The provided buffer is not large enough
+	PC_ERR_BUFFER_SIZE
 } PC_status_t;
 
 /** Looks for a node in a yaml document given a ypath index
@@ -87,7 +89,7 @@ PC_status_t PARACONF_EXPORT PC_get_double(yaml_document_t* document, yaml_node_t
  * \param[out] value the character string value found
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value);
+PC_status_t PARACONF_EXPORT PC_get_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value, int *value_len);
 
 /** Broadcasts yaml documents over MPI
  * 

@@ -66,10 +66,10 @@ PC_status_t PC_get(yaml_document_t* document, yaml_node_t* node, const char* ind
 			while ( index[id_len] && index[id_len] != '.' && index[id_len] != '[' ) ++id_len;
 			yaml_node_pair_t *pair = result->data.mapping.pairs.start;
 			while ( pair != result->data.mapping.pairs.top ) {
-				char *key_str;
+				char *key_str = NULL;
 				yaml_node_t *key = yaml_document_get_node(document, pair->key);
 				assert(key);
-				PC_status_t errcode = PC_as_string(document, key, &key_str);
+				PC_status_t errcode = PC_as_string(document, key, &key_str, 0);
 				if ( errcode ) return errcode;
 				int cmp = strncmp(index, key_str, id_len);
 				free(key_str);
@@ -118,12 +118,12 @@ PC_status_t PC_get_int(yaml_document_t* document, yaml_node_t* node, const char*
 	return PC_as_int(document, value_node, value);
 }
 
-PC_status_t PC_get_string(yaml_document_t* document, yaml_node_t* node, const char* index, char** value)
+PC_status_t PC_get_string(yaml_document_t* document, yaml_node_t* node, const char* index, char** value, int* value_len)
 {
 	yaml_node_t *value_node;
 	PC_status_t result = PC_get(document, node, index, &value_node);
 	if ( result ) return result;
-	return PC_as_string(document, value_node, value);
+	return PC_as_string(document, value_node, value, value_len);
 }
 
 PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm)
