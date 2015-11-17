@@ -82,8 +82,7 @@ PC_status_t PC_as_string(yaml_document_t* document, yaml_node_t* value_node, cha
 	
 	int len; PC_status_t res = PC_as_len(document, value_node, &len); if (res) return res;
 	if ( !value_len ) {
-		if ( *value ) *value = malloc(len+1);
-		else *value = realloc(*value, len+1);
+		*value = malloc(len+1);
 	} else if ( *value_len > len || -(*value_len) > len ) {
 		// ok, nothing to do here
 	} else if ( *value_len < 0 ) {

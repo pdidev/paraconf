@@ -32,7 +32,27 @@
 
 #define PC_BUFFER_SIZE 256
 
-PC_status_t PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value)
+static char *msprintf(const char *fmt, va_list ap)
+{
+	int index_size = PC_BUFFER_SIZE;
+	char *index = malloc(index_size);
+	while ( vsnprintf(index, index_size, fmt, ap) > index_size ) {
+		index_size *= 2;
+		index = realloc(index, PC_BUFFER_SIZE);
+	}
+	return index;
+}
+
+PC_status_t PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value, ...)
+{
+	va_list ap;
+	va_start(ap, value);
+	PC_status_t res = PC_vget(document, node, index, value, ap);
+	va_end(ap);
+	return res;
+}
+
+PC_status_t PC_vget(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, yaml_node_t** value, va_list ap)
 {
 	yaml_node_t* result;
 	if ( node ) {
@@ -42,25 +62,43 @@ PC_status_t PC_get(yaml_document_t* document, yaml_node_t* node, const char* ind
 	}
 	assert(result);
 	
-	while ( index ) {
+	PC_status_t err = PC_OK;
+	
+	char *index = msprintf(index_fmt, ap);
+	char *index_free = index;
+	
+	for(;;) {
 		switch ( *index ) {
 		case '[': {
-			if ( result->type != YAML_SEQUENCE_NODE ) return PC_INVALID_NODE_TYPE;
+			if ( result->type != YAML_SEQUENCE_NODE ) {
+				err = PC_INVALID_NODE_TYPE;
+				goto vget_free;
+			}
 			++index; // consume the starting '['
 			char *post_index;
 			long seq_idx = strtol(index, &post_index, 0);
-			if ( post_index == index ) return PC_INVALID_PARAMETER;
+			if ( post_index == index ) {
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
+			}
 			index = post_index;
 			if ( seq_idx > result->data.sequence.items.top - result->data.sequence.items.start ) {
-				return PC_INVALID_PARAMETER;
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
 			}
 			result = yaml_document_get_node(document, *(result->data.sequence.items.start + seq_idx));
 			assert(result);
-			if ( *index != ']' ) return PC_INVALID_PARAMETER;
+			if ( *index != ']' ) {
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
+			}
 			++index;
 		}; break;
 		case '.': {
-			if ( result->type != YAML_MAPPING_NODE ) return PC_INVALID_NODE_TYPE;
+			if ( result->type != YAML_MAPPING_NODE ) {
+				err = PC_INVALID_NODE_TYPE;
+				goto vget_free;
+			}
 			++index; // consume the starting '.'
 			int id_len = 0;
 			while ( index[id_len] && index[id_len] != '.' && index[id_len] != '[' ) ++id_len;
@@ -76,7 +114,10 @@ PC_status_t PC_get(yaml_document_t* document, yaml_node_t* node, const char* ind
 				if ( !cmp ) break;
 				++pair;
 			}
-			if ( pair == result->data.mapping.pairs.top ) return PC_NODE_NOT_FOUND;
+			if ( pair == result->data.mapping.pairs.top ) {
+				err = PC_NODE_NOT_FOUND;
+				goto vget_free;
+			}
 			index += id_len;
 			result = yaml_document_get_node(document, pair->value);
 			assert(result);
@@ -84,46 +125,95 @@ PC_status_t PC_get(yaml_document_t* document, yaml_node_t* node, const char* ind
 		case 0: {
 			assert(result);
 			*value = result;
-			return PC_OK;
+			err = PC_OK;
+			goto vget_free;
 		}
 		default: {
-			return PC_INVALID_PARAMETER;
+			err = PC_INVALID_PARAMETER;
+			goto vget_free;
 		};
 		}
 	}
+vget_free:
+	free(index_free);
+	return err;
 }
 
-PC_status_t PC_get_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len)
+PC_status_t PC_get_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len, ...)
 {
-	yaml_node_t *value_node;
-	PC_status_t result = PC_get(document, node, index, &value_node);
-	if ( result ) return result;
-	return PC_as_len(document, value_node, len);
+	va_list ap;
+	va_start(ap, len);
+	PC_status_t res = PC_vget_len(document, node, index, len, ap);
+	va_end(ap);
+	return res;
+}
+
+PC_status_t PC_vget_len(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, int* len, va_list ap)
+{
+	char *index = msprintf(index_fmt, ap);
+	yaml_node_t *value_node; PC_status_t err = PC_get(document, node, index, &value_node); if ( err ) goto vget_len_free; 
+	err = PC_as_len(document, value_node, len);
+vget_len_free:
+	free(index);
+	return err;
 }
 
 
-PC_status_t PC_get_double(yaml_document_t* document, yaml_node_t* node, const char* index, double* value)
+PC_status_t PC_get_double(yaml_document_t* document, yaml_node_t* node, const char* index, double* value, ...)
 {
-	yaml_node_t *value_node;
-	PC_status_t result = PC_get(document, node, index, &value_node);
-	if ( result ) return result;
-	return PC_as_double(document, value_node, value);
+	va_list ap;
+	va_start(ap, value);
+	PC_status_t res = PC_vget_double(document, node, index, value, ap);
+	va_end(ap);
+	return res;
 }
 
-PC_status_t PC_get_int(yaml_document_t* document, yaml_node_t* node, const char* index, int* value)
+PC_status_t PC_vget_double(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, double* value, va_list ap)
 {
-	yaml_node_t *value_node;
-	PC_status_t result = PC_get(document, node, index, &value_node);
-	if ( result ) return result;
-	return PC_as_int(document, value_node, value);
+	char *index = msprintf(index_fmt, ap);
+	yaml_node_t *value_node; PC_status_t err = PC_get(document, node, index, &value_node); if ( err ) goto vget_double_free; 
+	err = PC_as_double(document, value_node, value);
+vget_double_free:
+	free(index);
+	return err;
 }
 
-PC_status_t PC_get_string(yaml_document_t* document, yaml_node_t* node, const char* index, char** value, int* value_len)
+PC_status_t PC_get_int(yaml_document_t* document, yaml_node_t* node, const char* index, int* value, ...)
 {
-	yaml_node_t *value_node;
-	PC_status_t result = PC_get(document, node, index, &value_node);
-	if ( result ) return result;
-	return PC_as_string(document, value_node, value, value_len);
+	va_list ap;
+	va_start(ap, value);
+	PC_status_t res = PC_vget_int(document, node, index, value, ap);
+	va_end(ap);
+	return res;
+}
+
+PC_status_t PC_vget_int(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, int* value, va_list ap)
+{
+	char *index = msprintf(index_fmt, ap);
+	yaml_node_t *value_node; PC_status_t err = PC_get(document, node, index, &value_node); if ( err ) goto vget_int_free; 
+	err = PC_as_int(document, value_node, value);
+vget_int_free:
+	free(index);
+	return err;
+}
+
+PC_status_t PC_get_string(yaml_document_t* document, yaml_node_t* node, const char* index, char** value, int* value_len, ...)
+{
+	va_list ap;
+	va_start(ap, value_len);
+	PC_status_t res = PC_vget_string(document, node, index, value, value_len, ap);
+	va_end(ap);
+	return res;
+}
+
+PC_status_t PC_vget_string(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, char** value, int* value_len, va_list ap)
+{
+	char *index = msprintf(index_fmt, ap);
+	yaml_node_t *value_node; PC_status_t err = PC_get(document, node, index, &value_node); if ( err ) goto vget_string_free; 
+	err = PC_as_string(document, value_node, value, value_len);
+vget_string_free:
+	free(index);
+	return err;
 }
 
 PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm)

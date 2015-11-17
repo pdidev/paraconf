@@ -29,6 +29,7 @@
 extern "C" {
 #endif
 
+#include <stdarg.h>
 #include <yaml.h>
 #include <mpi.h>
 
@@ -53,7 +54,9 @@ typedef enum {
  * \param[out] value the node found
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value);
+PC_status_t PARACONF_EXPORT PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value, ...);
+
+PC_status_t PARACONF_EXPORT PC_vget(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value, va_list va);
 
 /** Looks for a sequence or mapping node in a yaml document given a ypath index and returns its size/length
  * 
@@ -62,7 +65,9 @@ PC_status_t PARACONF_EXPORT PC_get(yaml_document_t* document, yaml_node_t* node,
  * \param[out] value the number of elements in the mapping/sequence
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len);
+PC_status_t PARACONF_EXPORT PC_get_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len, ...);
+
+PC_status_t PARACONF_EXPORT PC_vget_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len, va_list va);
 
 /** Looks for an integer value in a yaml document given a ypath index
  * 
@@ -71,7 +76,9 @@ PC_status_t PARACONF_EXPORT PC_get_len(yaml_document_t* document, yaml_node_t* n
  * \param[out] value the integer value found
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get_int(yaml_document_t* document, yaml_node_t* node, const char *index, int *value);
+PC_status_t PARACONF_EXPORT PC_get_int(yaml_document_t* document, yaml_node_t* node, const char *index, int *value, ...);
+
+PC_status_t PARACONF_EXPORT PC_vget_int(yaml_document_t* document, yaml_node_t* node, const char *index, int *value, va_list va);
 
 /** Looks for a floating point value in a yaml document given a ypath index
  * 
@@ -80,16 +87,26 @@ PC_status_t PARACONF_EXPORT PC_get_int(yaml_document_t* document, yaml_node_t* n
  * \param[out] value the floating point value found
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get_double(yaml_document_t* document, yaml_node_t* node, const char *index, double *value);
+PC_status_t PARACONF_EXPORT PC_get_double(yaml_document_t* document, yaml_node_t* node, const char *index, double *value, ...);
+
+PC_status_t PARACONF_EXPORT PC_vget_double(yaml_document_t* document, yaml_node_t* node, const char *index, double *value, va_list va);
 
 /** Looks for a character string value in a yaml document given a ypath index
  * 
  * \param[in] document the yaml document
  * \param[in] index the ypath index
  * \param[out] value the character string value found
+ * \param[in,out] value_len the length of value (if not NULL)
  * \return error status
+ * 
+ * There are 3 cases regarding the memory allocation for value:
+ * * if value_len == NULL, a new buffer is allocated for value and returned, the old buffer is discarded
+ * * if *value_len > 0 the buffer is used as-is if large enough, PC_ERR_BUFFER_SIZE is returned otherwise
+ * * if *value_len <= 0 the actual size is the absolute value and the string can be reallocated
  */
-PC_status_t PARACONF_EXPORT PC_get_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value, int *value_len);
+PC_status_t PARACONF_EXPORT PC_get_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value, int *value_len, ...);
+
+PC_status_t PARACONF_EXPORT PC_vget_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value, int *value_len, va_list va);
 
 /** Broadcasts yaml documents over MPI
  * 
