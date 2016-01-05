@@ -33,9 +33,17 @@ extern "C" {
 #include <yaml.h>
 #include <mpi.h>
 
-#include "paraconf_export.h"
+#include <paraconf_export.h>
 
-typedef enum {
+typedef struct PC_tree_s
+{
+	yaml_document_t* document;
+	
+	yaml_node_t* node;
+	
+} PC_tree_t;
+
+typedef enum PC_status_e {
 	/// no error
 	PC_OK=0,
 	/// a parameter value is invalid
@@ -47,6 +55,13 @@ typedef enum {
 	PC_ERR_BUFFER_SIZE
 } PC_status_t;
 
+/** Returns the tree at the root of a document
+ * 
+ * \param[in] document the document
+ * \param[out] tree the tree, it must be destrocyed using 
+ */
+PC_status_t PARACONF_EXPORT PC_init(yaml_document_t *document, PC_tree_t *tree);
+
 /** Looks for a node in a yaml document given a ypath index
  * 
  * \param[in] document the yaml document
@@ -54,9 +69,9 @@ typedef enum {
  * \param[out] value the node found
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value, ...);
+PC_status_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char* index, PC_tree_t* value, ...);
 
-PC_status_t PARACONF_EXPORT PC_vget(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value, va_list va);
+PC_status_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char* index, PC_tree_t* value, va_list va);
 
 /** Looks for a sequence or mapping node in a yaml document given a ypath index and returns its size/length
  * 
@@ -65,9 +80,9 @@ PC_status_t PARACONF_EXPORT PC_vget(yaml_document_t* document, yaml_node_t* node
  * \param[out] value the number of elements in the mapping/sequence
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len, ...);
+PC_status_t PARACONF_EXPORT PC_get_len(PC_tree_t tree, const char* index, int* len, ...);
 
-PC_status_t PARACONF_EXPORT PC_vget_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len, va_list va);
+PC_status_t PARACONF_EXPORT PC_vget_len(PC_tree_t tree, const char* index, int* len, va_list va);
 
 /** Looks for an integer value in a yaml document given a ypath index
  * 
@@ -76,9 +91,9 @@ PC_status_t PARACONF_EXPORT PC_vget_len(yaml_document_t* document, yaml_node_t* 
  * \param[out] value the integer value found
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get_int(yaml_document_t* document, yaml_node_t* node, const char *index, int *value, ...);
+PC_status_t PARACONF_EXPORT PC_get_int(PC_tree_t tree, const char *index, int *value, ...);
 
-PC_status_t PARACONF_EXPORT PC_vget_int(yaml_document_t* document, yaml_node_t* node, const char *index, int *value, va_list va);
+PC_status_t PARACONF_EXPORT PC_vget_int(PC_tree_t tree, const char *index, int *value, va_list va);
 
 /** Looks for a floating point value in a yaml document given a ypath index
  * 
@@ -87,9 +102,9 @@ PC_status_t PARACONF_EXPORT PC_vget_int(yaml_document_t* document, yaml_node_t* 
  * \param[out] value the floating point value found
  * \return error status
  */
-PC_status_t PARACONF_EXPORT PC_get_double(yaml_document_t* document, yaml_node_t* node, const char *index, double *value, ...);
+PC_status_t PARACONF_EXPORT PC_get_double(PC_tree_t tree, const char *index, double *value, ...);
 
-PC_status_t PARACONF_EXPORT PC_vget_double(yaml_document_t* document, yaml_node_t* node, const char *index, double *value, va_list va);
+PC_status_t PARACONF_EXPORT PC_vget_double(PC_tree_t tree, const char *index, double *value, va_list va);
 
 /** Looks for a character string value in a yaml document given a ypath index
  * 
@@ -104,9 +119,9 @@ PC_status_t PARACONF_EXPORT PC_vget_double(yaml_document_t* document, yaml_node_
  * * if *value_len > 0 the buffer is used as-is if large enough, PC_ERR_BUFFER_SIZE is returned otherwise
  * * if *value_len <= 0 the actual size is the absolute value and the string can be reallocated
  */
-PC_status_t PARACONF_EXPORT PC_get_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value, int *value_len, ...);
+PC_status_t PARACONF_EXPORT PC_get_string(PC_tree_t tree, const char *index, char **value, int *value_len, ...);
 
-PC_status_t PARACONF_EXPORT PC_vget_string(yaml_document_t* document, yaml_node_t* node, const char *index, char **value, int *value_len, va_list va);
+PC_status_t PARACONF_EXPORT PC_vget_string(PC_tree_t tree, const char *index, char **value, int *value_len, va_list va);
 
 /** Broadcasts yaml documents over MPI
  * 

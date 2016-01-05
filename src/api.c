@@ -43,28 +43,28 @@ static char *msprintf(const char *fmt, va_list ap)
 	return index;
 }
 
-PC_status_t PC_get(yaml_document_t* document, yaml_node_t* node, const char* index, yaml_node_t** value, ...)
+PC_status_t PC_get(PC_tree_t tree, const char* index, PC_tree_t* value, ...)
 {
 	va_list ap;
 	va_start(ap, value);
-	PC_status_t res = PC_vget(document, node, index, value, ap);
+	PC_status_t res = PC_vget(tree, index, value, ap);
 	va_end(ap);
 	return res;
 }
 
-PC_status_t PC_vget(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, yaml_node_t** value, va_list ap)
+PC_status_t PC_vget(PC_tree_t tree, const char* index_fmt, PC_tree_t* value, va_list va)
 {
 	yaml_node_t* result;
-	if ( node ) {
-		result = node;
+	if ( tree.node ) {
+		result = tree.node;
 	} else {
-		result = yaml_document_get_root_node(document);
+		result = yaml_document_get_root_node(tree.document);
 	}
 	assert(result);
 	
 	PC_status_t err = PC_OK;
 	
-	char *index = msprintf(index_fmt, ap);
+	char *index = msprintf(index_fmt, va);
 	char *index_free = index;
 	
 	for(;;) {
@@ -86,7 +86,7 @@ PC_status_t PC_vget(yaml_document_t* document, yaml_node_t* node, const char* in
 				err = PC_INVALID_PARAMETER;
 				goto vget_free;
 			}
-			result = yaml_document_get_node(document, *(result->data.sequence.items.start + seq_idx));
+			result = yaml_document_get_node(tree.document, *(result->data.sequence.items.start + seq_idx));
 			assert(result);
 			if ( *index != ']' ) {
 				err = PC_INVALID_PARAMETER;
@@ -104,10 +104,10 @@ PC_status_t PC_vget(yaml_document_t* document, yaml_node_t* node, const char* in
 			while ( index[id_len] && index[id_len] != '.' && index[id_len] != '[' ) ++id_len;
 			yaml_node_pair_t *pair = result->data.mapping.pairs.start;
 			while ( pair != result->data.mapping.pairs.top ) {
-				char *key_str = NULL;
-				yaml_node_t *key = yaml_document_get_node(document, pair->key);
+				yaml_node_t *key = yaml_document_get_node(tree.document, pair->key);
 				assert(key);
-				PC_status_t errcode = PC_as_string(document, key, &key_str, 0);
+				PC_tree_t key_tree = { tree.document, key };
+				char *key_str = NULL; PC_status_t errcode = PC_as_string(key_tree, &key_str, 0);
 				if ( errcode ) return errcode;
 				int cmp = strncmp(index, key_str, id_len);
 				free(key_str);
@@ -119,12 +119,13 @@ PC_status_t PC_vget(yaml_document_t* document, yaml_node_t* node, const char* in
 				goto vget_free;
 			}
 			index += id_len;
-			result = yaml_document_get_node(document, pair->value);
+			result = yaml_document_get_node(tree.document, pair->value);
 			assert(result);
 		}; break;
 		case 0: {
 			assert(result);
-			*value = result;
+			value->node = result;
+			value->document = tree.document;
 			err = PC_OK;
 			goto vget_free;
 		}
@@ -139,78 +140,78 @@ vget_free:
 	return err;
 }
 
-PC_status_t PC_get_len(yaml_document_t* document, yaml_node_t* node, const char* index, int* len, ...)
+PC_status_t PC_get_len(PC_tree_t tree, const char* index, int* len, ...)
 {
 	va_list ap;
 	va_start(ap, len);
-	PC_status_t res = PC_vget_len(document, node, index, len, ap);
+	PC_status_t res = PC_vget_len(tree, index, len, ap);
 	va_end(ap);
 	return res;
 }
 
-PC_status_t PC_vget_len(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, int* len, va_list ap)
+PC_status_t PC_vget_len(PC_tree_t tree, const char* index_fmt, int* len, va_list ap)
 {
 	char *index = msprintf(index_fmt, ap);
-	yaml_node_t *value_node; PC_status_t err = PC_get(document, node, index, &value_node); if ( err ) goto vget_len_free; 
-	err = PC_as_len(document, value_node, len);
+	PC_tree_t value_node; PC_status_t err = PC_get(tree, index, &value_node); if ( err ) goto vget_len_free; 
+	err = PC_as_len(value_node, len);
 vget_len_free:
 	free(index);
 	return err;
 }
 
 
-PC_status_t PC_get_double(yaml_document_t* document, yaml_node_t* node, const char* index, double* value, ...)
+PC_status_t PC_get_double(PC_tree_t tree, const char* index, double* value, ...)
 {
 	va_list ap;
 	va_start(ap, value);
-	PC_status_t res = PC_vget_double(document, node, index, value, ap);
+	PC_status_t res = PC_vget_double(tree, index, value, ap);
 	va_end(ap);
 	return res;
 }
 
-PC_status_t PC_vget_double(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, double* value, va_list ap)
+PC_status_t PC_vget_double(PC_tree_t tree, const char* index_fmt, double* value, va_list ap)
 {
 	char *index = msprintf(index_fmt, ap);
-	yaml_node_t *value_node; PC_status_t err = PC_get(document, node, index, &value_node); if ( err ) goto vget_double_free; 
-	err = PC_as_double(document, value_node, value);
+	PC_tree_t value_node; PC_status_t err = PC_get(tree, index, &value_node); if ( err ) goto vget_double_free; 
+	err = PC_as_double(value_node, value);
 vget_double_free:
 	free(index);
 	return err;
 }
 
-PC_status_t PC_get_int(yaml_document_t* document, yaml_node_t* node, const char* index, int* value, ...)
+PC_status_t PC_get_int(PC_tree_t tree, const char* index, int* value, ...)
 {
 	va_list ap;
 	va_start(ap, value);
-	PC_status_t res = PC_vget_int(document, node, index, value, ap);
+	PC_status_t res = PC_vget_int(tree, index, value, ap);
 	va_end(ap);
 	return res;
 }
 
-PC_status_t PC_vget_int(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, int* value, va_list ap)
+PC_status_t PC_vget_int(PC_tree_t tree, const char* index_fmt, int* value, va_list ap)
 {
 	char *index = msprintf(index_fmt, ap);
-	yaml_node_t *value_node; PC_status_t err = PC_get(document, node, index, &value_node); if ( err ) goto vget_int_free; 
-	err = PC_as_int(document, value_node, value);
+	PC_tree_t value_node; PC_status_t err = PC_get(tree, index, &value_node); if ( err ) goto vget_int_free; 
+	err = PC_as_int(value_node, value);
 vget_int_free:
 	free(index);
 	return err;
 }
 
-PC_status_t PC_get_string(yaml_document_t* document, yaml_node_t* node, const char* index, char** value, int* value_len, ...)
+PC_status_t PC_get_string(PC_tree_t tree, const char* index, char** value, int* value_len, ...)
 {
 	va_list ap;
 	va_start(ap, value_len);
-	PC_status_t res = PC_vget_string(document, node, index, value, value_len, ap);
+	PC_status_t res = PC_vget_string(tree, index, value, value_len, ap);
 	va_end(ap);
 	return res;
 }
 
-PC_status_t PC_vget_string(yaml_document_t* document, yaml_node_t* node, const char* index_fmt, char** value, int* value_len, va_list ap)
+PC_status_t PC_vget_string(PC_tree_t tree, const char* index_fmt, char** value, int* value_len, va_list ap)
 {
 	char *index = msprintf(index_fmt, ap);
-	yaml_node_t *value_node; PC_status_t err = PC_get(document, node, index, &value_node); if ( err ) goto vget_string_free; 
-	err = PC_as_string(document, value_node, value, value_len);
+	PC_tree_t value_node; PC_status_t err = PC_get(tree, index, &value_node); if ( err ) goto vget_string_free;
+	err = PC_as_string(value_node, value, value_len);
 vget_string_free:
 	free(index);
 	return err;
@@ -218,24 +219,24 @@ vget_string_free:
 
 PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm)
 {
-	yaml_emitter_t *emitter;
-	yaml_emitter_initialize(emitter);
-	yaml_emitter_set_width(emitter, -1);
-	yaml_emitter_set_canonical(emitter, 1);
-	yaml_emitter_open(emitter);
+	yaml_emitter_t emitter;
+	yaml_emitter_initialize(&emitter);
+	yaml_emitter_set_width(&emitter, -1);
+	yaml_emitter_set_canonical(&emitter, 1);
+	yaml_emitter_open(&emitter);
 	
 	size_t buf_size = PC_BUFFER_SIZE/2;
-	char *buf = 0;
+	unsigned char *buf = 0;
 	int err = YAML_WRITER_ERROR;
 	unsigned long data_size;
 	while ( err == YAML_WRITER_ERROR ) {
 		buf_size *= 2;
 		buf = realloc(buf, buf_size);
-		yaml_emitter_set_output_string(emitter, buf, buf_size, &data_size);
-		err = yaml_emitter_dump(emitter, document);
+		yaml_emitter_set_output_string(&emitter, buf, buf_size, &data_size);
+		err = yaml_emitter_dump(&emitter, document);
 	}
-	yaml_emitter_close(emitter);
-	yaml_emitter_delete(emitter);
+	yaml_emitter_close(&emitter);
+	yaml_emitter_delete(&emitter);
 	
 	MPI_Bcast(&data_size, 1, MPI_LONG, root, comm);
 	MPI_Bcast(buf, data_size, MPI_LONG, root, comm);
