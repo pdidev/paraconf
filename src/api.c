@@ -122,6 +122,56 @@ PC_status_t PC_vget(PC_tree_t tree, const char* index_fmt, PC_tree_t* value, va_
 			result = yaml_document_get_node(tree.document, pair->value);
 			assert(result);
 		}; break;
+		case '{': {
+			if ( result->type != YAML_MAPPING_NODE ) {
+				err = PC_INVALID_NODE_TYPE;
+				goto vget_free;
+			}
+			++index; // consume the starting '{'
+			char *post_index;
+			long map_idx = strtol(index, &post_index, 0);
+			if ( post_index == index ) {
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
+			}
+			index = post_index;
+			if ( map_idx > result->data.mapping.pairs.top - result->data.mapping.pairs.start ) {
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
+			}
+			result = yaml_document_get_node(tree.document, (result->data.mapping.pairs.start + map_idx)->key);
+			assert(result);
+			if ( *index != '}' ) {
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
+			}
+			++index;
+		}; break;
+		case '<': {
+			if ( result->type != YAML_MAPPING_NODE ) {
+				err = PC_INVALID_NODE_TYPE;
+				goto vget_free;
+			}
+			++index; // consume the starting '<'
+			char *post_index;
+			long map_idx = strtol(index, &post_index, 0);
+			if ( post_index == index ) {
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
+			}
+			index = post_index;
+			if ( map_idx > result->data.mapping.pairs.top - result->data.mapping.pairs.start ) {
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
+			}
+			result = yaml_document_get_node(tree.document, (result->data.mapping.pairs.start + map_idx)->value);
+			assert(result);
+			if ( *index != '>' ) {
+				err = PC_INVALID_PARAMETER;
+				goto vget_free;
+			}
+			++index;
+		}; break;
 		case 0: {
 			assert(result);
 			value->node = result;

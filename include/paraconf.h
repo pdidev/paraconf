@@ -35,6 +35,19 @@ extern "C" {
 
 #include <paraconf_export.h>
 
+/** \file paraconf.h
+ *
+ * Supports accessing a yaml document using ypath.
+ * A ypath expression can contain the following
+ * * access to a mapping element using the dot syntax: e.g. .map.key
+ * * access to a sequence element using square brackets (indices are 0-based):
+ *   e.g. .seq[1]
+ * * access to a mapping element key using braces (indices are 0-based):
+ *   e.g. .map{1}
+ * * access to a mapping element value by index using chevrons:
+ *   e.g. .map<1> is a shortcut for .map[.map{1}]
+ */
+
 typedef struct PC_tree_s
 {
 	yaml_document_t* document;
@@ -58,7 +71,7 @@ typedef enum PC_status_e {
 /** Returns the tree at the root of a document
  * 
  * \param[in] document the document
- * \param[out] tree the tree, it must be destrocyed using 
+ * \param[out] tree the tree, it must be destroyed
  */
 PC_status_t PARACONF_EXPORT PC_init(yaml_document_t *document, PC_tree_t *tree);
 
