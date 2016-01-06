@@ -39,15 +39,7 @@ PC_status_t PC_as_len(PC_tree_t tree, int* len)
 		*len = tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start;
 	} break;
 	case YAML_SCALAR_NODE: {
-		switch ( tree.node->data.scalar.style ) {
-		case YAML_SINGLE_QUOTED_SCALAR_STYLE:
-		case YAML_DOUBLE_QUOTED_SCALAR_STYLE: {
-			*len = tree.node->data.scalar.length-2;
-		} break;
-		default: {
-			*len = tree.node->data.scalar.length;
-		} break;
-		}
+		*len = tree.node->data.scalar.length;
 	} break;
 	default: {
 		return PC_INVALID_NODE_TYPE;
