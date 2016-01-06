@@ -101,7 +101,7 @@ PC_status_t PC_vget(PC_tree_t tree, const char* index_fmt, PC_tree_t* value, va_
 			}
 			++index; // consume the starting '.'
 			int id_len = 0;
-			while ( index[id_len] && index[id_len] != '.' && index[id_len] != '[' ) ++id_len;
+			while ( index[id_len] && index[id_len] != '.' && index[id_len] != '[' && index[id_len] != '{' && index[id_len] != '<' ) ++id_len;
 			yaml_node_pair_t *pair = result->data.mapping.pairs.start;
 			while ( pair != result->data.mapping.pairs.top ) {
 				yaml_node_t *key = yaml_document_get_node(tree.document, pair->key);
