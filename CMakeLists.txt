@@ -66,7 +66,6 @@ file(READ VERSION paraconf_VERSION)
 
 add_library(paraconf
 	src/api.c
-	src/ytype.c
 )
 include(GenerateExportHeader)
 generate_export_header(paraconf)

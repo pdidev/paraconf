@@ -29,6 +29,7 @@
 extern "C" {
 #endif
 
+#include <string.h>
 #include <stdarg.h>
 #include <yaml.h>
 #include <mpi.h>
@@ -36,105 +37,149 @@ extern "C" {
 #include <paraconf_export.h>
 
 /** \file paraconf.h
- *
- * Supports accessing a yaml document using ypath.
- * A ypath expression can contain the following
- * * access to a mapping element using the dot syntax: e.g. .map.key
- * * access to a sequence element using square brackets (indices are 0-based):
- *   e.g. .seq[1]
- * * access to a mapping element key using braces (indices are 0-based):
- *   e.g. .map{1}
- * * access to a mapping element value by index using chevrons:
- *   e.g. .map<1> is a shortcut for .map[.map{1}]
  */
 
-typedef struct PC_tree_s
-{
-	yaml_document_t* document;
-	
-	yaml_node_t* node;
-	
-} PC_tree_t;
-
-typedef enum PC_status_e {
+typedef enum PC_errcode_e {
 	/// no error
 	PC_OK=0,
 	/// a parameter value is invalid
 	PC_INVALID_PARAMETER,
 	/// unexpected type found for a node
 	PC_INVALID_NODE_TYPE,
-	PC_NODE_NOT_FOUND,
-	/// The provided buffer is not large enough
-	PC_ERR_BUFFER_SIZE
+	// The requested node doen't exist in the tree
+	PC_NODE_NOT_FOUND
+} PC_errcode_t;
+
+extern const char *PC_errmessage[5];
+
+typedef struct PC_status_s
+{
+	/// The tree status
+	PC_errcode_t code;
+	
+	/// The error message
+	char *errmsg;
+	
 } PC_status_t;
+
+typedef void (PC_errfunc_f)(PC_status_t status);
+
+typedef struct PC_tree_s
+{
+	/// The tree status
+	PC_status_t status;
+	
+	PC_errfunc_f *errfunc;
+	
+	/// The document containing the tree
+	yaml_document_t* document;
+	
+	/// the node inside the tree
+	yaml_node_t* node;
+	
+} PC_tree_t;
+
+
+static inline PC_errcode_t PC_status(PC_tree_t tree)
+{
+	return tree.status.code;
+}
+
+static inline char *PC_errmsg(PC_tree_t tree)
+{
+	return tree.status.errmsg;
+}
+
+/** Prints the error message and aborts if the status is invalid
+ */
+void PARACONF_EXPORT PC_assert(PC_status_t status);
 
 /** Returns the tree at the root of a document
  * 
+ * \param[out] status status of the command execution
  * \param[in] document the document
- * \param[out] tree the tree, it must be destroyed
+ * \return the tree, valid as long as the containing document is
  */
-PC_status_t PARACONF_EXPORT PC_init(yaml_document_t *document, PC_tree_t *tree);
+PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t *document, PC_errfunc_f *errfunc);
 
 /** Looks for a node in a yaml document given a ypath index
  * 
- * \param[in] document the yaml document
- * \param[in] index the ypath index
- * \param[out] value the node found
- * \return error status
- */
-PC_status_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char* index, PC_tree_t* value, ...);
-
-PC_status_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char* index, PC_tree_t* value, va_list va);
-
-/** Looks for a sequence or mapping node in a yaml document given a ypath index and returns its size/length
+ * Does nothing if the provided tree is in error and returns the input tree.
+ *
+ * A ypath expression can contain the following
+ * * access to a mapping element using the dot syntax:
+ *   e.g. .map.key
+ * * access to a sequence element using square brackets (indices are 0-based):
+ *   e.g. .seq[1]
+ * * access to a mapping element key using braces (indices are 0-based):
+ *   e.g. .map{1}
+ * * access to a mapping element value by index using chevrons:
+ *   e.g. .map<1> 
+ *   PC_get(0,map,"<1>"); is similar to k=PC_get(0,map,"{1}"); PC_get(0,map,".%s",k);
  * 
- * \param[in] document the yaml document
- * \param[in] index the ypath index
- * \param[out] value the number of elements in the mapping/sequence
- * \return error status
+ * \param[in,out] status status of the command execution, does nothing if not valid in input
+ * \param[in] tree a yaml tree
+ * \param[in] index_fmt the ypath index, can be a printf-style format string
+ * \param[in] ... the printf-style values
+ * \return the subtree corresponding to the ypath index
  */
-PC_status_t PARACONF_EXPORT PC_get_len(PC_tree_t tree, const char* index, int* len, ...);
+PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char *index_fmt, ...);
 
-PC_status_t PARACONF_EXPORT PC_vget_len(PC_tree_t tree, const char* index, int* len, va_list va);
-
-/** Looks for an integer value in a yaml document given a ypath index
+/** Looks for a node in a yaml document given a ypath index
  * 
- * \param[in] document the yaml document
- * \param[in] index the ypath index
- * \param[out] value the integer value found
- * \return error status
+ * Does nothing if the provided tree is in error
+ * 
+ * \param[in,out] status status of the command execution, does nothing if not valid in input
+ * \param[in] tree a yaml tree
+ * \param[in] index_fmt the ypath index, can be a printf-style format string
+ * \param[in] va the printf-style values
+ * \return the subtree corresponding to the ypath index
  */
-PC_status_t PARACONF_EXPORT PC_get_int(PC_tree_t tree, const char *index, int *value, ...);
+PC_tree_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char *index_fmt, va_list va);
 
-PC_status_t PARACONF_EXPORT PC_vget_int(PC_tree_t tree, const char *index, int *value, va_list va);
-
-/** Looks for a floating point value in a yaml document given a ypath index
+/** Returns the length of a node, for a sequence, the number of nodes, for a mapping, the number of pairs, for a scalar, the string length
  * 
- * \param[in] document the yaml document
- * \param[in] index the ypath index
- * \param[out] value the floating point value found
- * \return error status
+ * Does nothing if the provided tree is in error
+ * 
+ * \param[in,out] status status of the command execution, does nothing if not valid in input
+ * \param[in] tree the sequence or mapping
+ * \param[out] value the length
+ * \return the status of the execution (valid until the next PC_* call in the same thread)
  */
-PC_status_t PARACONF_EXPORT PC_get_double(PC_tree_t tree, const char *index, double *value, ...);
+PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int *value);
 
-PC_status_t PARACONF_EXPORT PC_vget_double(PC_tree_t tree, const char *index, double *value, va_list va);
-
-/** Looks for a character string value in a yaml document given a ypath index
+/** Returns the int value of a scalar node
  * 
- * \param[in] document the yaml document
- * \param[in] index the ypath index
- * \param[out] value the character string value found
- * \param[in,out] value_len the length of value (if not NULL)
- * \return error status
+ * Does nothing if the provided tree is in error
  * 
- * There are 3 cases regarding the memory allocation for value:
- * * if value_len == NULL, a new buffer is allocated for value and returned, the old buffer is discarded
- * * if *value_len > 0 the buffer is used as-is if large enough, PC_ERR_BUFFER_SIZE is returned otherwise
- * * if *value_len <= 0 the actual size is the absolute value and the string can be reallocated
+ * \param[in,out] status status of the command execution, does nothing if not valid in input
+ * \param[in] tree the int-valued node
+ * \param[out] value the int value of the scalar node
+ * \return the status of the execution (valid until the next PC_* call in the same thread)
  */
-PC_status_t PARACONF_EXPORT PC_get_string(PC_tree_t tree, const char *index, char **value, int *value_len, ...);
+PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, int *value);
 
-PC_status_t PARACONF_EXPORT PC_vget_string(PC_tree_t tree, const char *index, char **value, int *value_len, va_list va);
+/** Returns the floating point value of a scalar node
+ * 
+ * Does nothing if the provided tree is in error
+ * 
+ * \param[in,out] status status of the command execution, does nothing if not valid in input
+ * \param[in] tree the floating-point-valued node
+ * \param[out] value the floating point value of the scalar node
+ * \return the status of the execution (valid until the next PC_* call in the same thread)
+ */
+PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double *value);
+
+/** Returns the string content of a scalar node
+ * 
+ * Does nothing if the provided tree is in error
+ * 
+ * \param[in,out] status status of the command execution, does nothing if not valid in input
+ * \param[in] tree the node
+ * \param[out] value the content of the scalar node as a newly allocated string that must be deallocated using free
+ * \return the status of the execution (valid until the next PC_* call in the same thread)
+ */
+PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
 
 /** Broadcasts yaml documents over MPI
  * 

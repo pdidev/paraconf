@@ -26,245 +26,327 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "ytype.h"
-
 #include "paraconf.h"
+
+const char *PC_errmessage[5] = {
+	"No error",
+	"Invalid parameter",
+	"Invalid node type",
+	"node not found"
+};
 
 #define PC_BUFFER_SIZE 256
 
-static char *msprintf(const char *fmt, va_list ap)
+static int strlzcmp(const char *lstr, const char *zstr, size_t lstr_size)
 {
-	int index_size = PC_BUFFER_SIZE;
-	char *index = malloc(index_size);
-	while ( vsnprintf(index, index_size, fmt, ap) > index_size ) {
-		index_size *= 2;
-		index = realloc(index, PC_BUFFER_SIZE);
-	}
-	return index;
-}
-
-PC_status_t PC_get(PC_tree_t tree, const char* index, PC_tree_t* value, ...)
-{
-	va_list ap;
-	va_start(ap, value);
-	PC_status_t res = PC_vget(tree, index, value, ap);
-	va_end(ap);
+	int res = strncmp(lstr, zstr, lstr_size);
+	if ( res ) return res;
+	if ( zstr[lstr_size] ) return -1;
 	return res;
 }
 
-PC_status_t PC_vget(PC_tree_t tree, const char* index_fmt, PC_tree_t* value, va_list va)
+static void verror(PC_status_t *status, PC_errcode_t code, const char *message, va_list va)
 {
-	yaml_node_t* result;
-	if ( tree.node ) {
-		result = tree.node;
+	if ( status ) {
+		status->code = code;
+		int bufsize = PC_BUFFER_SIZE;
+		status->errmsg = malloc(bufsize);
+		while ( vsnprintf(status->errmsg, bufsize, message, va) >= bufsize ) {
+			bufsize *= 2;
+			status->errmsg = realloc(status->errmsg, bufsize);
+		}
 	} else {
-		result = yaml_document_get_root_node(tree.document);
+		vfprintf(stderr, message, va);
+		fprintf(stderr, "\n");
+		abort();
 	}
-	assert(result);
-	
-	PC_status_t err = PC_OK;
-	
-	char *index = msprintf(index_fmt, va);
-	char *index_free = index;
+}
+
+static void error(PC_status_t *status, PC_errcode_t code, const char *message, ...)
+{
+	va_list ap;
+	va_start(ap, message);
+	verror(status, code, message, ap);
+	va_end(ap);
+}
+
+static const char *nodetype[4] = {
+	"none",
+	"scalar",
+	"sequence",
+	"mapping"
+};
+
+static PC_tree_t subtree(PC_tree_t tree, int key)
+{
+	PC_tree_t result = { tree.status, tree.errfunc, tree.document, yaml_document_get_node(tree.document, key) };
+	assert(result.node);
+	return result;
+}
+
+void PC_assert(PC_status_t status)
+{
+	if ( status.code ) {
+		fprintf(stderr, "%s in paraconf: %s\n", PC_errmessage[status.code], status.errmsg);
+		abort();
+	}
+}
+
+static PC_tree_t PC_sget(PC_tree_t tree, const char *index)
+{
+	PC_tree_t result = tree;
+	tree.errfunc = NULL; // Don't handle errors below, we'll do it
+	const char *full_index = index;
 	
 	for(;;) {
 		switch ( *index ) {
 		case '[': {
-			if ( result->type != YAML_SEQUENCE_NODE ) {
-				err = PC_INVALID_NODE_TYPE;
-				goto vget_free;
+			if ( result.node->type != YAML_SEQUENCE_NODE ) {
+				error(&result.status, PC_INVALID_NODE_TYPE, "Expected sequence, found %s: `%.*s'\n",
+						nodetype[result.node->type],
+						(int)(index-full_index)-1,
+						full_index);
+				goto err1;
 			}
 			++index; // consume the starting '['
 			char *post_index;
 			long seq_idx = strtol(index, &post_index, 0);
 			if ( post_index == index ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+				error(&result.status, PC_INVALID_PARAMETER, "Expected integer, found `%s' at %td of `%s'\n", index, index-full_index, full_index);
+				goto err1;
 			}
 			index = post_index;
-			if ( seq_idx > result->data.sequence.items.top - result->data.sequence.items.start ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+			if ( seq_idx > result.node->data.sequence.items.top - result.node->data.sequence.items.start ) {
+				error(&result.status, PC_NODE_NOT_FOUND, "Index %ld out of range in `%.*s'\n",
+						seq_idx,
+						(int)(index-full_index)-1,
+						full_index);
+				goto err1;
 			}
-			result = yaml_document_get_node(tree.document, *(result->data.sequence.items.start + seq_idx));
-			assert(result);
+			result.node = yaml_document_get_node(tree.document, *(result.node->data.sequence.items.start + seq_idx));
+			assert(result.node);
 			if ( *index != ']' ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+				error(&result.status, PC_INVALID_PARAMETER, "Expected closing square bracket, found %c at %td of `%s'\n", *index, index-full_index, full_index);
+				goto err1;
 			}
 			++index;
 		}; break;
 		case '.': {
-			if ( result->type != YAML_MAPPING_NODE ) {
-				err = PC_INVALID_NODE_TYPE;
-				goto vget_free;
+			if ( result.node->type != YAML_MAPPING_NODE ) {
+				error(&result.status, PC_INVALID_NODE_TYPE, "Expected mapping, found %s: `%.*s'\n",
+						nodetype[result.node->type],
+						(int)(index-full_index)-1,
+						full_index);
+				goto err1;
 			}
 			++index; // consume the starting '.'
 			int id_len = 0;
 			while ( index[id_len] && index[id_len] != '.' && index[id_len] != '[' && index[id_len] != '{' && index[id_len] != '<' ) ++id_len;
-			yaml_node_pair_t *pair = result->data.mapping.pairs.start;
-			while ( pair != result->data.mapping.pairs.top ) {
-				yaml_node_t *key = yaml_document_get_node(tree.document, pair->key);
-				assert(key);
-				PC_tree_t key_tree = { tree.document, key };
-				char *key_str = NULL; PC_status_t errcode = PC_as_string(key_tree, &key_str, 0);
-				if ( errcode ) return errcode;
-				int cmp = strncmp(index, key_str, id_len);
+			yaml_node_pair_t *pair = result.node->data.mapping.pairs.start;
+			while ( pair != result.node->data.mapping.pairs.top ) {
+				char *key_str; result.status = PC_string(subtree(tree, pair->key), &key_str);
+				if ( PC_status(result) ) goto err1;
+				int cmp = strlzcmp(index, key_str, id_len);
 				free(key_str);
 				if ( !cmp ) break;
 				++pair;
 			}
-			if ( pair == result->data.mapping.pairs.top ) {
-				err = PC_NODE_NOT_FOUND;
-				goto vget_free;
+			if ( pair == result.node->data.mapping.pairs.top ) {
+				error(&result.status, PC_NODE_NOT_FOUND, "Key not found: %.*s in `%.*s'\n",
+						id_len,
+						index,
+						(int)(index-full_index)-1,
+						full_index);
+				goto err1;
 			}
 			index += id_len;
-			result = yaml_document_get_node(tree.document, pair->value);
-			assert(result);
+			result.node = yaml_document_get_node(tree.document, pair->value);
+			assert(result.node);
 		}; break;
 		case '{': {
-			if ( result->type != YAML_MAPPING_NODE ) {
-				err = PC_INVALID_NODE_TYPE;
-				goto vget_free;
+			if ( result.node->type != YAML_MAPPING_NODE ) {
+				error(&result.status, PC_INVALID_NODE_TYPE, "Expected mapping, found %s: `%.*s'\n",
+						nodetype[result.node->type],
+						(int)(index-full_index)-1,
+						full_index);
+				goto err1;
 			}
 			++index; // consume the starting '{'
 			char *post_index;
 			long map_idx = strtol(index, &post_index, 0);
 			if ( post_index == index ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+				error(&result.status, PC_INVALID_PARAMETER, "Expected integer, found `%s' at %td of `%s'\n", index, index-full_index, full_index);
+				goto err1;
 			}
 			index = post_index;
-			if ( map_idx > result->data.mapping.pairs.top - result->data.mapping.pairs.start ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+			if ( map_idx > result.node->data.mapping.pairs.top - result.node->data.mapping.pairs.start ) {
+				error(&result.status, PC_NODE_NOT_FOUND, "Index %ld out of range in `%.*s'\n",
+						map_idx,
+						(int)(index-full_index)-1,
+						full_index);
+				goto err1;
 			}
-			result = yaml_document_get_node(tree.document, (result->data.mapping.pairs.start + map_idx)->key);
-			assert(result);
+			result.node = yaml_document_get_node(tree.document, (result.node->data.mapping.pairs.start + map_idx)->key);
+			assert(result.node);
 			if ( *index != '}' ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+				error(&result.status, PC_INVALID_PARAMETER, "Expected closing curly bracket, found %c at %td of `%s'\n", *index, index-full_index, full_index);
+				goto err1;
 			}
 			++index;
 		}; break;
 		case '<': {
-			if ( result->type != YAML_MAPPING_NODE ) {
-				err = PC_INVALID_NODE_TYPE;
-				goto vget_free;
+			if ( result.node->type != YAML_MAPPING_NODE ) {
+				error(&result.status, PC_INVALID_NODE_TYPE, "Expected mapping, found `%.*s': %s\n",
+						nodetype[result.node->type],
+						(int)(index-full_index)-1,
+						full_index);
+				goto err1;
 			}
 			++index; // consume the starting '<'
 			char *post_index;
+			const char *map_idx_str = index;
 			long map_idx = strtol(index, &post_index, 0);
 			if ( post_index == index ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+				error(&result.status, PC_INVALID_PARAMETER, "Expected integer, found `%s' at %td of `%s'\n", index, index-full_index, full_index);
+				goto err1;
 			}
 			index = post_index;
-			if ( map_idx > result->data.mapping.pairs.top - result->data.mapping.pairs.start ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+			if ( map_idx < 0 || map_idx > result.node->data.mapping.pairs.top - result.node->data.mapping.pairs.start ) {
+				error(&result.status, PC_NODE_NOT_FOUND, "Index %ld out of range in `%.*s'\n",
+						map_idx,
+						(int)(map_idx_str-full_index)-1,
+						full_index);
+				goto err1;
 			}
-			result = yaml_document_get_node(tree.document, (result->data.mapping.pairs.start + map_idx)->value);
-			assert(result);
+			result.node = yaml_document_get_node(tree.document, (result.node->data.mapping.pairs.start + map_idx)->value);
+			assert(result.node);
 			if ( *index != '>' ) {
-				err = PC_INVALID_PARAMETER;
-				goto vget_free;
+				error(&result.status, PC_INVALID_PARAMETER, "Expected closing angle bracket, found %c at %td of `%s'\n", *index, index-full_index, full_index);
+				goto err1;
 			}
 			++index;
 		}; break;
 		case 0: {
-			assert(result);
-			value->node = result;
-			value->document = tree.document;
-			err = PC_OK;
-			goto vget_free;
+			assert(result.node);
+			goto err1;
 		}
 		default: {
-			err = PC_INVALID_PARAMETER;
-			goto vget_free;
+			error(&result.status, PC_INVALID_PARAMETER, "Invalid character %c at %td of `%s'\n", *index, index-full_index, full_index);
+			goto err1;
 		};
 		}
 	}
-vget_free:
-	free(index_free);
-	return err;
+err1:
+	if ( result.status.code && result.errfunc ) result.errfunc(result.status);
+	return result;
 }
 
-PC_status_t PC_get_len(PC_tree_t tree, const char* index, int* len, ...)
+
+PC_tree_t PC_root(yaml_document_t *document, PC_errfunc_f errfunc)
+{
+	PC_status_t status = { PC_OK, NULL };
+	PC_tree_t res = { status, errfunc, document, yaml_document_get_root_node(document) };
+	return res;
+}
+
+PC_tree_t PC_get(PC_tree_t tree, const char *index_fmt, ...)
 {
 	va_list ap;
-	va_start(ap, len);
-	PC_status_t res = PC_vget_len(tree, index, len, ap);
+	va_start(ap, index_fmt);
+	PC_tree_t res = PC_vget(tree, index_fmt, ap);
 	va_end(ap);
 	return res;
 }
 
-PC_status_t PC_vget_len(PC_tree_t tree, const char* index_fmt, int* len, va_list ap)
+PC_tree_t PC_vget(PC_tree_t tree, const char *index_fmt, va_list va)
 {
-	char *index = msprintf(index_fmt, ap);
-	PC_tree_t value_node; PC_status_t err = PC_get(tree, index, &value_node); if ( err ) goto vget_len_free; 
-	err = PC_as_len(value_node, len);
-vget_len_free:
+	if ( tree.status.code ) return tree;
+	
+	int index_size = PC_BUFFER_SIZE;
+	char *index = malloc(index_size);
+	while ( vsnprintf(index, index_size, index_fmt, va) > index_size ) {
+		index_size *= 2;
+		index = realloc(index, index_size);
+	}
+	
+	PC_tree_t res = PC_sget(tree, index);
+	
 	free(index);
-	return err;
-}
-
-
-PC_status_t PC_get_double(PC_tree_t tree, const char* index, double* value, ...)
-{
-	va_list ap;
-	va_start(ap, value);
-	PC_status_t res = PC_vget_double(tree, index, value, ap);
-	va_end(ap);
 	return res;
 }
 
-PC_status_t PC_vget_double(PC_tree_t tree, const char* index_fmt, double* value, va_list ap)
+PC_status_t PC_len(PC_tree_t tree, int *res)
 {
-	char *index = msprintf(index_fmt, ap);
-	PC_tree_t value_node; PC_status_t err = PC_get(tree, index, &value_node); if ( err ) goto vget_double_free; 
-	err = PC_as_double(value_node, value);
-vget_double_free:
-	free(index);
-	return err;
+	if ( tree.status.code ) return tree.status;
+	
+	switch ( tree.node->type ) {
+	case YAML_SEQUENCE_NODE: {
+		*res = tree.node->data.sequence.items.top - tree.node->data.sequence.items.start;
+	} break;
+	case YAML_MAPPING_NODE: {
+		*res = tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start;
+	} break;
+	case YAML_SCALAR_NODE: {
+		*res = tree.node->data.scalar.length;
+	} break;
+	}
+	// the above cases should be exhaustive
+	return tree.status;
 }
 
-PC_status_t PC_get_int(PC_tree_t tree, const char* index, int* value, ...)
+PC_status_t PC_int(PC_tree_t tree, int *res)
 {
-	va_list ap;
-	va_start(ap, value);
-	PC_status_t res = PC_vget_int(tree, index, value, ap);
-	va_end(ap);
-	return res;
+	if ( tree.status.code ) return tree.status;
+	
+	if ( tree.node->type != YAML_SCALAR_NODE ) {
+		fprintf(stderr, "PC_int: bad type %s\n", tree.status.errmsg);
+		error(&tree.status, PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		return tree.status;
+	}
+	char *endptr;
+	long result = strtol((char*)tree.node->data.scalar.value, &endptr, 0);
+	if ( *endptr ) {
+		char *content; tree.status = PC_string(tree, &content);
+// 		error(&tree.status, PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
+		free(content);
+		return tree.status;
+	}
+	*res = result;
+	return tree.status;
 }
 
-PC_status_t PC_vget_int(PC_tree_t tree, const char* index_fmt, int* value, va_list ap)
+PC_status_t PC_double(PC_tree_t tree, double* value)
 {
-	char *index = msprintf(index_fmt, ap);
-	PC_tree_t value_node; PC_status_t err = PC_get(tree, index, &value_node); if ( err ) goto vget_int_free; 
-	err = PC_as_int(value_node, value);
-vget_int_free:
-	free(index);
-	return err;
+	if ( tree.status.code ) return tree.status;
+	
+	if ( tree.node->type != YAML_SCALAR_NODE ) {
+		error(&tree.status, PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+	}
+	char *endptr;
+	double result = strtod((char*)tree.node->data.scalar.value, &endptr);
+	if ( *endptr ) {
+		char *content; tree.status = PC_string(tree, &content);
+		error(&tree.status, PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
+		free(content);
+	}
+	return tree.status;
 }
 
-PC_status_t PC_get_string(PC_tree_t tree, const char* index, char** value, int* value_len, ...)
+PC_status_t PC_string(PC_tree_t tree, char** value)
 {
-	va_list ap;
-	va_start(ap, value_len);
-	PC_status_t res = PC_vget_string(tree, index, value, value_len, ap);
-	va_end(ap);
-	return res;
-}
-
-PC_status_t PC_vget_string(PC_tree_t tree, const char* index_fmt, char** value, int* value_len, va_list ap)
-{
-	char *index = msprintf(index_fmt, ap);
-	PC_tree_t value_node; PC_status_t err = PC_get(tree, index, &value_node); if ( err ) goto vget_string_free;
-	err = PC_as_string(value_node, value, value_len);
-vget_string_free:
-	free(index);
-	return err;
+	if ( tree.status.code ) return tree.status;
+	
+	if ( tree.node->type != YAML_SCALAR_NODE ) {
+		error(&tree.status, PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+	}
+	
+	int len; tree.status = PC_len(tree, &len); if (tree.status.code) return tree.status;
+	*value = malloc(len+1);
+	
+	strncpy(*value, (char*)tree.node->data.scalar.value, len+1);
+	assert((*value)[len]==0);
+	
+	return tree.status;
 }
 
 PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm)
@@ -298,5 +380,6 @@ PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Com
 		yaml_parser_set_input_string(&parser, buf, data_size);
 		yaml_parser_load(&parser, document);
 	}
-	return PC_OK;
+	PC_status_t res = { PC_OK, NULL };
+	return res;
 }
