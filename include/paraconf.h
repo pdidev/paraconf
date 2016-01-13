@@ -50,7 +50,7 @@ typedef enum PC_errcode_e {
 	PC_NODE_NOT_FOUND
 } PC_errcode_t;
 
-extern const char *PC_errmessage[5];
+extern const char *const PC_errmessage[5];
 
 typedef struct PC_status_s
 {
