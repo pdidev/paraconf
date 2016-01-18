@@ -39,7 +39,9 @@ extern "C" {
 /** \file paraconf.h
  */
 
-typedef enum PC_errcode_e {
+/** Status of function execution
+ */
+typedef enum PC_status_e {
 	/// no error
 	PC_OK=0,
 	/// a parameter value is invalid
@@ -48,28 +50,33 @@ typedef enum PC_errcode_e {
 	PC_INVALID_NODE_TYPE,
 	// The requested node doen't exist in the tree
 	PC_NODE_NOT_FOUND
-} PC_errcode_t;
-
-extern const char *const PC_errmessage[5];
-
-typedef struct PC_status_s
-{
-	/// The tree status
-	PC_errcode_t code;
-	
-	/// The error message
-	char *errmsg;
-	
 } PC_status_t;
 
-typedef void (PC_errfunc_f)(PC_status_t status);
+/** Type of a callback function used when an error occurs
+ * \param status the error code
+ * \param message the human-readable error message
+ * \param context a user-provided context
+ */
+typedef void (*PC_errfunc_f)(PC_status_t status, const char *message, void *context);
 
+/** Definition of an error handler
+ */
+typedef struct PC_errhandler_s
+{
+	/// The function to handle the error (none if NULL)
+	PC_errfunc_f func;
+	
+	/// the context that will be provided to the function
+	void *context;
+	
+} PC_errhandler_t;
+
+/** An opaque type describing a yaml tree (possibly a leaf node)
+ */
 typedef struct PC_tree_s
 {
 	/// The tree status
 	PC_status_t status;
-	
-	PC_errfunc_f *errfunc;
 	
 	/// The document containing the tree
 	yaml_document_t* document;
@@ -79,20 +86,32 @@ typedef struct PC_tree_s
 	
 } PC_tree_t;
 
-
-static inline PC_errcode_t PC_status(PC_tree_t tree)
-{
-	return tree.status.code;
-}
-
-static inline char *PC_errmsg(PC_tree_t tree)
-{
-	return tree.status.errmsg;
-}
-
-/** Prints the error message and aborts if the status is invalid
+/** Prints the error message and aborts
  */
-void PARACONF_EXPORT PC_assert(PC_status_t status);
+extern const PC_errhandler_t PC_ASSERT_HANDLER;
+
+/** Does nothing
+ */
+extern const PC_errhandler_t PC_NULL_HANDLER;
+
+/** check the status of a tree
+ * \param tree the tree to check
+ * \return the status
+ */
+static inline PC_status_t PC_status(PC_tree_t tree) { return tree.status; }
+
+/** Return a human-readabe message describing the last error that occured in paraconf
+ */
+char PARACONF_EXPORT *PC_errmsg();
+
+/** Sets the error handler to use
+ * 
+ * PC_assert is the default handler before this function is called
+ * 
+ * \param handler the new handler to set
+ * \return the previous handler
+ */
+PC_errhandler_t PARACONF_EXPORT PC_errhandler(PC_errhandler_t handler);
 
 /** Returns the tree at the root of a document
  * 
@@ -100,7 +119,7 @@ void PARACONF_EXPORT PC_assert(PC_status_t status);
  * \param[in] document the document
  * \return the tree, valid as long as the containing document is
  */
-PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t *document, PC_errfunc_f *errfunc);
+PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
 
 /** Looks for a node in a yaml document given a ypath index
  * 

@@ -27,6 +27,6 @@
 
 #include "paraconf.h"
 
-void error(PC_status_t *status, PC_errfunc_f *func, PC_errcode_t code, const char *message, ...);
+PC_status_t handle_error(PC_status_t status, const char* message, ...);
 
 #endif // STATUS_H__

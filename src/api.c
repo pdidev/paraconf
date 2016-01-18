@@ -33,13 +33,6 @@
 
 #define PC_BUFFER_SIZE 256
 
-const char *const PC_errmessage[5] = {
-	"No error",
-	"Invalid parameter",
-	"Invalid node type",
-	"node not found"
-};
-
 static const char *nodetype[4] = {
 	"none",
 	"scalar",
@@ -47,18 +40,10 @@ static const char *nodetype[4] = {
 	"mapping"
 };
 
-void PC_assert(PC_status_t status)
-{
-	if ( status.code ) {
-		fprintf(stderr, "%s in paraconf: %s\n", PC_errmessage[status.code], status.errmsg);
-		abort();
-	}
-}
-
-PC_tree_t PC_root(yaml_document_t *document, PC_errfunc_f errfunc)
+PC_tree_t PC_root(yaml_document_t *document)
 {
 	PC_status_t status = { PC_OK, NULL };
-	PC_tree_t res = { status, errfunc, document, yaml_document_get_root_node(document) };
+	PC_tree_t res = { status, document, yaml_document_get_root_node(document) };
 	return res;
 }
 
@@ -73,7 +58,7 @@ PC_tree_t PC_get(PC_tree_t tree, const char *index_fmt, ...)
 
 PC_tree_t PC_vget(PC_tree_t tree, const char *index_fmt, va_list va)
 {
-	if ( tree.status.code ) return tree;
+	if ( tree.status ) return tree;
 	
 	int index_size = PC_BUFFER_SIZE;
 	char *index = malloc(index_size);
@@ -90,7 +75,7 @@ PC_tree_t PC_vget(PC_tree_t tree, const char *index_fmt, va_list va)
 
 PC_status_t PC_len(PC_tree_t tree, int *res)
 {
-	if ( tree.status.code ) return tree.status;
+	if ( tree.status ) return tree.status;
 	
 	switch ( tree.node->type ) {
 	case YAML_SEQUENCE_NODE: {
@@ -109,18 +94,16 @@ PC_status_t PC_len(PC_tree_t tree, int *res)
 
 PC_status_t PC_int(PC_tree_t tree, int *res)
 {
-	if ( tree.status.code ) return tree.status;
+	if ( tree.status ) return tree.status;
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		fprintf(stderr, "PC_int: bad type %s\n", tree.status.errmsg);
-		error(&tree.status, tree.errfunc, PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
-		return tree.status;
+		return handle_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 	char *endptr;
 	long result = strtol((char*)tree.node->data.scalar.value, &endptr, 0);
 	if ( *endptr ) {
 		char *content; tree.status = PC_string(tree, &content);
-		error(&tree.status, tree.errfunc, PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
+		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
 		free(content);
 		return tree.status;
 	}
@@ -130,16 +113,16 @@ PC_status_t PC_int(PC_tree_t tree, int *res)
 
 PC_status_t PC_double(PC_tree_t tree, double* value)
 {
-	if ( tree.status.code ) return tree.status;
+	if ( tree.status ) return tree.status;
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		error(&tree.status, tree.errfunc, PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 	char *endptr;
 	double result = strtod((char*)tree.node->data.scalar.value, &endptr);
 	if ( *endptr ) {
 		char *content; tree.status = PC_string(tree, &content);
-		error(&tree.status, tree.errfunc, PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
+		tree.status = handle_error(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
 		free(content);
 	}
 	return tree.status;
@@ -147,13 +130,13 @@ PC_status_t PC_double(PC_tree_t tree, double* value)
 
 PC_status_t PC_string(PC_tree_t tree, char** value)
 {
-	if ( tree.status.code ) return tree.status;
+	if ( tree.status ) return tree.status;
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		error(&tree.status, tree.errfunc, PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 	
-	int len; tree.status = PC_len(tree, &len); if (tree.status.code) return tree.status;
+	int len; tree.status = PC_len(tree, &len); if (tree.status) return tree.status;
 	*value = malloc(len+1);
 	
 	strncpy(*value, (char*)tree.node->data.scalar.value, len+1);

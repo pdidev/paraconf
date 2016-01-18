@@ -22,29 +22,78 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "paraconf.h"
 
 #include "status.h"
 
-#define PC_BUFFER_SIZE 256
+// file private stuff
 
-void error(PC_status_t *status, PC_errfunc_f *func, PC_errcode_t code, const char *message, ...)
+typedef struct errctx_s {
+	
+	PC_errhandler_t handler;
+	
+	char *buffer;
+	
+	long buffer_size;
+	
+} errctx_t;
+
+static void assert_status(PC_status_t status, const char *message, void *context)
 {
-	assert(status);
-	va_list ap;
-	va_start(ap, message);
-	status->code = code;
-	int bufsize = PC_BUFFER_SIZE;
-	status->errmsg = malloc(bufsize);
-	while ( vsnprintf(status->errmsg, bufsize, message, ap) >= bufsize ) {
-		bufsize *= 2;
-		status->errmsg = realloc(status->errmsg, bufsize);
+	if ( status ) {
+		fprintf(stderr, "Error in paraconf: %s\n", message);
+		abort();
 	}
-	if ( func ) func(*status);
+}
+
+// TODO: make this thread-safe by using a distinct buffer / thread
+static errctx_t *get_context()
+{
+	static errctx_t result = {
+		{ assert_status, NULL },
+		NULL,
+		0
+	};
+	
+	return &result;
+}
+
+// library private stuff
+
+PC_status_t handle_error(PC_status_t status, const char *message, ...)
+{
+	va_list ap;
+	
+	errctx_t *ctx = get_context();
+	
+	va_start(ap, message);
+	int realsize = vsnprintf(ctx->buffer, ctx->buffer_size, message, ap);
 	va_end(ap);
+	if ( realsize >= ctx->buffer_size ) {
+		ctx->buffer_size = realsize+1;
+		ctx->buffer = realloc(ctx->buffer, ctx->buffer_size);
+		va_start(ap, message);
+		vsnprintf(ctx->buffer, ctx->buffer_size, message, ap);
+		va_end(ap);
+	}
+	if ( ctx->handler.func ) ctx->handler.func(status, ctx->buffer, ctx->handler.context);
+	return status;
+}
+
+// public stuff
+
+const PC_errhandler_t PC_ASSERT_HANDLER = { assert_status, NULL };
+
+const PC_errhandler_t PC_NULL_HANDLER = { NULL, NULL };
+
+PC_errhandler_t PC_errhandler(PC_errhandler_t new_handler)
+{
+	PC_errhandler_t old_handler = get_context()->handler;
+	get_context()->handler = new_handler;
+	return old_handler;
 }
