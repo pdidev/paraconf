@@ -88,11 +88,11 @@ typedef struct PC_tree_s
 
 /** Prints the error message and aborts
  */
-extern const PC_errhandler_t PC_ASSERT_HANDLER;
+extern const PARACONF_EXPORT PC_errhandler_t PC_ASSERT_HANDLER;
 
 /** Does nothing
  */
-extern const PC_errhandler_t PC_NULL_HANDLER;
+extern const PARACONF_EXPORT PC_errhandler_t PC_NULL_HANDLER;
 
 /** check the status of a tree
  * \param tree the tree to check
