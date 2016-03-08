@@ -182,10 +182,10 @@ static yaml_node_pair_t *get_map_idx_pair(PC_tree_t tree, const char **req_index
 	
 	// handle index
 	if ( map_idx < 0 || map_idx >= (tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start) ) {
-		tree.status = handle_error(PC_NODE_NOT_FOUND, "Index %ld out of range [0...%ld[ in (ROOT)%.*s\n",
+		tree.status = handle_error(PC_NODE_NOT_FOUND, "Index %ld out of range [0...%ld] in (ROOT)%.*s\n",
 				map_idx,
 				(long)(tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start),
-				(int)(*req_index-full_index),
+				(int)(*req_index-full_index-1),
 				full_index);
 		goto err0;
 	}

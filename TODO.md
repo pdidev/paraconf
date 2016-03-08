@@ -1,6 +1,7 @@
 # to upstream
 - add Fortran interface
-- add string based lookup interface
+- allow not using libyaml at all
+- correct the broadcast procedure
 
 # 3rd party
 - add C/Fortran struct generation based on kwalify
