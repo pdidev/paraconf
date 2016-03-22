@@ -113,10 +113,43 @@ char PARACONF_EXPORT *PC_errmsg();
  */
 PC_errhandler_t PARACONF_EXPORT PC_errhandler(PC_errhandler_t handler);
 
+/** Returns the tree as found in a file identified by its path
+ * 
+ * This only supports single document files. Use yaml and PC_root to handle 
+ * multi-document files
+ * 
+ * \param[out] status status of the command execution
+ * \param[in] path the file path as a character string
+ * \return the tree, valid as long as the containing document is
+ */
+PC_tree_t PARACONF_EXPORT PC_parse_path(const char *path);
+
+/** Returns the tree as found in an already open file
+ * 
+ * This only supports single document files. Use yaml and PC_root to handle 
+ * multi-document files
+ * 
+ * \param[out] status status of the command execution
+ * \param[in] file the file containing the tree
+ * \return the tree, valid as long as the containing document is
+ */
+PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
+
+/** Returns the tree contained in a character string
+ * 
+ * This only supports single document strings. Use yaml and PC_root to handle 
+ * multi-document strings
+ * 
+ * \param[out] status status of the command execution
+ * \param[in] document the document as a character string to parse
+ * \return the tree, valid as long as the containing document is
+ */
+PC_tree_t PARACONF_EXPORT PC_parse_string(char *document);
+
 /** Returns the tree at the root of a document
  * 
  * \param[out] status status of the command execution
- * \param[in] document the document
+ * \param[in] document the yaml document
  * \return the tree, valid as long as the containing document is
  */
 PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);

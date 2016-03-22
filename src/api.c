@@ -87,6 +87,9 @@ PC_status_t PC_len(PC_tree_t tree, int *res)
 	case YAML_SCALAR_NODE: {
 		*res = tree.node->data.scalar.length;
 	} break;
+	default: {
+		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Unknown yaml node type: #%d", tree.node->type);
+	} break;
 	}
 	// the above cases should be exhaustive
 	return tree.status;
@@ -119,7 +122,7 @@ PC_status_t PC_double(PC_tree_t tree, double* value)
 		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 	char *endptr;
-	double result = strtod((char*)tree.node->data.scalar.value, &endptr);
+	*value = strtod((char*)tree.node->data.scalar.value, &endptr);
 	if ( *endptr ) {
 		char *content; tree.status = PC_string(tree, &content);
 		tree.status = handle_error(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
@@ -152,6 +155,8 @@ PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Com
 	yaml_emitter_set_width(&emitter, -1);
 	yaml_emitter_set_canonical(&emitter, 1);
 	yaml_emitter_open(&emitter);
+	
+	count = count; // prevent unused warning
 	
 	size_t buf_size = PC_BUFFER_SIZE/2;
 	unsigned char *buf = 0;
