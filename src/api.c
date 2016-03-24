@@ -42,7 +42,7 @@ static const char *nodetype[4] = {
 
 PC_tree_t PC_root(yaml_document_t *document)
 {
-	PC_status_t status = { PC_OK, NULL };
+	PC_status_t status = PC_OK;
 	PC_tree_t res = { status, document, yaml_document_get_root_node(document) };
 	return res;
 }
@@ -181,6 +181,5 @@ PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Com
 		yaml_parser_set_input_string(&parser, buf, data_size);
 		yaml_parser_load(&parser, document);
 	}
-	PC_status_t res = { PC_OK, NULL };
-	return res;
+	return PC_OK;
 }
