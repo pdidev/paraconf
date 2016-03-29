@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "paraconf.h"
+#include "../include/paraconf.h"
 
 #include "ypath.h"
 #include "status.h"
@@ -39,6 +39,34 @@ static const char *nodetype[4] = {
 	"sequence",
 	"mapping"
 };
+
+PC_tree_t PC_parse_path(const char *path)
+{
+
+	FILE *conf_file = fopen(path, "rb"); assert(conf_file);
+	yaml_parser_t conf_parser; assert(yaml_parser_initialize(&conf_parser));
+	yaml_parser_set_input_file(&conf_parser, conf_file);
+	yaml_document_t conf_doc; 
+	if ( !yaml_parser_load(&conf_parser, &conf_doc) ) {
+		printf("%s:%d:%d: Error: %s\n",
+				"example.yml",
+				(int) conf_parser.problem_mark.line,
+				(int) conf_parser.problem_mark.column,
+				conf_parser.problem
+  			);
+		if ( conf_parser.context ) {
+		printf("%s:%d:%d: Error: %s\n",
+				"example.yml",
+				(int) conf_parser.context_mark.line,
+				(int) conf_parser.context_mark.column,
+				conf_parser.context
+  			);
+		}
+		exit(1);
+	}
+	
+	return PC_root(&conf_doc);
+}
 
 PC_tree_t PC_root(yaml_document_t *document)
 {
