@@ -49,7 +49,9 @@ typedef enum PC_status_e {
 	/// unexpected type found for a node
 	PC_INVALID_NODE_TYPE,
 	// The requested node doen't exist in the tree
-	PC_NODE_NOT_FOUND
+	PC_NODE_NOT_FOUND,
+	// The provided input is invalid 
+	PC_INVALID_FORMAT
 } PC_status_t;
 
 /** Type of a callback function used when an error occurs

@@ -48,21 +48,26 @@ PC_tree_t PC_parse_path(const char *path)
 	yaml_parser_set_input_file(&conf_parser, conf_file);
 	yaml_document_t conf_doc; 
 	if ( !yaml_parser_load(&conf_parser, &conf_doc) ) {
-		printf("%s:%d:%d: Error: %s\n",
-				"example.yml",
-				(int) conf_parser.problem_mark.line,
-				(int) conf_parser.problem_mark.column,
-				conf_parser.problem
-  			);
+		PC_tree_t res = { PC_INVALID_FORMAT, NULL, NULL};
+		res.status = handle_error(PC_INVALID_FORMAT, 
+								  "%s:%d:%d: Error: %s",
+								  path,
+								  (int) conf_parser.problem_mark.line,
+								  (int) conf_parser.problem_mark.column,
+								  conf_parser.problem);
 		if ( conf_parser.context ) {
-		printf("%s:%d:%d: Error: %s\n",
-				"example.yml",
-				(int) conf_parser.context_mark.line,
-				(int) conf_parser.context_mark.column,
-				conf_parser.context
-  			);
+			res.status = handle_error(PC_INVALID_FORMAT, 
+									  "%s:%d:%d: Error: %s \n%s:%d:%d: Error: %s",
+									  path,
+									  (int) conf_parser.problem_mark.line,
+									  (int) conf_parser.problem_mark.column,
+									  conf_parser.problem,
+									  path,
+									  (int) conf_parser.context_mark.line,
+									  (int) conf_parser.context_mark.column,
+									  conf_parser.context);
 		}
-		exit(1);
+		return res;
 	}
 	
 	return PC_root(&conf_doc);
