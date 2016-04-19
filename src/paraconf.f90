@@ -153,7 +153,7 @@ MODULE paraconf
 	!=============================================================  
 	SUBROUTINE PC_len(tree_in,value,status)
 		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		INTEGER, INTENT(OUT), POINTER :: value
+		INTEGER, INTENT(OUT), TARGET :: value
 		INTEGER, INTENT(OUT), OPTIONAL :: status
 
 		INTEGER :: tmp
@@ -169,7 +169,7 @@ MODULE paraconf
 	!=============================================================  
 	SUBROUTINE PC_int(tree_in,value,status)
 		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		INTEGER, INTENT(OUT), POINTER :: value
+		INTEGER, INTENT(OUT), TARGET :: value
 		INTEGER, INTENT(OUT), OPTIONAL :: status
 
 		INTEGER :: tmp
@@ -185,7 +185,7 @@ MODULE paraconf
 	!=============================================================  
 	SUBROUTINE PC_double(tree_in,value,status)
 		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		REAL(8), INTENT(OUT), POINTER :: value
+		REAL(8), INTENT(OUT), TARGET :: value
 		INTEGER, INTENT(OUT), OPTIONAL :: status
 
 		INTEGER :: tmp

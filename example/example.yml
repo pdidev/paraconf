@@ -1,0 +1,46 @@
+# a simple scalar, the number of iterations to execute
+iter: 100
+# an example with a list, global [width,height] (excluding ghost)
+datasize: [6, 6]
+# an example with nested associative arrays
+parallelism:
+    width:  1
+    height: 2
+pdi:
+    params: # metadata, i.e. small values that can be referenced using $syntax
+        width: int # per proc. width including ghost
+        height: int # per proc. height including ghost
+        pwidth: int  # nb proc. in the x dim
+        pheight: int # nb proc. in the y dim
+        nb_iter: int # total nb. iter (actually the iter option on top, but as exposed by the code)
+        iter: int # curent iteration id
+        coord: { size: 2, type: int } # coordinate of the process as [x, y]
+    variables: # values that can not be referenced using $syntax
+        main_field:
+            type:     double
+            sizes:    [$width, $height]     # if only one element, you can use size as a acalar
+            subsizes: [$width-2, $height-2] # defaults to sizes
+            starts:   [1, 1]                # defaults to [0, 0]
+            # not handled yet ## order:    ORDER_C
+            
+            # the following are not handled by PDI but might be used by plugins
+            
+            #in: # specifies that the provided data is part of a bigger (constant) logical data
+                #name: global_main_field # the global logical data
+                #starts:
+                    #- '$coord[0]*($width-2)'
+                    #- '$coord[1]*($height-2)'
+                    #- $iter
+            
+    plugins:
+        # load the hdf5_per_process PDI plugin
+        hdf5_per_process:
+            # and here is its configuration
+            outputs:
+                main_field: # ref to a variable
+                    select: ($iter % 16 = 0 | $iter=$nb_iter ) & $coord[0] = 0 # & $coord[0] = 0 & $coord[1] = 0 # an expression defining when to output the variable
+                    file: output_${coord[0]}x${coord[1]}.hdf5
+                    var: iter_${iter}/main_field
+                    # not handled yet ## mode: append_reopen # append_keep, overwrite, create # not handled yet
+        # load the test_plugin PDI plugin
+        #test_plugin: ~
