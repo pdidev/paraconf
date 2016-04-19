@@ -105,6 +105,14 @@ MODULE paraconf
 		END FUNCTION PC_string_f
 	END INTERFACE
 
+	INTERFACE
+		SUBROUTINE free_f(ptr) &
+			bind(C, name="free")   
+			USE iso_C_binding 
+			TYPE(C_PTR) :: ptr
+		END SUBROUTINE free_f
+	END INTERFACE
+
 	CONTAINS 
 
 	!=============================================================  
@@ -146,9 +154,15 @@ MODULE paraconf
 	SUBROUTINE PC_len(tree_in,value,status)
 		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
 		INTEGER, INTENT(OUT), POINTER :: value
-		INTEGER, INTENT(OUT) :: status
+		INTEGER, INTENT(OUT), OPTIONAL :: status
 
-		status = int(PC_len_f(tree_in,c_loc(value)))
+		INTEGER :: tmp
+
+		if(PRESENT(status)) then
+			status = int(PC_len_f(tree_in,c_loc(value)))
+		else
+			tmp = int(PC_len_f(tree_in,c_loc(value)))
+		end if
 
 	END SUBROUTINE PC_len
 	!=============================================================
@@ -156,9 +170,15 @@ MODULE paraconf
 	SUBROUTINE PC_int(tree_in,value,status)
 		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
 		INTEGER, INTENT(OUT), POINTER :: value
-		INTEGER, INTENT(OUT) :: status
+		INTEGER, INTENT(OUT), OPTIONAL :: status
 
-		status = int(PC_int_f(tree_in,c_loc(value)))
+		INTEGER :: tmp
+
+		if(PRESENT(status)) then
+			status = int(PC_int_f(tree_in,c_loc(value)))
+		else
+			tmp = int(PC_int_f(tree_in,c_loc(value)))
+		end if
 
 	END SUBROUTINE PC_int
 	!=============================================================
@@ -166,26 +186,41 @@ MODULE paraconf
 	SUBROUTINE PC_double(tree_in,value,status)
 		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
 		REAL(8), INTENT(OUT), POINTER :: value
-		INTEGER, INTENT(OUT) :: status
+		INTEGER, INTENT(OUT), OPTIONAL :: status
 
-		status = int(PC_double_f(tree_in,c_loc(value)))
+		INTEGER :: tmp
+
+		if(PRESENT(status)) then
+			status = int(PC_double_f(tree_in,c_loc(value)))
+		else
+			tmp = int(PC_double_f(tree_in,c_loc(value)))
+		end if
 
 	END SUBROUTINE PC_double
 	!=============================================================
 	!=============================================================  
 	SUBROUTINE PC_string(tree_in,value,status)
 		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		CHARACTER(LEN=*), INTENT(OUT), POINTER :: value
-		INTEGER, INTENT(OUT) :: status
+		CHARACTER(LEN=*), INTENT(OUT) :: value
+		INTEGER, INTENT(OUT), OPTIONAL :: status
 
-		INTEGER :: i
+		INTEGER :: i,tmp
+		CHARACTER, POINTER :: pointer_value
+		TYPE(C_PTR) :: C_pointer_value
 
-		TYPE(C_PTR) :: C_value
+		if(PRESENT(status)) then
+			status = int(PC_string_f(tree_in,C_pointer_value))
+		else
+			tmp = int(PC_string_f(tree_in,C_pointer_value))
+		end if
 
-		status = int(PC_string_f(tree_in,C_value))
+		call c_f_pointer(C_pointer_value,pointer_value)
 
-		call c_f_pointer(C_value,value)
+		do i=1,len_trim(pointer_value)-1
+			value(i:i) = pointer_value(i:i)
+		end do
 
+		call free_f(C_pointer_value)
 
 	END SUBROUTINE PC_string
 	!=============================================================
