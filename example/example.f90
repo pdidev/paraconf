@@ -3,22 +3,30 @@ PROGRAM example
 	USE PC_tree_t
 
 	TYPE(PC_tree_t_f) :: tree1,tree2
-	INTEGER, POINTER :: nb_iter
-
-	print *, "test1 : PC_parse_path"
+	INTEGER :: nb_iter, lengh
+	CHARACTER(LEN=20) :: nb_iter_string
+	REAL(8) :: nb_iter_double
 
 	call PC_parse_path("example.yml",tree1)
 
 	print *, "tree.status = ", tree1%status
 
-	print *, "test2 : PC_get"
-
 	call PC_get(tree1,".iter",tree2)
-
-	print *, "test3 : PC_int"
 
 	call PC_int(tree2,nb_iter)
 
 	print *, "nb_iter =", nb_iter
+
+	call PC_len(tree2,lengh)
+
+	print *, "lengh(nb_iter) =", lengh
+
+	call PC_double(tree2,nb_iter_double)
+
+	print *, "nb_iter_double =", nb_iter_double
+
+	call PC_string(tree2,nb_iter_string)
+
+	print *, "nb_iter =", trim(nb_iter_string)
 
 END PROGRAM example

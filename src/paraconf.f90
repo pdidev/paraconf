@@ -68,7 +68,7 @@ MODULE paraconf
 			USE PC_tree_t
 			INTEGER(C_INT) :: PC_len_f
 			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR) :: value
+			TYPE(C_PTR), VALUE :: value
 		END FUNCTION PC_len_f
 	END INTERFACE
 
@@ -79,7 +79,7 @@ MODULE paraconf
 			USE PC_tree_t
 			INTEGER(C_INT) :: PC_int_f
 			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR) :: value
+			TYPE(C_PTR), VALUE :: value
 		END FUNCTION PC_int_f
 	END INTERFACE
 
@@ -90,7 +90,7 @@ MODULE paraconf
 			USE PC_tree_t
 			INTEGER(C_INT) :: PC_double_f
 			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR) :: value
+			TYPE(C_PTR), VALUE :: value
 		END FUNCTION PC_double_f
 	END INTERFACE
 
@@ -109,7 +109,7 @@ MODULE paraconf
 		SUBROUTINE free_f(ptr) &
 			bind(C, name="free")   
 			USE iso_C_binding 
-			TYPE(C_PTR) :: ptr
+			TYPE(C_PTR), VALUE :: ptr
 		END SUBROUTINE free_f
 	END INTERFACE
 
@@ -141,6 +141,7 @@ MODULE paraconf
 		INTEGER, INTENT(OUT), OPTIONAL :: status
 
 		INTEGER :: tmp
+		
 
 		if(PRESENT(status)) then
 			status = int(PC_len_f(tree_in,c_loc(value)))
@@ -184,6 +185,9 @@ MODULE paraconf
 			tmp = int(PC_int_f(tree_in,c_loc(value)))
 		end if
 
+		!value = Fp_value
+		!print *, "value =",Fp_value
+
 	END SUBROUTINE PC_int
 	!=============================================================
 	!=============================================================  
@@ -208,23 +212,23 @@ MODULE paraconf
 		CHARACTER(LEN=*), INTENT(OUT) :: value
 		INTEGER, INTENT(OUT), OPTIONAL :: status
 
-		INTEGER :: i,tmp
-		CHARACTER, POINTER :: pointer_value
-		TYPE(C_PTR) :: C_pointer_value
+		INTEGER :: i,tmp,lengh
+		CHARACTER(LEN=:),TARGET :: value2
+
 
 		if(PRESENT(status)) then
-			status = int(PC_string_f(tree_in,C_pointer_value))
+			status = int(PC_string_f(tree_in,c_loc(value2)))
 		else
-			tmp = int(PC_string_f(tree_in,C_pointer_value))
+			tmp = int(PC_string_f(tree_in,c_loc(value2)))
 		end if
 
-		call c_f_pointer(C_pointer_value,pointer_value)
+		print *, "pointer_value = ", pointer_value
 
 		do i=1,len_trim(pointer_value)-1
 			value(i:i) = pointer_value(i:i)
 		end do
 
-		call free_f(C_pointer_value)
+		call free_f(pointer_value)
 
 	END SUBROUTINE PC_string
 	!=============================================================

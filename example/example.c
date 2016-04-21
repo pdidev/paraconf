@@ -17,5 +17,9 @@ int main(int argc, char *argv[])
 
 	printf("nb_iter = %d\n",nb_iter);
 
+	char *nb_iter_string; PC_string(PC_get(conf, ".iter"), &nb_iter_string);
+
+	printf("nb_iter = %s\n",nb_iter_string);
+
 	return 0;
 }
