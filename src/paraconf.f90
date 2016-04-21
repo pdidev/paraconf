@@ -128,27 +128,11 @@ MODULE paraconf
     	end do
     	C_path(len_trim(path)+1) = C_NULL_CHAR
 
+    	print *, "C_path = ", C_path
+
 		tree = PC_parse_path_f(c_loc(C_path))
 
 	END SUBROUTINE PC_parse_path
-	!=============================================================
-	!=============================================================  
-	SUBROUTINE PC_get(tree_in,index_fmt,tree_out)
-		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		CHARACTER(LEN=*), INTENT(IN) :: index_fmt
-		TYPE(PC_tree_t_f), INTENT(OUT) :: tree_out
-
-		INTEGER :: i
-		CHARACTER(C_CHAR), TARGET :: C_index_fmt(len_trim(index_fmt)+1)
-
-		do i=1,len_trim(index_fmt)
-      		C_index_fmt(i) = index_fmt(i:i)
-    	end do
-    	C_index_fmt(len_trim(index_fmt)+1) = C_NULL_CHAR
-
-		tree_out = PC_get_f(tree_in,c_loc(C_index_fmt))
-
-	END SUBROUTINE PC_get
 	!=============================================================
 	!=============================================================  
 	SUBROUTINE PC_len(tree_in,value,status)
@@ -165,6 +149,26 @@ MODULE paraconf
 		end if
 
 	END SUBROUTINE PC_len
+	!=============================================================
+	!=============================================================  
+	SUBROUTINE PC_get(tree_in,index_fmt,tree_out)
+		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+		CHARACTER(LEN=*), INTENT(IN) :: index_fmt
+		TYPE(PC_tree_t_f), INTENT(OUT) :: tree_out
+
+		INTEGER :: i
+		CHARACTER(C_CHAR), TARGET :: C_index_fmt(len_trim(index_fmt)+1)
+
+		do i=1,len_trim(index_fmt)
+      		C_index_fmt(i) = index_fmt(i:i)
+    	end do
+    	C_index_fmt(len_trim(index_fmt)+1) = C_NULL_CHAR
+
+    	print *, "C_index_fmt = ", C_index_fmt
+
+		tree_out = PC_get_f(tree_in,c_loc(C_index_fmt))
+
+	END SUBROUTINE PC_get
 	!=============================================================
 	!=============================================================  
 	SUBROUTINE PC_int(tree_in,value,status)

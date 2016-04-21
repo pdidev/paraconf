@@ -26,10 +26,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../include/paraconf.h"
-
+#include "paraconf.h"
 #include "ypath.h"
 #include "status.h"
+#include <yaml.h>
+
 
 #define PC_BUFFER_SIZE 256
 
@@ -39,44 +40,46 @@ static const char *nodetype[4] = {
 	"sequence",
 	"mapping"
 };
-
+ 
 PC_tree_t PC_parse_path(const char *path)
 {
 
 	FILE *conf_file = fopen(path, "rb"); assert(conf_file);
-	yaml_parser_t conf_parser; assert(yaml_parser_initialize(&conf_parser));
-	yaml_parser_set_input_file(&conf_parser, conf_file);
-	yaml_document_t conf_doc; 
-	if ( !yaml_parser_load(&conf_parser, &conf_doc) ) {
+	yaml_parser_t *conf_parser = malloc(sizeof(yaml_parser_t)); assert(yaml_parser_initialize(conf_parser));
+	yaml_parser_set_input_file(conf_parser, conf_file);
+	yaml_document_t *conf_doc =malloc(sizeof(yaml_document_t)); 
+	if ( !yaml_parser_load(conf_parser, conf_doc) ) {
 		PC_tree_t res = { PC_INVALID_FORMAT, NULL, NULL};
 		res.status = handle_error(PC_INVALID_FORMAT, 
 								  "%s:%d:%d: Error: %s",
 								  path,
-								  (int) conf_parser.problem_mark.line,
-								  (int) conf_parser.problem_mark.column,
-								  conf_parser.problem);
-		if ( conf_parser.context ) {
+								  (int) conf_parser->problem_mark.line,
+								  (int) conf_parser->problem_mark.column,
+								  conf_parser->problem);
+		if ( conf_parser->context ) {
 			res.status = handle_error(PC_INVALID_FORMAT, 
 									  "%s:%d:%d: Error: %s \n%s:%d:%d: Error: %s",
 									  path,
-									  (int) conf_parser.problem_mark.line,
-									  (int) conf_parser.problem_mark.column,
-									  conf_parser.problem,
+									  (int) conf_parser->problem_mark.line,
+									  (int) conf_parser->problem_mark.column,
+									  conf_parser->problem,
 									  path,
-									  (int) conf_parser.context_mark.line,
-									  (int) conf_parser.context_mark.column,
-									  conf_parser.context);
+									  (int) conf_parser->context_mark.line,
+									  (int) conf_parser->context_mark.column,
+									  conf_parser->context);
 		}
 		return res;
 	}
-	
-	return PC_root(&conf_doc);
+
+
+	return PC_root(conf_doc);
 }
 
 PC_tree_t PC_root(yaml_document_t *document)
 {
 	PC_status_t status = PC_OK;
 	PC_tree_t res = { status, document, yaml_document_get_root_node(document) };
+
 	return res;
 }
 

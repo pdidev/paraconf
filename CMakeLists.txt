@@ -69,6 +69,8 @@ add_library(paraconf
 	src/status.c
 	src/ypath.c
 )
+include(AddCCompilerFlags)
+add_compiler_flags(paraconf PRIVATE -std=c99 )
 include(GenerateExportHeader)
 generate_export_header(paraconf)
 set_target_properties(paraconf PROPERTIES C_VISIBILITY_PRESET hidden)
@@ -81,6 +83,12 @@ target_link_libraries(paraconf mpi yaml)
 # set_property(TARGET paraconf PROPERTY SOVERSION 3)
 # set_property(TARGET paraconf PROPERTY INTERFACE_paraconf_MAJOR_VERSION 3)
 # set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
+
+# the test example
+
+
+add_subdirectory(example/)
+
 
 
 # library installation
