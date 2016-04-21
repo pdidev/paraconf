@@ -101,7 +101,7 @@ MODULE paraconf
 			USE PC_tree_t
 			INTEGER(C_INT) :: PC_string_f
 			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR) :: value
+			TYPE(C_PTR), VALUE :: value
 		END FUNCTION PC_string_f
 	END INTERFACE
 
@@ -109,7 +109,7 @@ MODULE paraconf
 		SUBROUTINE free_f(ptr) &
 			bind(C, name="free")   
 			USE iso_C_binding 
-			TYPE(C_PTR), VALUE :: ptr
+			TYPE(C_PTR) :: ptr
 		END SUBROUTINE free_f
 	END INTERFACE
 
@@ -127,8 +127,6 @@ MODULE paraconf
       		C_path(i) = path(i:i)
     	end do
     	C_path(len_trim(path)+1) = C_NULL_CHAR
-
-    	print *, "C_path = ", C_path
 
 		tree = PC_parse_path_f(c_loc(C_path))
 
@@ -164,8 +162,6 @@ MODULE paraconf
       		C_index_fmt(i) = index_fmt(i:i)
     	end do
     	C_index_fmt(len_trim(index_fmt)+1) = C_NULL_CHAR
-
-    	print *, "C_index_fmt = ", C_index_fmt
 
 		tree_out = PC_get_f(tree_in,c_loc(C_index_fmt))
 
@@ -212,23 +208,27 @@ MODULE paraconf
 		CHARACTER(LEN=*), INTENT(OUT) :: value
 		INTEGER, INTENT(OUT), OPTIONAL :: status
 
-		INTEGER :: i,tmp,lengh
-		CHARACTER(LEN=:),TARGET :: value2
+		INTEGER :: i,tmp
+		INTEGER, DIMENSION(1), TARGET :: tab_lengh
+		TYPE(C_PTR),TARGET :: C_pointer
+		CHARACTER, DIMENSION(:), POINTER :: F_pointer
 
 
 		if(PRESENT(status)) then
-			status = int(PC_string_f(tree_in,c_loc(value2)))
+			status = int(PC_string_f(tree_in,c_loc(C_pointer)))
 		else
-			tmp = int(PC_string_f(tree_in,c_loc(value2)))
+			tmp = int(PC_string_f(tree_in,c_loc(C_pointer)))
 		end if
 
-		print *, "pointer_value = ", pointer_value
+		call PC_len(tree_in,tab_lengh(1))  
 
-		do i=1,len_trim(pointer_value)-1
-			value(i:i) = pointer_value(i:i)
+		call c_f_pointer(C_pointer,F_pointer,tab_lengh)
+
+		do i=1,tab_lengh(1)
+			value(i:i) = F_pointer(i)
 		end do
 
-		call free_f(pointer_value)
+		!call free_f(C_pointer)
 
 	END SUBROUTINE PC_string
 	!=============================================================
