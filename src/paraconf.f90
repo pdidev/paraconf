@@ -109,7 +109,7 @@ MODULE paraconf
 		SUBROUTINE free_f(ptr) &
 			bind(C, name="free")   
 			USE iso_C_binding 
-			TYPE(C_PTR) :: ptr
+			TYPE(C_PTR), VALUE :: ptr
 		END SUBROUTINE free_f
 	END INTERFACE
 
@@ -222,13 +222,15 @@ MODULE paraconf
 
 		call PC_len(tree_in,tab_lengh(1))  
 
+		print *, "C_pointer = ", C_pointer
+
 		call c_f_pointer(C_pointer,F_pointer,tab_lengh)
 
 		do i=1,tab_lengh(1)
 			value(i:i) = F_pointer(i)
 		end do
 
-		!call free_f(C_pointer)
+		call free_f(C_pointer)
 
 	END SUBROUTINE PC_string
 	!=============================================================
