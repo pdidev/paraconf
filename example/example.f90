@@ -29,6 +29,6 @@ PROGRAM example
 
 	print *, "nb_iter_string =", trim(nb_iter_string)
 
-	call PC_finalize(tree1)
+	call PC_tree_destroy(tree1)
 
 END PROGRAM example
