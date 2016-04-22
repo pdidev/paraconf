@@ -33,4 +33,6 @@ PROGRAM example
 
 	deallocate(nb_iter_string)
 
+	call PC_finalize(tree1)
+
 END PROGRAM example

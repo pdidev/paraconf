@@ -105,6 +105,17 @@ MODULE paraconf
 		END FUNCTION PC_string_f
 	END INTERFACE
 
+
+	INTERFACE
+		FUNCTION PC_finalize_f(tree) &
+			bind(C, name="PC_finalize")   
+			USE iso_C_binding 
+			USE PC_tree_t
+			INTEGER(C_INT) :: PC_finalize_f
+			TYPE(PC_tree_t_f) :: tree
+		END FUNCTION PC_finalize_f
+	END INTERFACE
+
 	INTERFACE
 		SUBROUTINE free_f(ptr) &
 			bind(C, name="free")   
@@ -209,7 +220,7 @@ MODULE paraconf
 		INTEGER, INTENT(OUT), OPTIONAL :: status
 
 		INTEGER :: i,tmp
-		INTEGER, DIMENSION(1), TARGET :: tab_lengh
+		INTEGER, DIMENSION(1) :: tab_lengh
 		TYPE(C_PTR),TARGET :: C_pointer
 		CHARACTER, DIMENSION(:), POINTER :: F_pointer
 
@@ -222,8 +233,6 @@ MODULE paraconf
 
 		call PC_len(tree_in,tab_lengh(1))  
 
-		print *, "C_pointer = ", C_pointer
-
 		call c_f_pointer(C_pointer,F_pointer,tab_lengh)
 
 		do i=1,tab_lengh(1)
@@ -233,6 +242,21 @@ MODULE paraconf
 		call free_f(C_pointer)
 
 	END SUBROUTINE PC_string
+	!=============================================================
+	!=============================================================  
+	SUBROUTINE PC_finalize(tree_in,status)
+		TYPE(PC_tree_t_f), INTENT(INOUT), TARGET :: tree_in
+		INTEGER, INTENT(OUT), OPTIONAL :: status
+
+		INTEGER :: tmp
+
+		if(PRESENT(status)) then
+			status = int(PC_finalize_f(tree_in))
+		else
+			tmp = int(PC_finalize_f(tree_in))
+		end if
+
+	END SUBROUTINE PC_finalize
 	!=============================================================
 
 END MODULE paraconf

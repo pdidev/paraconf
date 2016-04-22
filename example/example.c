@@ -21,5 +21,8 @@ int main(int argc, char *argv[])
 
 	printf("nb_iter = %s\n",nb_iter_string);
 
+	free(nb_iter_string);
+	PC_finalize(&conf);
+
 	return 0;
 }

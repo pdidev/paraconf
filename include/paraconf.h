@@ -51,7 +51,9 @@ typedef enum PC_status_e {
 	// The requested node doen't exist in the tree
 	PC_NODE_NOT_FOUND,
 	// The provided input is invalid 
-	PC_INVALID_FORMAT
+	PC_INVALID_FORMAT,
+	// The provided tree is empty
+	PC_TREE_EMPTY
 } PC_status_t;
 
 /** Type of a callback function used when an error occurs
@@ -85,6 +87,7 @@ typedef struct PC_tree_s
 	
 	/// the node inside the tree
 	yaml_node_t* node;
+
 	
 } PC_tree_t;
 
@@ -119,6 +122,8 @@ PC_errhandler_t PARACONF_EXPORT PC_errhandler(PC_errhandler_t handler);
  * 
  * This only supports single document files. Use yaml and PC_root to handle 
  * multi-document files
+ *
+ *The yaml document created must be free by PC_finalize at the end.
  * 
  * \param[out] status status of the command execution
  * \param[in] path the file path as a character string
@@ -130,6 +135,8 @@ PC_tree_t PARACONF_EXPORT PC_parse_path(const char *path);
  * 
  * This only supports single document files. Use yaml and PC_root to handle 
  * multi-document files
+ *
+ * The yaml document created must be free by PC_finalize at the end.
  * 
  * \param[out] status status of the command execution
  * \param[in] file the file containing the tree
@@ -141,6 +148,8 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
  * 
  * This only supports single document strings. Use yaml and PC_root to handle 
  * multi-document strings
+ *
+ * The yaml document created must be free by PC_finalize at the end.
  * 
  * \param[out] status status of the command execution
  * \param[in] document the document as a character string to parse
@@ -244,6 +253,15 @@ PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
  * \param[in] comm the set of precesses over wich to broadcast
  */
 PC_status_t PARACONF_EXPORT PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm);
+
+/** Destroy the yaml document and free the document pointer in tree
+ * All the trees for this document will become unusable 
+ * Does nothing if the provided tree is in error
+ * 
+ * \param[in] tree the node
+ * \return the status of the tree 
+ */
+PC_status_t PARACONF_EXPORT PC_finalize(PC_tree_t* tree);
 
 #ifdef __cplusplus
 }

@@ -72,6 +72,9 @@ PC_tree_t PC_parse_path(const char *path)
 	}
 
 
+	yaml_parser_delete(conf_parser);
+	free(conf_parser);
+	fclose(conf_file);
 
 	return PC_root(conf_doc);
 }
@@ -219,4 +222,18 @@ PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Com
 		yaml_parser_load(&parser, document);
 	}
 	return PC_OK;
+}
+
+PC_status_t PC_finalize(PC_tree_t* tree)
+{
+	if ( tree->status ) return tree->status;
+
+	yaml_document_delete(tree->document);
+	free(tree->document);
+	tree->node = NULL;
+	tree->status = PC_TREE_EMPTY;
+
+	return tree->status;
+
+
 }
