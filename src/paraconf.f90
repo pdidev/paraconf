@@ -107,13 +107,13 @@ MODULE paraconf
 
 
 	INTERFACE
-		FUNCTION PC_finalize_f(tree) &
-			bind(C, name="PC_finalize")   
+		FUNCTION PC_tree_destroy_f(tree) &
+			bind(C, name="PC_tree_destroy")   
 			USE iso_C_binding 
 			USE PC_tree_t
 			INTEGER(C_INT) :: PC_finalize_f
 			TYPE(PC_tree_t_f) :: tree
-		END FUNCTION PC_finalize_f
+		END FUNCTION PC_tree_destroy_f
 	END INTERFACE
 
 	INTERFACE
@@ -239,24 +239,28 @@ MODULE paraconf
 			value(i:i) = F_pointer(i)
 		end do
 
+		do i=tab_lengh(1)+1,len(value)
+			value(i:i) = ' '
+		end do 
+
 		call free_f(C_pointer)
 
 	END SUBROUTINE PC_string
 	!=============================================================
 	!=============================================================  
-	SUBROUTINE PC_finalize(tree_in,status)
+	SUBROUTINE PC_tree_destroy(tree_in,status)
 		TYPE(PC_tree_t_f), INTENT(INOUT), TARGET :: tree_in
 		INTEGER, INTENT(OUT), OPTIONAL :: status
 
 		INTEGER :: tmp
 
 		if(PRESENT(status)) then
-			status = int(PC_finalize_f(tree_in))
+			status = int(PC_tree_destroy_f(tree_in))
 		else
-			tmp = int(PC_finalize_f(tree_in))
+			tmp = int(PC_tree_destroy_f(tree_in))
 		end if
 
-	END SUBROUTINE PC_finalize
+	END SUBROUTINE PC_tree_destroy
 	!=============================================================
 
 END MODULE paraconf

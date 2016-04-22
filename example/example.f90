@@ -4,7 +4,7 @@ PROGRAM example
 
 	TYPE(PC_tree_t_f) :: tree1,tree2
 	INTEGER :: nb_iter, lengh
-	CHARACTER(LEN=:), ALLOCATABLE  :: nb_iter_string
+	CHARACTER(20) :: nb_iter_string
 	REAL(8) :: nb_iter_double
 
 	call PC_parse_path("example.yml",tree1)
@@ -25,13 +25,9 @@ PROGRAM example
 
 	print *, "nb_iter_double =", nb_iter_double
 
-	allocate(CHARACTER(LEN=lengh) :: nb_iter_string)
-
 	call PC_string(tree2,nb_iter_string)
 
 	print *, "nb_iter_string =", trim(nb_iter_string)
-
-	deallocate(nb_iter_string)
 
 	call PC_finalize(tree1)
 

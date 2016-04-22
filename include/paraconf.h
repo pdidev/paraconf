@@ -52,8 +52,6 @@ typedef enum PC_status_e {
 	PC_NODE_NOT_FOUND,
 	// The provided input is invalid 
 	PC_INVALID_FORMAT,
-	// The provided tree is empty
-	PC_TREE_EMPTY
 } PC_status_t;
 
 /** Type of a callback function used when an error occurs
@@ -123,7 +121,7 @@ PC_errhandler_t PARACONF_EXPORT PC_errhandler(PC_errhandler_t handler);
  * This only supports single document files. Use yaml and PC_root to handle 
  * multi-document files
  *
- *The yaml document created must be free by PC_finalize at the end.
+ * The tree created must be destroyed with PC_tree_destroy at the end.
  * 
  * \param[out] status status of the command execution
  * \param[in] path the file path as a character string
@@ -136,7 +134,7 @@ PC_tree_t PARACONF_EXPORT PC_parse_path(const char *path);
  * This only supports single document files. Use yaml and PC_root to handle 
  * multi-document files
  *
- * The yaml document created must be free by PC_finalize at the end.
+ * The tree created must be destroyed with PC_tree_destroy at the end.
  * 
  * \param[out] status status of the command execution
  * \param[in] file the file containing the tree
@@ -254,14 +252,14 @@ PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
  */
 PC_status_t PARACONF_EXPORT PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm);
 
-/** Destroy the yaml document and free the document pointer in tree
- * All the trees for this document will become unusable 
+/** Destroy the tree. 
+ * All the trees referring to this tree will become unusable 
  * Does nothing if the provided tree is in error
  * 
- * \param[in] tree the node
+ * \param[in,out] tree the node
  * \return the status of the tree 
  */
-PC_status_t PARACONF_EXPORT PC_finalize(PC_tree_t* tree);
+PC_status_t PARACONF_EXPORT PC_tree_destroy(PC_tree_t* tree);
 
 #ifdef __cplusplus
 }

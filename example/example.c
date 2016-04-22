@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	printf("nb_iter = %s\n",nb_iter_string);
 
 	free(nb_iter_string);
-	PC_finalize(&conf);
+	PC_tree_destroy(&conf);
 
 	return 0;
 }
