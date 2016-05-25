@@ -45,61 +45,37 @@ PC_tree_t PC_parse_path(const char *path)
 {
 
 	FILE *conf_file = fopen(path, "rb"); assert(conf_file);
-	// PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER);
-	// PC_tree_t tree = PC_parse_file(conf_file);
-	// PC_errhandler(handler);
-
-	// if(tree.status)
-	// {
-	// 	tree.status = handle_error(PC_INVALID_FORMAT, 
-	// 							  "%s: Error",
-	// 							  path);	
-	// } probleme avec conf_parser qui n'existe plus du coup
-	yaml_parser_t *conf_parser = malloc(sizeof(yaml_parser_t)); assert(yaml_parser_initialize(conf_parser));
-	yaml_parser_set_input_file(conf_parser, conf_file);
-	yaml_document_t *conf_doc =malloc(sizeof(yaml_document_t)); 
-	if ( !yaml_parser_load(conf_parser, conf_doc) ) {
-		PC_tree_t res = { PC_INVALID_FORMAT, NULL, NULL};
-		res.status = handle_error(PC_INVALID_FORMAT, 
-								  "%s:%d:%d: Error: %s",
-								  path,
-								  (int) conf_parser->problem_mark.line,
-								  (int) conf_parser->problem_mark.column,
-								  conf_parser->problem);
-		if ( conf_parser->context ) {
-			res.status = handle_error(PC_INVALID_FORMAT, 
-									  "%s:%d:%d: Error: %s \n%s:%d:%d: Error: %s",
-									  path,
-									  (int) conf_parser->problem_mark.line,
-									  (int) conf_parser->problem_mark.column,
-									  conf_parser->problem,
-									  path,
-									  (int) conf_parser->context_mark.line,
-									  (int) conf_parser->context_mark.column,
-									  conf_parser->context);
-		}
-		return res;
-	}
-
-
-	yaml_parser_delete(conf_parser);
-	free(conf_parser);
+	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER);
+	PC_tree_t tree = PC_parse_file(conf_file);
+	PC_errhandler(handler);
+	/*char *err_string;*/
+	if(tree.status)
+	{
+		/*err_string = PC_errmsg();*/
+		tree.status = handle_error(PC_INVALID_FORMAT, 
+								  "In %s: %s",
+								  path/*,
+								  err_string*/);	
+	} 
 	fclose(conf_file);
 
-	return PC_root(conf_doc);
+	return tree;
 }
 
 PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *conf_file)
 {
 
 
-	yaml_parser_t *conf_parser = malloc(sizeof(yaml_parser_t)); assert(yaml_parser_initialize(conf_parser));
+	yaml_parser_t *conf_parser = malloc(sizeof(yaml_parser_t)); 
+	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER);
+	yaml_parser_initialize(conf_parser);
+	PC_errhandler(handler);
 	yaml_parser_set_input_file(conf_parser, conf_file);
 	yaml_document_t *conf_doc =malloc(sizeof(yaml_document_t)); 
 	if ( !yaml_parser_load(conf_parser, conf_doc) ) {
 		PC_tree_t res = { PC_INVALID_FORMAT, NULL, NULL};
 		res.status = handle_error(PC_INVALID_FORMAT, 
-								  "In yaml %d:%d: Error: %s",
+								  "%d:%d: Error: %s",
 								  (int) conf_parser->problem_mark.line,
 								  (int) conf_parser->problem_mark.column,
 								  conf_parser->problem);

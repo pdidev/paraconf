@@ -68,6 +68,7 @@ add_library(paraconf
 	src/api.c
 	src/status.c
 	src/ypath.c
+	src/paraconf.f90
 )
 include(AddCCompilerFlags)
 add_compiler_flags(paraconf PRIVATE -std=c99 )
