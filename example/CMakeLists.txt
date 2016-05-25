@@ -28,9 +28,9 @@
 #=============================================================================
 
 find_package(MPI REQUIRED)
-add_executable(example
+add_executable(PC_example
 	example.c
 )
-target_link_libraries(example paraconf yaml mpi)
+target_link_libraries(PC_example paraconf yaml mpi)
 include(AddCCompilerFlags)
-add_compiler_flags(example PRIVATE -std=c99 )
+add_compiler_flags(PC_example PRIVATE -std=c99 )
