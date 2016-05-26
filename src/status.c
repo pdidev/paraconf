@@ -120,3 +120,8 @@ PC_errhandler_t PC_errhandler(PC_errhandler_t new_handler)
 	get_context()->handler = new_handler;
 	return old_handler;
 }
+
+char *PC_errmsg()
+{
+	return get_context()->buffer;
+}
