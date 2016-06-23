@@ -27,10 +27,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
-find_package(MPI REQUIRED)
+include(AddCCompilerFlags)
+
 add_executable(PC_example
 	example.c
 )
+add_compiler_flags(PC_example PRIVATE -std=c99)
 target_link_libraries(PC_example paraconf yaml mpi)
-include(AddCCompilerFlags)
-add_compiler_flags(PC_example PRIVATE -std=c99 )
+add_test(NAME PC_example COMMAND PC_example WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_executable(PC_example_f90
+	example.f90
+)
+target_link_libraries(PC_example_f90 paraconf_f90 mpi)
+add_test(NAME PC_example_f90 COMMAND PC_example_f90 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")

@@ -29,10 +29,12 @@
 
 cmake_minimum_required(VERSION 3.0)
 # enable C++ to work-around cmake issue #15829 https://cmake.org/Bug/view.php?id=15829
-project(paraconf)
+project(paraconf LANGUAGES C CXX Fortran)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
+
+include(AddCCompilerFlags)
+include(GenerateExportHeader)
+include(CMakePackageConfigHelpers)
 
 
 # Build options
@@ -41,13 +43,26 @@ option(BUILD_SHARED_LIBS
 	"Build paraconf as a shared library instead of a static one"
 	ON
 )
+option(ENABLE_FORTRAN
+	"Enable compilation of the Fortran version of the library"
+	ON
+)
+option(ENABLE_TESTING
+	"Enable compilation of the (example) tests"
+	OFF
+)
 option(USE_SYSTEM_YAML
 	"Use an already installed libyaml instead of building the embedded one"
 	ON
 )
 
+get_property(ENABLED_LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES)
+if("${ENABLE_FORTRAN}" AND NOT "${ENABLED_LANGUAGES}" MATCHES Fortran)
+	message(FATAL_ERROR "Fortran language support disabled can not build Fortran lib, set ENABLE_FORTRAN to OFF")
+endif()
 
-# dependancies
+
+# Find dependancies
 
 find_package(MPI REQUIRED)
 if("${USE_SYSTEM_YAML}")
@@ -57,63 +72,79 @@ else()
 endif()
 
 
-# the version file
+# Version
 
 file(READ VERSION paraconf_VERSION)
+string(STRIP "${paraconf_VERSION}" paraconf_VERSION)
+string(REPLACE "." ";" paraconf_VERSION_list ${paraconf_VERSION})
+list(GET paraconf_VERSION_list 0 paraconf_VERSION_MAJOR)
+list(GET paraconf_VERSION_list 1 paraconf_VERSION_MINOR)
+list(GET paraconf_VERSION_list 2 paraconf_VERSION_PATCH)
 
+# Libraries
 
-# the actual library
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_CURRENT_DIR_IN_INTERFACE ON)
 
+#C version
 add_library(paraconf
 	src/api.c
 	src/status.c
 	src/ypath.c
-	src/paraconf.f90
 )
-include(AddCCompilerFlags)
-add_compiler_flags(paraconf PRIVATE -std=c99 )
-include(GenerateExportHeader)
+add_compiler_flags(paraconf PRIVATE -std=c99)
 generate_export_header(paraconf)
-set_target_properties(paraconf PROPERTIES C_VISIBILITY_PRESET hidden)
-target_include_directories(paraconf
-	PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-)
+set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
+set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
+set_property(TARGET paraconf PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
+set_property(TARGET paraconf PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
+set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
+target_include_directories(paraconf PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>)
 target_link_libraries(paraconf mpi yaml)
-# set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
-# set_property(TARGET paraconf PROPERTY SOVERSION 3)
-# set_property(TARGET paraconf PROPERTY INTERFACE_paraconf_MAJOR_VERSION 3)
-# set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
-
-# the test example
-
-
-add_subdirectory(example/)
-
-
-
-# library installation
-
-install(TARGETS paraconf EXPORT paraconfTargets
+install(TARGETS paraconf EXPORT PC_export
 	LIBRARY DESTINATION lib INCLUDES DESTINATION include
 	ARCHIVE DESTINATION lib INCLUDES DESTINATION include
 )
-install(FILES
-		include/paraconf.h
-		"${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
+install(FILES include/paraconf.h "${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
 	DESTINATION include
 )
 
+#Fortran version
+if("${ENABLE_FORTRAN}")
+	add_library(paraconf_f90 src/paraconf.F90)
+	target_link_libraries(paraconf_f90 paraconf)
+	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modinclude")
+	target_include_directories(paraconf_f90 INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modinclude/>)
+	set_property(TARGET paraconf_f90 PROPERTY VERSION ${paraconf_VERSION})
+	set_property(TARGET paraconf_f90 PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
+	set_property(TARGET paraconf_f90 PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
+	set_property(TARGET paraconf_f90 APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
+	install(TARGETS paraconf_f90 EXPORT PC_export
+		LIBRARY DESTINATION lib INCLUDES DESTINATION "lib/paraconf-${paraconf_VERSION}"
+		ARCHIVE DESTINATION lib INCLUDES DESTINATION "lib/paraconf-${paraconf_VERSION}"
+	)
+	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modinclude/
+		DESTINATION "lib/paraconf-${paraconf_VERSION}"
+	)
+endif()
 
-# cmake stuff installation
+
+# Test examples
+
+if("${ENABLE_TESTING}")
+	enable_testing()
+	add_subdirectory(example/)
+endif()
+
+
+# Installable config
 
 set(ConfigPackageLocation "lib/CMake/paraconf-${paraconf_VERSION}")
-include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
 	VERSION ${paraconf_VERSION}
 	COMPATIBILITY AnyNewerVersion
 )
-install(EXPORT paraconfTargets DESTINATION ${ConfigPackageLocation})
+install(EXPORT PC_export DESTINATION ${ConfigPackageLocation})
 install(FILES
 		cmake/FindMPI.cmake
 		cmake/FindLibYaml.cmake
