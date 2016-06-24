@@ -27,9 +27,9 @@
 #include <stdlib.h>
 
 #include "paraconf.h"
+
 #include "ypath.h"
 #include "status.h"
-#include <yaml.h>
 
 
 #define PC_BUFFER_SIZE 256
@@ -43,19 +43,18 @@ static const char *nodetype[4] = {
  
 PC_tree_t PC_parse_path(const char *path)
 {
-
-	FILE *conf_file = fopen(path, "rb"); assert(conf_file);
 	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER);
+	FILE *conf_file = fopen(path, "rb"); 
 	PC_tree_t tree = PC_parse_file(conf_file);
 	PC_errhandler(handler);
-	/*char *err_string;*/
+
 	if(tree.status)
 	{
-		/*err_string = PC_errmsg();*/
+
 		tree.status = handle_error(PC_INVALID_FORMAT, 
 								  "In %s: %s",
-								  path/*,
-								  err_string*/);	
+								  path,
+								  PC_errmsg());	
 	} 
 	fclose(conf_file);
 
@@ -64,8 +63,6 @@ PC_tree_t PC_parse_path(const char *path)
 
 PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *conf_file)
 {
-
-
 	yaml_parser_t *conf_parser = malloc(sizeof(yaml_parser_t)); 
 	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER);
 	yaml_parser_initialize(conf_parser);
@@ -95,7 +92,6 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *conf_file)
 
 	yaml_parser_delete(conf_parser);
 	free(conf_parser);
-
 	return PC_root(conf_doc);
 }
 
@@ -103,7 +99,6 @@ PC_tree_t PC_root(yaml_document_t *document)
 {
 	PC_status_t status = PC_OK;
 	PC_tree_t res = { status, document, yaml_document_get_root_node(document) };
-
 	return res;
 }
 
@@ -204,7 +199,6 @@ PC_status_t PC_string(PC_tree_t tree, char** value)
 	
 	strncpy(*value, (char*)tree.node->data.scalar.value, len+1);
 	assert((*value)[len]==0);
-	
 	return tree.status;
 }
 
@@ -246,13 +240,8 @@ PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Com
 
 PC_status_t PC_tree_destroy(PC_tree_t* tree)
 {
-	if ( tree->status ) return tree->status;
-
 	yaml_document_delete(tree->document);
 	free(tree->document);
 	tree->node = NULL;
-
 	return tree->status;
-
-
 }

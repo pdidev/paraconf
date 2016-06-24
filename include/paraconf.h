@@ -48,9 +48,9 @@ typedef enum PC_status_e {
 	PC_INVALID_PARAMETER,
 	/// unexpected type found for a node
 	PC_INVALID_NODE_TYPE,
-	// The requested node doen't exist in the tree
+	/// The requested node doen't exist in the tree
 	PC_NODE_NOT_FOUND,
-	// The provided input is invalid 
+	/// The provided input is invalid 
 	PC_INVALID_FORMAT,
 } PC_status_t;
 
@@ -86,7 +86,6 @@ typedef struct PC_tree_s
 	/// the node inside the tree
 	yaml_node_t* node;
 
-	
 } PC_tree_t;
 
 /** Prints the error message and aborts
@@ -147,7 +146,7 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
  * This only supports single document strings. Use yaml and PC_root to handle 
  * multi-document strings
  *
- * The yaml document created must be free by PC_finalize at the end.
+ * The tree created must be destroyed with PC_tree_destroy at the end.
  * 
  * \param[out] status status of the command execution
  * \param[in] document the document as a character string to parse
