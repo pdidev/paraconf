@@ -27,6 +27,24 @@
 
 #include "paraconf.h"
 
-PC_status_t handle_error(PC_status_t status, const char* message, ...);
+#define handle_error(callstatus, free_stamp)\
+do { \
+	status = callstatus; \
+	if ( status ) goto free_stamp; \
+} while( 0 )
+
+#define handle_tree(calltree, free_stamp)\
+do { \
+	tree = calltree; \
+	if ( PC_status(tree) ) goto free_stamp; \
+} while( 0 )
+
+#define handle_error_tree(callstatus, free_stamp)\
+do { \
+	tree.status = callstatus; \
+	if ( PC_status(tree) ) goto free_stamp; \
+} while( 0 )
+
+PC_status_t make_error(PC_status_t status, const char* message, ...);
 
 #endif // STATUS_H__

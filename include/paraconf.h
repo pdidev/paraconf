@@ -10,7 +10,7 @@
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
  * * Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific 
+ *   endorse or promote products derived from this software without specific
  *   prior written permission.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -50,8 +50,10 @@ typedef enum PC_status_e {
 	PC_INVALID_NODE_TYPE,
 	/// The requested node doen't exist in the tree
 	PC_NODE_NOT_FOUND,
-	/// The provided input is invalid 
+	/// The provided input is invalid
 	PC_INVALID_FORMAT,
+	/// An error occured with the system
+	PC_SYSTEM_ERROR
 } PC_status_t;
 
 /** Type of a callback function used when an error occurs
@@ -107,21 +109,21 @@ static inline PC_status_t PC_status(PC_tree_t tree) { return tree.status; }
 char PARACONF_EXPORT *PC_errmsg();
 
 /** Sets the error handler to use
- * 
+ *
  * PC_assert is the default handler before this function is called
- * 
+ *
  * \param handler the new handler to set
  * \return the previous handler
  */
 PC_errhandler_t PARACONF_EXPORT PC_errhandler(PC_errhandler_t handler);
 
 /** Returns the tree as found in a file identified by its path
- * 
- * This only supports single document files. Use yaml and PC_root to handle 
+ *
+ * This only supports single document files. Use yaml and PC_root to handle
  * multi-document files
  *
  * The tree created must be destroyed with PC_tree_destroy at the end.
- * 
+ *
  * \param[out] status status of the command execution
  * \param[in] path the file path as a character string
  * \return the tree, valid as long as the containing document is
@@ -129,12 +131,12 @@ PC_errhandler_t PARACONF_EXPORT PC_errhandler(PC_errhandler_t handler);
 PC_tree_t PARACONF_EXPORT PC_parse_path(const char *path);
 
 /** Returns the tree as found in an already open file
- * 
- * This only supports single document files. Use yaml and PC_root to handle 
+ *
+ * This only supports single document files. Use yaml and PC_root to handle
  * multi-document files
  *
  * The tree created must be destroyed with PC_tree_destroy at the end.
- * 
+ *
  * \param[out] status status of the command execution
  * \param[in] file the file containing the tree
  * \return the tree, valid as long as the containing document is
@@ -142,12 +144,12 @@ PC_tree_t PARACONF_EXPORT PC_parse_path(const char *path);
 PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
 
 /** Returns the tree contained in a character string
- * 
- * This only supports single document strings. Use yaml and PC_root to handle 
+ *
+ * This only supports single document strings. Use yaml and PC_root to handle
  * multi-document strings
  *
  * The tree created must be destroyed with PC_tree_destroy at the end.
- * 
+ *
  * \param[out] status status of the command execution
  * \param[in] document the document as a character string to parse
  * \return the tree, valid as long as the containing document is
@@ -155,7 +157,7 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
 PC_tree_t PARACONF_EXPORT PC_parse_string(char *document);
 
 /** Returns the tree at the root of a document
- * 
+ *
  * \param[out] status status of the command execution
  * \param[in] document the yaml document
  * \return the tree, valid as long as the containing document is
@@ -163,7 +165,7 @@ PC_tree_t PARACONF_EXPORT PC_parse_string(char *document);
 PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
 
 /** Looks for a node in a yaml document given a ypath index
- * 
+ *
  * Does nothing if the provided tree is in error and returns the input tree.
  *
  * A ypath expression can contain the following
@@ -174,9 +176,9 @@ PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
  * * access to a mapping element key using braces (indices are 0-based):
  *   e.g. .map{1}
  * * access to a mapping element value by index using chevrons:
- *   e.g. .map<1> 
+ *   e.g. .map<1>
  *   PC_get(0,map,"<1>"); is similar to k=PC_get(0,map,"{1}"); PC_get(0,map,".%s",k);
- * 
+ *
  * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree a yaml tree
  * \param[in] index_fmt the ypath index, can be a printf-style format string
@@ -186,9 +188,9 @@ PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
 PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char *index_fmt, ...);
 
 /** Looks for a node in a yaml document given a ypath index
- * 
+ *
  * Does nothing if the provided tree is in error
- * 
+ *
  * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree a yaml tree
  * \param[in] index_fmt the ypath index, can be a printf-style format string
@@ -198,9 +200,9 @@ PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char *index_fmt, ...);
 PC_tree_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char *index_fmt, va_list va);
 
 /** Returns the length of a node, for a sequence, the number of nodes, for a mapping, the number of pairs, for a scalar, the string length
- * 
+ *
  * Does nothing if the provided tree is in error
- * 
+ *
  * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the sequence or mapping
  * \param[out] value the length
@@ -209,9 +211,9 @@ PC_tree_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char *index_fmt, va_list
 PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int *value);
 
 /** Returns the int value of a scalar node
- * 
+ *
  * Does nothing if the provided tree is in error
- * 
+ *
  * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the int-valued node
  * \param[out] value the int value of the scalar node
@@ -220,9 +222,9 @@ PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int *value);
 PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, int *value);
 
 /** Returns the floating point value of a scalar node
- * 
+ *
  * Does nothing if the provided tree is in error
- * 
+ *
  * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the floating-point-valued node
  * \param[out] value the floating point value of the scalar node
@@ -231,9 +233,9 @@ PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, int *value);
 PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double *value);
 
 /** Returns the string content of a scalar node
- * 
+ *
  * Does nothing if the provided tree is in error
- * 
+ *
  * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the node
  * \param[out] value the content of the scalar node as a newly allocated string that must be deallocated using free
@@ -242,7 +244,7 @@ PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double *value);
 PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
 
 /** Broadcasts yaml documents over MPI
- * 
+ *
  * \param[in,out] document an array of documents that should already be allocated.
  *                         Their content will be copied from the root node.
  * \param[in] count the number of documents in the array
@@ -251,12 +253,12 @@ PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
  */
 PC_status_t PARACONF_EXPORT PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm);
 
-/** Destroy the tree. 
- * All the trees referring to this tree will become unusable 
+/** Destroy the tree.
+ * All the trees referring to this tree will become unusable
  * Does nothing if the provided tree is in error
- * 
+ *
  * \param[in,out] tree the node
- * \return the status of the tree 
+ * \return the status of the tree
  */
 PC_status_t PARACONF_EXPORT PC_tree_destroy(PC_tree_t* tree);
 

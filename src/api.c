@@ -10,7 +10,7 @@
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
  * * Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific 
+ *   endorse or promote products derived from this software without specific
  *   prior written permission.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -22,17 +22,21 @@
  * THE SOFTWARE.
  ******************************************************************************/
 
+#define _POSIX_C_SOURCE 200112L
+
 #include <assert.h>
-#include <string.h>
+#include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "paraconf.h"
 
 #include "ypath.h"
 #include "status.h"
 
-
 #define PC_BUFFER_SIZE 256
+#define ERRBUF_SIZE 512
 
 static const char *nodetype[4] = {
 	"none",
@@ -40,59 +44,78 @@ static const char *nodetype[4] = {
 	"sequence",
 	"mapping"
 };
- 
+
 PC_tree_t PC_parse_path(const char *path)
 {
-	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER);
-	FILE *conf_file = fopen(path, "rb"); 
-	PC_tree_t tree = PC_parse_file(conf_file);
+	PC_tree_t tree = { PC_OK, NULL, NULL };
+	
+	FILE *conf_file = fopen(path, "rb");
+	if ( !conf_file ) {
+		char errbuf[ERRBUF_SIZE];
+		strerror_r(errno, errbuf, ERRBUF_SIZE);
+		handle_error_tree(make_error(PC_SYSTEM_ERROR, errbuf), err0);
+	}
+	
+	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER); // aka PC_try
+	tree = PC_parse_file(conf_file);
 	PC_errhandler(handler);
-
-	if(tree.status)
-	{
-
-		tree.status = handle_error(PC_INVALID_FORMAT, 
-								  "In %s: %s",
-								  path,
-								  PC_errmsg());	
-	} 
+	if ( PC_status(tree) ) { // aka PC_catch
+		handle_error_tree(make_error(tree.status, "Error while opening file `%s`, %s", path, PC_errmsg()), err1);
+	}
+	
 	fclose(conf_file);
-
+	return tree;
+	
+err1:
+	fclose(conf_file);
+	
+err0:
 	return tree;
 }
 
-PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *conf_file)
+PC_tree_t PC_parse_file(FILE *conf_file)
 {
-	yaml_parser_t *conf_parser = malloc(sizeof(yaml_parser_t)); 
-	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER);
-	yaml_parser_initialize(conf_parser);
-	PC_errhandler(handler);
-	yaml_parser_set_input_file(conf_parser, conf_file);
-	yaml_document_t *conf_doc =malloc(sizeof(yaml_document_t)); 
-	if ( !yaml_parser_load(conf_parser, conf_doc) ) {
-		PC_tree_t res = { PC_INVALID_FORMAT, NULL, NULL};
-		res.status = handle_error(PC_INVALID_FORMAT, 
-								  "%d:%d: Error: %s",
-								  (int) conf_parser->problem_mark.line,
-								  (int) conf_parser->problem_mark.column,
-								  conf_parser->problem);
-		if ( conf_parser->context ) {
-			res.status = handle_error(PC_INVALID_FORMAT, 
-									  "%d:%d: Error: %s \n%d:%d: Error: %s",
-									  (int) conf_parser->problem_mark.line,
-									  (int) conf_parser->problem_mark.column,
-									  conf_parser->problem,
-									  (int) conf_parser->context_mark.line,
-									  (int) conf_parser->context_mark.column,
-									  conf_parser->context);
-		}
-		return res;
+	PC_tree_t tree = { PC_OK, NULL, NULL };
+	
+	yaml_parser_t conf_parser; 
+	if ( !yaml_parser_initialize(&conf_parser) ) {
+		handle_error_tree(make_error(PC_SYSTEM_ERROR, "unable to load yaml library"), err0);
 	}
-
-
-	yaml_parser_delete(conf_parser);
-	free(conf_parser);
-	return PC_root(conf_doc);
+	
+	yaml_parser_set_input_file(&conf_parser, conf_file);
+	
+	yaml_document_t *conf_doc = malloc(sizeof(yaml_document_t));
+	if ( !conf_doc ) {
+		handle_error_tree(make_error(PC_SYSTEM_ERROR, "unable to allocate memory"), err1);
+	}
+	
+	if ( !yaml_parser_load(&conf_parser, conf_doc) ) {
+		if ( conf_parser.context ) {
+			handle_error_tree(make_error(PC_INVALID_FORMAT,
+					"%lu:%lu: Error: %s \n%lu:%lu: Error: %s",
+					(unsigned long) conf_parser.problem_mark.line,
+					(unsigned long) conf_parser.problem_mark.column,
+					conf_parser.problem,
+					(unsigned long) conf_parser.context_mark.line,
+					(unsigned long) conf_parser.context_mark.column,
+					conf_parser.context), err1);
+		} else {
+			handle_error_tree(make_error(PC_INVALID_FORMAT, "%lu:%lu: Error: %s",
+					(unsigned long) conf_parser.problem_mark.line,
+					(unsigned long) conf_parser.problem_mark.column,
+					conf_parser.problem), err1);
+		}
+	}
+	
+	yaml_parser_delete(&conf_parser);
+	
+	handle_tree(PC_root(conf_doc), err0);
+	
+	return tree;
+err1:
+	yaml_parser_delete(&conf_parser);
+err0:
+	return tree;
 }
 
 PC_tree_t PC_root(yaml_document_t *document)
@@ -114,16 +137,16 @@ PC_tree_t PC_get(PC_tree_t tree, const char *index_fmt, ...)
 PC_tree_t PC_vget(PC_tree_t tree, const char *index_fmt, va_list va)
 {
 	if ( tree.status ) return tree;
-	
+
 	int index_size = PC_BUFFER_SIZE;
 	char *index = malloc(index_size);
 	while ( vsnprintf(index, index_size, index_fmt, va) > index_size ) {
 		index_size *= 2;
 		index = realloc(index, index_size);
 	}
-	
+
 	PC_tree_t res = PC_sget(tree, index);
-	
+
 	free(index);
 	return res;
 }
@@ -131,7 +154,7 @@ PC_tree_t PC_vget(PC_tree_t tree, const char *index_fmt, va_list va)
 PC_status_t PC_len(PC_tree_t tree, int *res)
 {
 	if ( tree.status ) return tree.status;
-	
+
 	switch ( tree.node->type ) {
 	case YAML_SEQUENCE_NODE: {
 		*res = tree.node->data.sequence.items.top - tree.node->data.sequence.items.start;
@@ -143,7 +166,7 @@ PC_status_t PC_len(PC_tree_t tree, int *res)
 		*res = tree.node->data.scalar.length;
 	} break;
 	default: {
-		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Unknown yaml node type: #%d", tree.node->type);
+		tree.status = make_error(PC_INVALID_NODE_TYPE, "Unknown yaml node type: #%d", tree.node->type);
 	} break;
 	}
 	// the above cases should be exhaustive
@@ -153,15 +176,15 @@ PC_status_t PC_len(PC_tree_t tree, int *res)
 PC_status_t PC_int(PC_tree_t tree, int *res)
 {
 	if ( tree.status ) return tree.status;
-	
+
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		return handle_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		return make_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 	char *endptr;
 	long result = strtol((char*)tree.node->data.scalar.value, &endptr, 0);
 	if ( *endptr ) {
 		char *content; tree.status = PC_string(tree, &content);
-		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
+		tree.status = make_error(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
 		free(content);
 		return tree.status;
 	}
@@ -172,15 +195,15 @@ PC_status_t PC_int(PC_tree_t tree, int *res)
 PC_status_t PC_double(PC_tree_t tree, double* value)
 {
 	if ( tree.status ) return tree.status;
-	
+
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		tree.status = make_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 	char *endptr;
 	*value = strtod((char*)tree.node->data.scalar.value, &endptr);
 	if ( *endptr ) {
 		char *content; tree.status = PC_string(tree, &content);
-		tree.status = handle_error(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
+		tree.status = make_error(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
 		free(content);
 	}
 	return tree.status;
@@ -189,14 +212,14 @@ PC_status_t PC_double(PC_tree_t tree, double* value)
 PC_status_t PC_string(PC_tree_t tree, char** value)
 {
 	if ( tree.status ) return tree.status;
-	
+
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		tree.status = handle_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		tree.status = make_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
-	
+
 	int len; tree.status = PC_len(tree, &len); if (tree.status) return tree.status;
 	*value = malloc(len+1);
-	
+
 	strncpy(*value, (char*)tree.node->data.scalar.value, len+1);
 	assert((*value)[len]==0);
 	return tree.status;
@@ -209,9 +232,9 @@ PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Com
 	yaml_emitter_set_width(&emitter, -1);
 	yaml_emitter_set_canonical(&emitter, 1);
 	yaml_emitter_open(&emitter);
-	
+
 	count = count; // prevent unused warning
-	
+
 	size_t buf_size = PC_BUFFER_SIZE/2;
 	unsigned char *buf = 0;
 	int err = YAML_WRITER_ERROR;
@@ -224,10 +247,10 @@ PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Com
 	}
 	yaml_emitter_close(&emitter);
 	yaml_emitter_delete(&emitter);
-	
+
 	MPI_Bcast(&data_size, 1, MPI_LONG, root, comm);
 	MPI_Bcast(buf, data_size, MPI_LONG, root, comm);
-	
+
 	int rank; MPI_Comm_rank(comm, &rank);
 	if ( rank != root ) {
 		yaml_parser_t parser;

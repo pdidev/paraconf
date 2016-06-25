@@ -88,7 +88,7 @@ static errctx_t *get_context()
 
 // library private stuff
 
-PC_status_t handle_error(PC_status_t status, const char *message, ...)
+PC_status_t make_error(PC_status_t status, const char *message, ...)
 {
 	va_list ap;
 	
