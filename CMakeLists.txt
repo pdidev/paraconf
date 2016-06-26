@@ -32,6 +32,10 @@ cmake_minimum_required(VERSION 3.0)
 project(paraconf LANGUAGES C CXX Fortran)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+if(POLICY CMP0063)
+cmake_policy(SET CMP0063 NEW)
+endif()
+
 include(AddCCompilerFlags)
 include(GenerateExportHeader)
 include(CMakePackageConfigHelpers)
@@ -81,6 +85,7 @@ list(GET paraconf_VERSION_list 0 paraconf_VERSION_MAJOR)
 list(GET paraconf_VERSION_list 1 paraconf_VERSION_MINOR)
 list(GET paraconf_VERSION_list 2 paraconf_VERSION_PATCH)
 
+
 # Libraries
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -92,14 +97,16 @@ add_library(paraconf
 	src/status.c
 	src/ypath.c
 )
-add_compiler_flags(paraconf PRIVATE -std=c99)
+add_compiler_flags(paraconf PRIVATE -std=c99 -pedantic -Wall -Wextra -Werror -Wfatal-errors -pedantic-errors)
 generate_export_header(paraconf)
 set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
 set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
 set_property(TARGET paraconf PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
-target_include_directories(paraconf PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>)
+target_include_directories(paraconf PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+)
 target_link_libraries(paraconf mpi yaml)
 install(TARGETS paraconf EXPORT PC_export
 	LIBRARY DESTINATION lib INCLUDES DESTINATION include
@@ -114,7 +121,9 @@ if("${ENABLE_FORTRAN}")
 	add_library(paraconf_f90 src/paraconf.F90)
 	target_link_libraries(paraconf_f90 paraconf)
 	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modinclude")
-	target_include_directories(paraconf_f90 INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modinclude/>)
+	target_include_directories(paraconf_f90 INTERFACE
+		"$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modinclude/>"
+		"$<INSTALL_INTERFACE:lib/paraconf-${paraconf_VERSION}/finclude>")
 	set_property(TARGET paraconf_f90 PROPERTY VERSION ${paraconf_VERSION})
 	set_property(TARGET paraconf_f90 PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
 	set_property(TARGET paraconf_f90 PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
@@ -124,7 +133,7 @@ if("${ENABLE_FORTRAN}")
 		ARCHIVE DESTINATION lib INCLUDES DESTINATION "lib/paraconf-${paraconf_VERSION}"
 	)
 	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modinclude/
-		DESTINATION "lib/paraconf-${paraconf_VERSION}"
+		DESTINATION "lib/paraconf-${paraconf_VERSION}/finclude"
 	)
 endif()
 

@@ -21,246 +21,259 @@
 ! * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ! * THE SOFTWARE.
 ! ******************************************************************************/
-MODULE PC_tree_t
-
-	USE iso_C_binding
-
-	TYPE, bind(C) :: PC_tree_t_f
-		INTEGER(C_INT) :: status
-		TYPE(C_PTR) :: document
-		TYPE(C_PTR) :: node
-	END TYPE PC_tree_t_f
-
-END MODULE
-
 MODULE paraconf
 
-	USE iso_C_binding
-	USE PC_tree_t
+    USE iso_C_binding
+    USE PC_tree_t
 
-	IMPLICIT NONE
+    TYPE, bind(C) :: PC_tree_t_f
+        INTEGER(C_INT) :: status
+        TYPE(C_PTR) :: document
+        TYPE(C_PTR) :: node
+    END TYPE PC_tree_t_f
 
-	INTERFACE
-		FUNCTION PC_parse_path_f(path) &
-			bind(C, name="PC_parse_path")   
-			USE iso_C_binding 
-			USE PC_tree_t
-			TYPE(PC_tree_t_f) :: PC_parse_path_f
-			TYPE(C_PTR), VALUE :: path
-		END FUNCTION PC_parse_path_f
-	END INTERFACE
+    IMPLICIT NONE
 
-	INTERFACE
-		FUNCTION PC_get_f(tree,index_fmt) &
-			bind(C, name="PC_get")   
-			USE iso_C_binding 
-			USE PC_tree_t
-			TYPE(PC_tree_t_f) :: PC_get_f
-			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR), VALUE :: index_fmt
-		END FUNCTION PC_get_f
-	END INTERFACE
+    INTERFACE
+        FUNCTION PC_parse_path_f(path) &
+            bind(C, name="PC_parse_path")   
+            USE iso_C_binding 
+            USE PC_tree_t
+            TYPE(PC_tree_t_f) :: PC_parse_path_f
+            TYPE(C_PTR), VALUE :: path
+        END FUNCTION PC_parse_path_f
+    END INTERFACE
 
-	INTERFACE
-		FUNCTION PC_len_f(tree,value) &
-			bind(C, name="PC_len")   
-			USE iso_C_binding 
-			USE PC_tree_t
-			INTEGER(C_INT) :: PC_len_f
-			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR), VALUE :: value
-		END FUNCTION PC_len_f
-	END INTERFACE
+    INTERFACE
+        FUNCTION PC_get_f(tree,index_fmt) &
+            bind(C, name="PC_get")   
+            USE iso_C_binding 
+            USE PC_tree_t
+            TYPE(PC_tree_t_f) :: PC_get_f
+            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(C_PTR), VALUE :: index_fmt
+        END FUNCTION PC_get_f
+    END INTERFACE
 
-	INTERFACE
-		FUNCTION PC_int_f(tree,value) &
-			bind(C, name="PC_int")   
-			USE iso_C_binding 
-			USE PC_tree_t
-			INTEGER(C_INT) :: PC_int_f
-			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR), VALUE :: value
-		END FUNCTION PC_int_f
-	END INTERFACE
+    INTERFACE
+        FUNCTION PC_len_f(tree,value) &
+            bind(C, name="PC_len")   
+            USE iso_C_binding 
+            USE PC_tree_t
+            INTEGER(C_INT) :: PC_len_f
+            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(C_PTR), VALUE :: value
+        END FUNCTION PC_len_f
+    END INTERFACE
 
-	INTERFACE
-		FUNCTION PC_double_f(tree,value) &
-			bind(C, name="PC_double")   
-			USE iso_C_binding 
-			USE PC_tree_t
-			INTEGER(C_INT) :: PC_double_f
-			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR), VALUE :: value
-		END FUNCTION PC_double_f
-	END INTERFACE
+    INTERFACE
+        FUNCTION PC_int_f(tree,value) &
+            bind(C, name="PC_int")   
+            USE iso_C_binding 
+            USE PC_tree_t
+            INTEGER(C_INT) :: PC_int_f
+            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(C_PTR), VALUE :: value
+        END FUNCTION PC_int_f
+    END INTERFACE
 
-	INTERFACE
-		FUNCTION PC_string_f(tree,value) &
-			bind(C, name="PC_string")   
-			USE iso_C_binding 
-			USE PC_tree_t
-			INTEGER(C_INT) :: PC_string_f
-			TYPE(PC_tree_t_f), VALUE :: tree
-			TYPE(C_PTR), VALUE :: value
-		END FUNCTION PC_string_f
-	END INTERFACE
+    INTERFACE
+        FUNCTION PC_double_f(tree,value) &
+            bind(C, name="PC_double")   
+            USE iso_C_binding 
+            USE PC_tree_t
+            INTEGER(C_INT) :: PC_double_f
+            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(C_PTR), VALUE :: value
+        END FUNCTION PC_double_f
+    END INTERFACE
 
-
-	INTERFACE
-		FUNCTION PC_tree_destroy_f(tree) &
-			bind(C, name="PC_tree_destroy")   
-			USE iso_C_binding 
-			USE PC_tree_t
-			INTEGER(C_INT) :: PC_finalize_f
-			TYPE(PC_tree_t_f) :: tree
-		END FUNCTION PC_tree_destroy_f
-	END INTERFACE
-
-	INTERFACE
-		SUBROUTINE free_f(ptr) &
-			bind(C, name="free")   
-			USE iso_C_binding 
-			TYPE(C_PTR), VALUE :: ptr
-		END SUBROUTINE free_f
-	END INTERFACE
-
-	CONTAINS 
-
-	!=============================================================  
-	SUBROUTINE PC_parse_path(path,tree)
-		CHARACTER(LEN=*), INTENT(IN) :: path
-		TYPE(PC_tree_t_f), INTENT(OUT) :: tree
-
-		INTEGER :: i
-		CHARACTER(C_CHAR), TARGET :: C_path(len_trim(path)+1)
-
-		do i=1,len_trim(path)
-      		C_path(i) = path(i:i)
-    	end do
-    	C_path(len_trim(path)+1) = C_NULL_CHAR
-
-		tree = PC_parse_path_f(c_loc(C_path))
-
-	END SUBROUTINE PC_parse_path
-	!=============================================================
-	!=============================================================  
-	SUBROUTINE PC_len(tree_in,value,status)
-		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		INTEGER, INTENT(OUT), TARGET :: value
-		INTEGER, INTENT(OUT), OPTIONAL :: status
-
-		INTEGER :: tmp
-		
-
-		if(PRESENT(status)) then
-			status = int(PC_len_f(tree_in,c_loc(value)))
-		else
-			tmp = int(PC_len_f(tree_in,c_loc(value)))
-		end if
-
-	END SUBROUTINE PC_len
-	!=============================================================
-	!=============================================================  
-	SUBROUTINE PC_get(tree_in,index_fmt,tree_out)
-		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		CHARACTER(LEN=*), INTENT(IN) :: index_fmt
-		TYPE(PC_tree_t_f), INTENT(OUT) :: tree_out
-
-		INTEGER :: i
-		CHARACTER(C_CHAR), TARGET :: C_index_fmt(len_trim(index_fmt)+1)
-
-		do i=1,len_trim(index_fmt)
-      		C_index_fmt(i) = index_fmt(i:i)
-    	end do
-    	C_index_fmt(len_trim(index_fmt)+1) = C_NULL_CHAR
-
-		tree_out = PC_get_f(tree_in,c_loc(C_index_fmt))
-
-	END SUBROUTINE PC_get
-	!=============================================================
-	!=============================================================  
-	SUBROUTINE PC_int(tree_in,value,status)
-		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		INTEGER, INTENT(OUT), TARGET :: value
-		INTEGER, INTENT(OUT), OPTIONAL :: status
-
-		INTEGER :: tmp
-
-		if(PRESENT(status)) then
-			status = int(PC_int_f(tree_in,c_loc(value)))
-		else
-			tmp = int(PC_int_f(tree_in,c_loc(value)))
-		end if
-
-		!value = Fp_value
-		!print *, "value =",Fp_value
-
-	END SUBROUTINE PC_int
-	!=============================================================
-	!=============================================================  
-	SUBROUTINE PC_double(tree_in,value,status)
-		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		REAL(8), INTENT(OUT), TARGET :: value
-		INTEGER, INTENT(OUT), OPTIONAL :: status
-
-		INTEGER :: tmp
-
-		if(PRESENT(status)) then
-			status = int(PC_double_f(tree_in,c_loc(value)))
-		else
-			tmp = int(PC_double_f(tree_in,c_loc(value)))
-		end if
-
-	END SUBROUTINE PC_double
-	!=============================================================
-	!=============================================================  
-	SUBROUTINE PC_string(tree_in,value,status)
-		TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
-		CHARACTER(LEN=*), INTENT(OUT) :: value
-		INTEGER, INTENT(OUT), OPTIONAL :: status
-
-		INTEGER :: i,tmp
-		INTEGER, DIMENSION(1) :: tab_lengh
-		TYPE(C_PTR),TARGET :: C_pointer
-		CHARACTER, DIMENSION(:), POINTER :: F_pointer
+    INTERFACE
+        FUNCTION PC_string_f(tree,value) &
+            bind(C, name="PC_string")   
+            USE iso_C_binding 
+            USE PC_tree_t
+            INTEGER(C_INT) :: PC_string_f
+            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(C_PTR), VALUE :: value
+        END FUNCTION PC_string_f
+    END INTERFACE
 
 
-		if(PRESENT(status)) then
-			status = int(PC_string_f(tree_in,c_loc(C_pointer)))
-		else
-			tmp = int(PC_string_f(tree_in,c_loc(C_pointer)))
-		end if
+    INTERFACE
+        FUNCTION PC_tree_destroy_f(tree) &
+            bind(C, name="PC_tree_destroy")   
+            USE iso_C_binding 
+            USE PC_tree_t
+            INTEGER(C_INT) :: PC_finalize_f
+            TYPE(PC_tree_t_f) :: tree
+        END FUNCTION PC_tree_destroy_f
+    END INTERFACE
 
-		call PC_len(tree_in,tab_lengh(1))  
+    INTERFACE
+        SUBROUTINE free_f(ptr) &
+            bind(C, name="free")   
+            USE iso_C_binding 
+            TYPE(C_PTR), VALUE :: ptr
+        END SUBROUTINE free_f
+    END INTERFACE
 
-		call c_f_pointer(C_pointer,F_pointer,tab_lengh)
+    CONTAINS 
 
-		do i=1,tab_lengh(1)
-			value(i:i) = F_pointer(i)
-		end do
+    !==================================================================
+    SUBROUTINE PC_parse_path(path,tree)
+        CHARACTER(LEN=*), INTENT(IN) :: path
+        TYPE(PC_tree_t_f), INTENT(OUT) :: tree
 
-		do i=tab_lengh(1)+1,len(value)
-			value(i:i) = ' '
-		end do 
+        INTEGER :: i
+        CHARACTER(C_CHAR), TARGET :: C_path(len_trim(path)+1)
 
-		call free_f(C_pointer)
+        do i=1,len_trim(path)
+              C_path(i) = path(i:i)
+        end do
+        C_path(len_trim(path)+1) = C_NULL_CHAR
 
-	END SUBROUTINE PC_string
-	!=============================================================
-	!=============================================================  
-	SUBROUTINE PC_tree_destroy(tree_in,status)
-		TYPE(PC_tree_t_f), INTENT(INOUT), TARGET :: tree_in
-		INTEGER, INTENT(OUT), OPTIONAL :: status
+        tree = PC_parse_path_f(c_loc(C_path))
 
-		INTEGER :: tmp
+    END SUBROUTINE PC_parse_path
+    !==================================================================
+    
+    
+    
+    !==================================================================
+    SUBROUTINE PC_len(tree_in,value,status)
+        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        INTEGER, INTENT(OUT), TARGET :: value
+        INTEGER, INTENT(OUT), OPTIONAL :: status
 
-		if(PRESENT(status)) then
-			status = int(PC_tree_destroy_f(tree_in))
-		else
-			tmp = int(PC_tree_destroy_f(tree_in))
-		end if
+        INTEGER :: tmp
+        
 
-	END SUBROUTINE PC_tree_destroy
-	!=============================================================
+        if(PRESENT(status)) then
+            status = int(PC_len_f(tree_in,c_loc(value)))
+        else
+            tmp = int(PC_len_f(tree_in,c_loc(value)))
+        end if
+
+    END SUBROUTINE PC_len
+    !==================================================================
+    
+    
+    
+    !==================================================================
+    SUBROUTINE PC_get(tree_in,index_fmt,tree_out)
+        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        CHARACTER(LEN=*), INTENT(IN) :: index_fmt
+        TYPE(PC_tree_t_f), INTENT(OUT) :: tree_out
+
+        INTEGER :: i
+        CHARACTER(C_CHAR), TARGET :: C_index_fmt(len_trim(index_fmt)+1)
+
+        do i=1,len_trim(index_fmt)
+              C_index_fmt(i) = index_fmt(i:i)
+        end do
+        C_index_fmt(len_trim(index_fmt)+1) = C_NULL_CHAR
+
+        tree_out = PC_get_f(tree_in,c_loc(C_index_fmt))
+
+    END SUBROUTINE PC_get
+    !==================================================================
+    
+    
+    
+    !==================================================================
+    SUBROUTINE PC_int(tree_in,value,status)
+        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        INTEGER, INTENT(OUT), TARGET :: value
+        INTEGER, INTENT(OUT), OPTIONAL :: status
+
+        INTEGER :: tmp
+
+        if(PRESENT(status)) then
+            status = int(PC_int_f(tree_in,c_loc(value)))
+        else
+            tmp = int(PC_int_f(tree_in,c_loc(value)))
+        end if
+
+        !value = Fp_value
+        !print *, "value =",Fp_value
+
+    END SUBROUTINE PC_int
+    !==================================================================
+    
+    
+    
+    !==================================================================
+    SUBROUTINE PC_double(tree_in,value,status)
+        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        REAL(8), INTENT(OUT), TARGET :: value
+        INTEGER, INTENT(OUT), OPTIONAL :: status
+
+        INTEGER :: tmp
+
+        if(PRESENT(status)) then
+            status = int(PC_double_f(tree_in,c_loc(value)))
+        else
+            tmp = int(PC_double_f(tree_in,c_loc(value)))
+        end if
+
+    END SUBROUTINE PC_double
+    !==================================================================
+    
+    
+    
+    !==================================================================
+    SUBROUTINE PC_string(tree_in,value,status)
+        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        CHARACTER(LEN=*), INTENT(OUT) :: value
+        INTEGER, INTENT(OUT), OPTIONAL :: status
+
+        INTEGER :: i,tmp
+        INTEGER, DIMENSION(1) :: tab_lengh
+        TYPE(C_PTR),TARGET :: C_pointer
+        CHARACTER, DIMENSION(:), POINTER :: F_pointer
+
+
+        if(PRESENT(status)) then
+            status = int(PC_string_f(tree_in,c_loc(C_pointer)))
+        else
+            tmp = int(PC_string_f(tree_in,c_loc(C_pointer)))
+        end if
+
+        call PC_len(tree_in,tab_lengh(1))  
+
+        call c_f_pointer(C_pointer,F_pointer,tab_lengh)
+
+        do i=1,tab_lengh(1)
+            value(i:i) = F_pointer(i)
+        end do
+
+        do i=tab_lengh(1)+1,len(value)
+            value(i:i) = ' '
+        end do 
+
+        call free_f(C_pointer)
+
+    END SUBROUTINE PC_string
+    !==================================================================
+    
+    
+    
+    !==================================================================
+    SUBROUTINE PC_tree_destroy(tree_in,status)
+        TYPE(PC_tree_t_f), INTENT(INOUT), TARGET :: tree_in
+        INTEGER, INTENT(OUT), OPTIONAL :: status
+
+        INTEGER :: tmp
+
+        if(PRESENT(status)) then
+            status = int(PC_tree_destroy_f(tree_in))
+        else
+            tmp = int(PC_tree_destroy_f(tree_in))
+        end if
+
+    END SUBROUTINE PC_tree_destroy
+    !==================================================================
 
 END MODULE paraconf
+!======================================================================

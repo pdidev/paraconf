@@ -1,9 +1,18 @@
-# a simple scalar, the number of iterations to execute
-iter: 100
-# an example with a list, global [width,height] (excluding ghost)
-datasize: [6, 6]
-# an example with nested associative arrays
-parallelism:
-    width:  1
-    height: 2
-
+# int scalar
+a_int: 100
+# float scalar
+a_float: 100.1
+# string scalar
+a_string: this is a string
+# list
+a_list: [10, 11]
+# map
+a_map: { first: 20, second: 21 }
+# second syntax for lists
+another_list:
+    - 30
+    - 31
+# second syntax for maps
+another_map:
+    first: 40
+    second: 41
