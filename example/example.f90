@@ -1,8 +1,7 @@
 PROGRAM example
 	USE paraconf
-	USE PC_tree_t
 
-	TYPE(PC_tree_t_f) :: tree1,tree2
+	TYPE(PC_tree_t) :: tree1,tree2
 	INTEGER :: nb_iter, lengh
 	CHARACTER(20) :: nb_iter_string
 	REAL(8) :: nb_iter_double

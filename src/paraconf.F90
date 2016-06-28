@@ -21,16 +21,21 @@
 ! * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ! * THE SOFTWARE.
 ! ******************************************************************************/
-MODULE paraconf
+module paraconf_types
 
     USE iso_C_binding
-    USE PC_tree_t
 
-    TYPE, bind(C) :: PC_tree_t_f
+    TYPE, bind(C) :: PC_tree_t
         INTEGER(C_INT) :: status
         TYPE(C_PTR) :: document
         TYPE(C_PTR) :: node
-    END TYPE PC_tree_t_f
+    END TYPE PC_tree_t
+
+endmodule
+MODULE paraconf
+
+    USE iso_C_binding
+    USE paraconf_types
 
     IMPLICIT NONE
 
@@ -38,8 +43,8 @@ MODULE paraconf
         FUNCTION PC_parse_path_f(path) &
             bind(C, name="PC_parse_path")   
             USE iso_C_binding 
-            USE PC_tree_t
-            TYPE(PC_tree_t_f) :: PC_parse_path_f
+            USE paraconf_types
+            TYPE(PC_tree_t) :: PC_parse_path_f
             TYPE(C_PTR), VALUE :: path
         END FUNCTION PC_parse_path_f
     END INTERFACE
@@ -48,9 +53,9 @@ MODULE paraconf
         FUNCTION PC_get_f(tree,index_fmt) &
             bind(C, name="PC_get")   
             USE iso_C_binding 
-            USE PC_tree_t
-            TYPE(PC_tree_t_f) :: PC_get_f
-            TYPE(PC_tree_t_f), VALUE :: tree
+            USE paraconf_types
+            TYPE(PC_tree_t) :: PC_get_f
+            TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: index_fmt
         END FUNCTION PC_get_f
     END INTERFACE
@@ -59,9 +64,9 @@ MODULE paraconf
         FUNCTION PC_len_f(tree,value) &
             bind(C, name="PC_len")   
             USE iso_C_binding 
-            USE PC_tree_t
+            USE paraconf_types
             INTEGER(C_INT) :: PC_len_f
-            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
         END FUNCTION PC_len_f
     END INTERFACE
@@ -70,9 +75,9 @@ MODULE paraconf
         FUNCTION PC_int_f(tree,value) &
             bind(C, name="PC_int")   
             USE iso_C_binding 
-            USE PC_tree_t
+            USE paraconf_types
             INTEGER(C_INT) :: PC_int_f
-            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
         END FUNCTION PC_int_f
     END INTERFACE
@@ -81,9 +86,9 @@ MODULE paraconf
         FUNCTION PC_double_f(tree,value) &
             bind(C, name="PC_double")   
             USE iso_C_binding 
-            USE PC_tree_t
+            USE paraconf_types
             INTEGER(C_INT) :: PC_double_f
-            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
         END FUNCTION PC_double_f
     END INTERFACE
@@ -92,9 +97,9 @@ MODULE paraconf
         FUNCTION PC_string_f(tree,value) &
             bind(C, name="PC_string")   
             USE iso_C_binding 
-            USE PC_tree_t
+            USE paraconf_types
             INTEGER(C_INT) :: PC_string_f
-            TYPE(PC_tree_t_f), VALUE :: tree
+            TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
         END FUNCTION PC_string_f
     END INTERFACE
@@ -104,9 +109,9 @@ MODULE paraconf
         FUNCTION PC_tree_destroy_f(tree) &
             bind(C, name="PC_tree_destroy")   
             USE iso_C_binding 
-            USE PC_tree_t
+            USE paraconf_types
             INTEGER(C_INT) :: PC_finalize_f
-            TYPE(PC_tree_t_f) :: tree
+            TYPE(PC_tree_t) :: tree
         END FUNCTION PC_tree_destroy_f
     END INTERFACE
 
@@ -123,7 +128,7 @@ MODULE paraconf
     !==================================================================
     SUBROUTINE PC_parse_path(path,tree)
         CHARACTER(LEN=*), INTENT(IN) :: path
-        TYPE(PC_tree_t_f), INTENT(OUT) :: tree
+        TYPE(PC_tree_t), INTENT(OUT) :: tree
 
         INTEGER :: i
         CHARACTER(C_CHAR), TARGET :: C_path(len_trim(path)+1)
@@ -142,7 +147,7 @@ MODULE paraconf
     
     !==================================================================
     SUBROUTINE PC_len(tree_in,value,status)
-        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        TYPE(PC_tree_t), INTENT(IN) :: tree_in
         INTEGER, INTENT(OUT), TARGET :: value
         INTEGER, INTENT(OUT), OPTIONAL :: status
 
@@ -162,9 +167,9 @@ MODULE paraconf
     
     !==================================================================
     SUBROUTINE PC_get(tree_in,index_fmt,tree_out)
-        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        TYPE(PC_tree_t), INTENT(IN) :: tree_in
         CHARACTER(LEN=*), INTENT(IN) :: index_fmt
-        TYPE(PC_tree_t_f), INTENT(OUT) :: tree_out
+        TYPE(PC_tree_t), INTENT(OUT) :: tree_out
 
         INTEGER :: i
         CHARACTER(C_CHAR), TARGET :: C_index_fmt(len_trim(index_fmt)+1)
@@ -183,7 +188,7 @@ MODULE paraconf
     
     !==================================================================
     SUBROUTINE PC_int(tree_in,value,status)
-        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        TYPE(PC_tree_t), INTENT(IN) :: tree_in
         INTEGER, INTENT(OUT), TARGET :: value
         INTEGER, INTENT(OUT), OPTIONAL :: status
 
@@ -205,7 +210,7 @@ MODULE paraconf
     
     !==================================================================
     SUBROUTINE PC_double(tree_in,value,status)
-        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        TYPE(PC_tree_t), INTENT(IN) :: tree_in
         REAL(8), INTENT(OUT), TARGET :: value
         INTEGER, INTENT(OUT), OPTIONAL :: status
 
@@ -224,7 +229,7 @@ MODULE paraconf
     
     !==================================================================
     SUBROUTINE PC_string(tree_in,value,status)
-        TYPE(PC_tree_t_f), INTENT(IN) :: tree_in
+        TYPE(PC_tree_t), INTENT(IN) :: tree_in
         CHARACTER(LEN=*), INTENT(OUT) :: value
         INTEGER, INTENT(OUT), OPTIONAL :: status
 
@@ -261,7 +266,7 @@ MODULE paraconf
     
     !==================================================================
     SUBROUTINE PC_tree_destroy(tree_in,status)
-        TYPE(PC_tree_t_f), INTENT(INOUT), TARGET :: tree_in
+        TYPE(PC_tree_t), INTENT(INOUT), TARGET :: tree_in
         INTEGER, INTENT(OUT), OPTIONAL :: status
 
         INTEGER :: tmp
