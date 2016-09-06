@@ -51,10 +51,6 @@ option(ENABLE_FORTRAN
 	"Enable compilation of the Fortran version of the library"
 	ON
 )
-option(ENABLE_TESTING
-	"Enable compilation of the (example) tests"
-	OFF
-)
 option(USE_SYSTEM_YAML
 	"Use an already installed libyaml instead of building the embedded one"
 	ON
@@ -140,10 +136,8 @@ endif()
 
 # Test examples
 
-if("${ENABLE_TESTING}")
-	enable_testing()
-	add_subdirectory(example/)
-endif()
+enable_testing()
+add_subdirectory(example/)
 
 
 # Installable config

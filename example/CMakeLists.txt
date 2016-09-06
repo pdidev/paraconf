@@ -29,15 +29,17 @@
 
 include(AddCCompilerFlags)
 
-add_executable(PC_example
-	example.c
-)
-add_compiler_flags(PC_example PRIVATE -std=c99)
+add_executable(PC_example EXCLUDE_FROM_ALL example.c)
 target_link_libraries(PC_example paraconf yaml mpi)
+add_compiler_flags(PC_example PRIVATE -std=c99)
+add_test(NAME PC_example_build COMMAND "${CMAKE_COMMAND}" --build . --target PC_example WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 add_test(NAME PC_example COMMAND PC_example WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+set_tests_properties(PC_example PROPERTIES DEPENDS PC_example_build)
 
-add_executable(PC_example_f90
-	example.f90
-)
-target_link_libraries(PC_example_f90 paraconf_f90 mpi)
-add_test(NAME PC_example_f90 COMMAND PC_example_f90 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+if("${ENABLE_FORTRAN}")
+	add_executable(PC_example_f90 EXCLUDE_FROM_ALL example.f90)
+	target_link_libraries(PC_example_f90 paraconf_f90 mpi)
+	add_test(NAME PC_example_f90_build COMMAND "${CMAKE_COMMAND}" --build . --target PC_example_f90 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+	add_test(NAME PC_example_f90 COMMAND PC_example_f90 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+	set_tests_properties(PC_example_f90 PROPERTIES DEPENDS PC_example_f90_build)
+endif()
