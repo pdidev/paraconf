@@ -192,9 +192,10 @@ static yaml_node_pair_t *get_map_idx_pair(PC_tree_t tree, const char **req_index
 	yaml_node_pair_t *result = tree.node->data.mapping.pairs.start + map_idx;
 	assert(result);
 	
+	return result;
 err0:
 	*req_index = index;
-	
+	result = NULL;
 	return result;
 }
 
