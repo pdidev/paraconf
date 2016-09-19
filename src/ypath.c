@@ -91,9 +91,9 @@ static PC_tree_t get_seq_idx(PC_tree_t tree, const char **req_index, const char 
 	}
 	tree.node = yaml_document_get_node(tree.document, *(tree.node->data.sequence.items.start + seq_idx));
 	assert(tree.node);
+	*req_index = index;
 	
 err0:
-	*req_index = index;
 	
 	return tree;
 }
@@ -149,16 +149,17 @@ static PC_tree_t get_map_key_val(PC_tree_t tree, const char **req_index, const c
 	}
 	tree.node = yaml_document_get_node(tree.document, pair->value);
 	assert(tree.node);
+	*req_index = index;
 	
 err0:
-	*req_index = index;
 	
 	return tree;
 }
 
-static yaml_node_pair_t *get_map_idx_pair(PC_tree_t tree, const char **req_index, const char *full_index)
+static PC_status_t get_map_idx_pair(PC_tree_t tree, const char **req_index, const char *full_index, yaml_node_pair_t **pair)
 {
 	const char *index = *req_index;
+	PC_status_t status = PC_OK;
 	
 	// read int
 	char *post_index;
@@ -189,14 +190,16 @@ static yaml_node_pair_t *get_map_idx_pair(PC_tree_t tree, const char **req_index
 				full_index);
 		goto err0;
 	}
-	yaml_node_pair_t *result = tree.node->data.mapping.pairs.start + map_idx;
-	assert(result);
-	
-	return result;
-err0:
+	*pair = tree.node->data.mapping.pairs.start + map_idx;
+	assert(*pair);
 	*req_index = index;
-	result = NULL;
-	return result;
+	
+	return status;
+
+err0:
+
+	status=tree.status;
+	return status;
 }
 
 static PC_tree_t get_map_idx_key(PC_tree_t tree, const char **req_index, const char *full_index)
@@ -213,7 +216,8 @@ static PC_tree_t get_map_idx_key(PC_tree_t tree, const char **req_index, const c
 	++index;
 	
 	// get pair
-	yaml_node_pair_t *pair = get_map_idx_pair(tree, &index, full_index);
+	yaml_node_pair_t *pair = NULL; 
+	handle_error_tree(get_map_idx_pair(tree, &index, full_index, &pair),err0);
 	
 	// read '}'
 	if ( *index != '}' ) {
@@ -227,9 +231,9 @@ static PC_tree_t get_map_idx_key(PC_tree_t tree, const char **req_index, const c
 	// handle pair
 	tree.node = yaml_document_get_node(tree.document, pair->key);
 	assert(tree.node);
+	*req_index = index;
 	
 err0:
-	*req_index = index;
 	
 	return tree;
 }
@@ -248,7 +252,8 @@ static PC_tree_t get_map_idx_val(PC_tree_t tree, const char **req_index, const c
 	++index;
 	
 	// get pair
-	yaml_node_pair_t *pair = get_map_idx_pair(tree, &index, full_index);
+	yaml_node_pair_t *pair = NULL; 
+	handle_error_tree(get_map_idx_pair(tree, &index, full_index, &pair),err0);
 	
 	// read '>'
 	if ( *index != '>' ) {
@@ -262,9 +267,9 @@ static PC_tree_t get_map_idx_val(PC_tree_t tree, const char **req_index, const c
 	// handle pair
 	tree.node = yaml_document_get_node(tree.document, pair->value);
 	assert(tree.node);
+	*req_index = index;
 	
 err0:
-	*req_index = index;
 	
 	return tree;
 }
