@@ -165,7 +165,7 @@ static PC_status_t get_map_idx_pair(PC_tree_t tree, const char **req_index, cons
 	char *post_index;
 	long map_idx = strtol(index, &post_index, 0);
 	if ( post_index == index ) {
-		tree.status = make_error(PC_INVALID_PARAMETER, "Expected integer at char #%ld of `%.*s'\n",
+		status = make_error(PC_INVALID_PARAMETER, "Expected integer at char #%ld of `%.*s'\n",
 				(long int)(index-full_index),
 				full_index);
 		goto err0;
@@ -174,7 +174,7 @@ static PC_status_t get_map_idx_pair(PC_tree_t tree, const char **req_index, cons
 	
 	// check type
 	if ( tree.node->type != YAML_MAPPING_NODE ) {
-		tree.status = make_error(PC_INVALID_NODE_TYPE, "Expected mapping, found %s (ROOT)%.*s\n",
+		status = make_error(PC_INVALID_NODE_TYPE, "Expected mapping, found %s (ROOT)%.*s\n",
 				nodetype[tree.node->type],
 				(int)(*req_index-full_index),
 				full_index);
@@ -183,7 +183,7 @@ static PC_status_t get_map_idx_pair(PC_tree_t tree, const char **req_index, cons
 	
 	// handle index
 	if ( map_idx < 0 || map_idx >= (tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start) ) {
-		tree.status = make_error(PC_NODE_NOT_FOUND, "Index %ld out of range [0...%ld] in (ROOT)%.*s\n",
+		status = make_error(PC_NODE_NOT_FOUND, "Index %ld out of range [0...%ld] in (ROOT)%.*s\n",
 				map_idx,
 				(long)(tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start),
 				(int)(*req_index-full_index-1),
@@ -194,11 +194,8 @@ static PC_status_t get_map_idx_pair(PC_tree_t tree, const char **req_index, cons
 	assert(*pair);
 	*req_index = index;
 	
-	return status;
-
 err0:
 
-	status=tree.status;
 	return status;
 }
 
