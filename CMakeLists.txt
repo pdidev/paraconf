@@ -93,7 +93,7 @@ add_library(paraconf
 	src/status.c
 	src/ypath.c
 )
-add_compiler_flags(paraconf PRIVATE -std=c99 -pedantic -Wall -Wextra -Werror -Wfatal-errors -pedantic-errors)
+add_compiler_flags(paraconf PRIVATE -std=c99 -pedantic -Wall -Wextra -Werror -Wfatal-errors -pedantic-errors -O3)
 generate_export_header(paraconf)
 set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
 set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
@@ -115,6 +115,7 @@ install(FILES include/paraconf.h "${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
 #Fortran version
 if("${ENABLE_FORTRAN}")
 	add_library(paraconf_f90 src/paraconf.F90)
+	add_compiler_flags(paraconf_f90 PRIVATE -fimplicit-none -Wall -Wextra -Wno-unused-function -Wno-unused-label -Wno-unused-value -Wno-unused-variable -Wno-unused-parameter -Wno-unused-dummy-argument -Wuninitialized -Wcharacter-truncation -Wunderflow -Wintrinsic-shadow -ffree-line-length-none -O3 -ffast-math -fexpensive-optimizations -funroll-loops -funroll-all-loops -fPIC)
 	target_link_libraries(paraconf_f90 paraconf)
 	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modinclude")
 	target_include_directories(paraconf_f90 INTERFACE

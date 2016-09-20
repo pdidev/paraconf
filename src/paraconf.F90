@@ -40,79 +40,79 @@ MODULE paraconf
     IMPLICIT NONE
 
     INTERFACE
-        FUNCTION PC_parse_path_f(path) &
+        TYPE(PC_tree_t) & 
+          FUNCTION PC_parse_path_f(path) &
             bind(C, name="PC_parse_path")   
             USE iso_C_binding 
             USE paraconf_types
-            TYPE(PC_tree_t) :: PC_parse_path_f
             TYPE(C_PTR), VALUE :: path
-        END FUNCTION PC_parse_path_f
+          END FUNCTION PC_parse_path_f
     END INTERFACE
 
     INTERFACE
-        FUNCTION PC_get_f(tree,index_fmt) &
+        TYPE(PC_tree_t) &
+          FUNCTION PC_get_f(tree,index_fmt) &
             bind(C, name="PC_get")   
             USE iso_C_binding 
             USE paraconf_types
-            TYPE(PC_tree_t) :: PC_get_f
             TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: index_fmt
-        END FUNCTION PC_get_f
+          END FUNCTION PC_get_f
     END INTERFACE
 
     INTERFACE
-        FUNCTION PC_len_f(tree,value) &
+        INTEGER(C_INT) &
+          FUNCTION PC_len_f(tree,value) &
             bind(C, name="PC_len")   
             USE iso_C_binding 
             USE paraconf_types
-            INTEGER(C_INT) :: PC_len_f
             TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
-        END FUNCTION PC_len_f
+          END FUNCTION PC_len_f
     END INTERFACE
 
     INTERFACE
-        FUNCTION PC_int_f(tree,value) &
+        INTEGER(C_INT) &
+          FUNCTION PC_int_f(tree,value) &
             bind(C, name="PC_int")   
             USE iso_C_binding 
             USE paraconf_types
-            INTEGER(C_INT) :: PC_int_f
             TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
-        END FUNCTION PC_int_f
+          END FUNCTION PC_int_f
     END INTERFACE
 
     INTERFACE
-        FUNCTION PC_double_f(tree,value) &
+        INTEGER(C_INT) &
+          FUNCTION PC_double_f(tree,value) &
             bind(C, name="PC_double")   
             USE iso_C_binding 
             USE paraconf_types
-            INTEGER(C_INT) :: PC_double_f
             TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
-        END FUNCTION PC_double_f
+          END FUNCTION PC_double_f
     END INTERFACE
 
     INTERFACE
-        FUNCTION PC_string_f(tree,value) &
+        INTEGER(C_INT) &
+          FUNCTION PC_string_f(tree,value) &
             bind(C, name="PC_string")   
             USE iso_C_binding 
             USE paraconf_types
-            INTEGER(C_INT) :: PC_string_f
             TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
-        END FUNCTION PC_string_f
+          END FUNCTION PC_string_f
     END INTERFACE
 
 
     INTERFACE
-        FUNCTION PC_tree_destroy_f(tree) &
+        INTEGER(C_INT) &
+          FUNCTION PC_tree_destroy_f(tree) &
             bind(C, name="PC_tree_destroy")   
             USE iso_C_binding 
             USE paraconf_types
-            INTEGER(C_INT) :: PC_finalize_f
             TYPE(PC_tree_t) :: tree
-        END FUNCTION PC_tree_destroy_f
+          END FUNCTION PC_tree_destroy_f
     END INTERFACE
 
     INTERFACE
