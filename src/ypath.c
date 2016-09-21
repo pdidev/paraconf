@@ -275,7 +275,7 @@ PC_tree_t PC_sget(PC_tree_t tree, const char *index)
 {
 	const char *full_index = index;
 	
-	for(;;) {
+	while ( !PC_status(tree) ) {
 		switch ( *index ) {
 		case '[':
 			tree = get_seq_idx(tree, &index, full_index);
