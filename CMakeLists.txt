@@ -115,6 +115,7 @@ install(FILES include/paraconf.h "${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
 #Fortran version
 if("${ENABLE_FORTRAN}")
 	add_library(paraconf_f90 src/paraconf.F90)
+	add_compiler_flags(paraconf_f90 PRIVATE -fimplicit-none)
 	target_link_libraries(paraconf_f90 paraconf)
 	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modinclude")
 	target_include_directories(paraconf_f90 INTERFACE
