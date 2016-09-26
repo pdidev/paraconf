@@ -53,14 +53,14 @@ PC_tree_t PC_parse_path(const char *path)
 	if ( !conf_file ) {
 		char errbuf[ERRBUF_SIZE];
 		strerror_r(errno, errbuf, ERRBUF_SIZE);
-		handle_error_tree(make_error(PC_SYSTEM_ERROR, errbuf), err0);
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, errbuf), err0);
 	}
 	
 	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER); // aka PC_try
 	tree = PC_parse_file(conf_file);
 	PC_errhandler(handler);
 	if ( PC_status(tree) ) { // aka PC_catch
-		handle_error_tree(make_error(tree.status, "Error while opening file `%s`, %s", path, PC_errmsg()), err1);
+		PC_handle_err_tree(PC_make_err(tree.status, "Error while opening file `%s`, %s", path, PC_errmsg()), err1);
 	}
 	
 	fclose(conf_file);
@@ -79,19 +79,19 @@ PC_tree_t PC_parse_file(FILE *conf_file)
 	
 	yaml_parser_t conf_parser; 
 	if ( !yaml_parser_initialize(&conf_parser) ) {
-		handle_error_tree(make_error(PC_SYSTEM_ERROR, "unable to load yaml library"), err0);
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to load yaml library"), err0);
 	}
 	
 	yaml_parser_set_input_file(&conf_parser, conf_file);
 	
 	yaml_document_t *conf_doc = malloc(sizeof(yaml_document_t));
 	if ( !conf_doc ) {
-		handle_error_tree(make_error(PC_SYSTEM_ERROR, "unable to allocate memory"), err1);
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to allocate memory"), err1);
 	}
 	
 	if ( !yaml_parser_load(&conf_parser, conf_doc) ) {
 		if ( conf_parser.context ) {
-			handle_error_tree(make_error(PC_INVALID_FORMAT,
+			PC_handle_err_tree(PC_make_err(PC_INVALID_FORMAT,
 					"%lu:%lu: Error: %s \n%lu:%lu: Error: %s",
 					(unsigned long) conf_parser.problem_mark.line,
 					(unsigned long) conf_parser.problem_mark.column,
@@ -100,7 +100,7 @@ PC_tree_t PC_parse_file(FILE *conf_file)
 					(unsigned long) conf_parser.context_mark.column,
 					conf_parser.context), err1);
 		} else {
-			handle_error_tree(make_error(PC_INVALID_FORMAT, "%lu:%lu: Error: %s",
+			PC_handle_err_tree(PC_make_err(PC_INVALID_FORMAT, "%lu:%lu: Error: %s",
 					(unsigned long) conf_parser.problem_mark.line,
 					(unsigned long) conf_parser.problem_mark.column,
 					conf_parser.problem), err1);
@@ -166,7 +166,7 @@ PC_status_t PC_len(PC_tree_t tree, int *res)
 		*res = tree.node->data.scalar.length;
 	} break;
 	default: {
-		tree.status = make_error(PC_INVALID_NODE_TYPE, "Unknown yaml node type: #%d", tree.node->type);
+		tree.status = PC_make_err(PC_INVALID_NODE_TYPE, "Unknown yaml node type: #%d", tree.node->type);
 	} break;
 	}
 	// the above cases should be exhaustive
@@ -178,13 +178,13 @@ PC_status_t PC_int(PC_tree_t tree, int *res)
 	if ( tree.status ) return tree.status;
 
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		return make_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		return PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 	char *endptr;
 	long result = strtol((char*)tree.node->data.scalar.value, &endptr, 0);
 	if ( *endptr ) {
 		char *content; tree.status = PC_string(tree, &content);
-		tree.status = make_error(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
+		tree.status = PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
 		free(content);
 		return tree.status;
 	}
@@ -197,13 +197,13 @@ PC_status_t PC_double(PC_tree_t tree, double* value)
 	if ( tree.status ) return tree.status;
 
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		tree.status = make_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		tree.status = PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 	char *endptr;
 	*value = strtod((char*)tree.node->data.scalar.value, &endptr);
 	if ( *endptr ) {
 		char *content; tree.status = PC_string(tree, &content);
-		tree.status = make_error(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
+		tree.status = PC_make_err(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
 		free(content);
 	}
 	return tree.status;
@@ -214,7 +214,7 @@ PC_status_t PC_string(PC_tree_t tree, char** value)
 	if ( tree.status ) return tree.status;
 
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		tree.status = make_error(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		tree.status = PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 
 	int len; tree.status = PC_len(tree, &len); if (tree.status) return tree.status;
