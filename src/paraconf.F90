@@ -31,6 +31,11 @@ module paraconf_types
         TYPE(C_PTR) :: node
     END TYPE PC_tree_t
 
+    TYPE, bind(C) :: PC_errhandler_t
+        TYPE(C_FUNPTR) :: func
+        TYPE(C_PTR) :: context
+    END TYPE PC_errhandler_t
+
 endmodule
 MODULE paraconf
 
@@ -38,6 +43,30 @@ MODULE paraconf
     USE paraconf_types
 
     IMPLICIT NONE
+
+    !! Status of function execution
+    ENUM, BIND(C)
+        ENUMERATOR :: PC_OK = 0            ! No error
+        ENUMERATOR :: PC_INVALID_PARAMETER ! A parameter value is invalid
+        ENUMERATOR :: PC_INVALID_NODE_TYPE ! Unexpected type found for a node
+        ENUMERATOR :: PC_NODE_NOT_FOUND    ! The requested node doesn exist in the tree
+        ENUMERATOR :: PC_INVALID_FORMAT    ! The provided input is invalid
+        ENUMERATOR :: PC_SYSTEM_ERROR      ! An error occured with the system
+    END ENUM
+
+    ! Error handlers
+    TYPE(PC_errhandler_t), BIND(C, NAME="PC_ASSERT_HANDLER") :: PC_ASSERT_HANDLER
+    TYPE(PC_errhandler_t), BIND(C, NAME="PC_NULL_HANDLER") :: PC_NULL_HANDLER
+
+    INTERFACE
+        TYPE(PC_errhandler_t) &
+          FUNCTION PC_errhandler_f(handler) &
+            bind(C, name="PC_errhandler")
+            USE iso_C_binding
+            USE paraconf_types
+            TYPE(PC_errhandler_t), VALUE :: handler
+          END FUNCTION PC_errhandler_f
+    END INTERFACE
 
     INTERFACE
         TYPE(PC_tree_t) & 
@@ -124,6 +153,17 @@ MODULE paraconf
     END INTERFACE
 
     CONTAINS 
+
+    !==================================================================
+    SUBROUTINE PC_errhandler(new_handler, old_handler)
+        TYPE(PC_errhandler_t), INTENT(IN) :: new_handler
+        TYPE(PC_errhandler_t), INTENT(OUT) :: old_handler
+
+        old_handler = PC_errhandler_f(new_handler)
+
+    END SUBROUTINE PC_errhandler
+    !==================================================================
+
 
     !==================================================================
     SUBROUTINE PC_parse_path(path,tree)
