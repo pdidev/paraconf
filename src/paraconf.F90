@@ -24,6 +24,8 @@
 module paraconf_types
 
     USE iso_C_binding
+ 
+    IMPLICIT NONE
 
     TYPE, bind(C) :: PC_tree_t
         INTEGER(C_INT) :: status
@@ -57,6 +59,25 @@ MODULE paraconf
     ! Error handlers
     TYPE(PC_errhandler_t), BIND(C, NAME="PC_ASSERT_HANDLER") :: PC_ASSERT_HANDLER
     TYPE(PC_errhandler_t), BIND(C, NAME="PC_NULL_HANDLER") :: PC_NULL_HANDLER
+
+    ! Need to declare the C function as extern 
+    ! INTERFACE 
+    !     TYPE(C_INT) &
+    !       FUNCTION PC_status_f(tree) &
+    !         bind(C, name="PC_status")
+    !         USE iso_C_binding
+    !         USE paraconf_types
+    !         TYPE(PC_tree_t), VALUE :: tree
+    !       END FUNCTION PC_status_f
+    ! END INTERFACE
+
+    INTERFACE
+        TYPE(C_PTR) &
+          FUNCTION PC_errmsg_f() &
+            bind(C, name="PC_errmsg")
+            USE ISO_C_BINDING
+          END FUNCTION PC_errmsg_f
+    END INTERFACE
 
     INTERFACE
         TYPE(PC_errhandler_t) &
@@ -153,6 +174,39 @@ MODULE paraconf
     END INTERFACE
 
     CONTAINS 
+
+    !==================================================================
+    ! Need PC_status function to be declared as extern in paraconf.h
+    ! SUBROUTINE PC_status(tree,status)
+    !     TYPE(PC_tree_t), INTENT(IN) :: tree
+    !     INTEGER, INTENT(OUT) :: status
+
+    !     status = int(PC_status_f(tree), kind=kind(status))
+
+    ! END SUBROUTINE PC_status
+    !==================================================================
+
+   
+
+    !==================================================================
+    SUBROUTINE PC_errmsg(errmsg)
+        CHARACTER(*), INTENT(OUT) :: errmsg
+        CHARACTER, POINTER, DIMENSION(:) :: errmsg_array
+        CHARACTER(LEN=255) :: tmpmsg
+        INTEGER :: errmsg_length
+        INTEGER :: I
+
+        CALL C_F_POINTER(PC_errmsg_f(), errmsg_array, [255])
+        
+        DO I = 1, 255
+            tmpmsg(i:i+1) = errmsg_array(i)
+        END DO
+
+        errmsg_length = LEN_TRIM(tmpmsg(1:INDEX(tmpmsg, CHAR(0))))
+        errmsg = tmpmsg(1:errmsg_length-1)
+
+    END SUBROUTINE PC_errmsg
+    !==================================================================    
 
     !==================================================================
     SUBROUTINE PC_errhandler(new_handler, old_handler)
