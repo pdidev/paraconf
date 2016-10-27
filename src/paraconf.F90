@@ -63,16 +63,6 @@ MODULE paraconf
     ! character length parameters 
     INTEGER, PARAMETER :: PC_ERRMSG_MAXLENGTH = 255
 
-    INTERFACE 
-        INTEGER(C_INT) &
-          FUNCTION PC_status_f(tree) &
-            bind(C, name="PC_status")
-            USE iso_C_binding
-            USE paraconf_types
-            TYPE(PC_tree_t), VALUE :: tree
-          END FUNCTION PC_status_f
-    END INTERFACE
-
     INTERFACE
         TYPE(C_PTR) &
           FUNCTION PC_errmsg_f() &
@@ -182,7 +172,7 @@ MODULE paraconf
         TYPE(PC_tree_t), INTENT(IN) :: tree
         INTEGER, INTENT(OUT) :: status
 
-        status = int(PC_status_f(tree), kind=kind(status))
+        status = int(tree%status,kind(status))
 
     END SUBROUTINE PC_status
     !==================================================================
@@ -197,14 +187,17 @@ MODULE paraconf
         INTEGER :: errmsg_length
         INTEGER :: I
 
+        errmsg = ""
         CALL C_F_POINTER(PC_errmsg_f(), errmsg_array, [PC_ERRMSG_MAXLENGTH])
-        
-        DO I = 1, PC_ERRMSG_MAXLENGTH
-            tmpmsg(i:i+1) = errmsg_array(i)
-        END DO
+        IF (ASSOCIATED(errmsg_array)) THEN
+                
+            DO I = 1, PC_ERRMSG_MAXLENGTH
+                tmpmsg(i:i+1) = errmsg_array(i)
+            END DO
 
-        errmsg_length = LEN_TRIM(tmpmsg(1:INDEX(tmpmsg, CHAR(0))))
-        errmsg = tmpmsg(1:errmsg_length-1)
+            errmsg_length = LEN_TRIM(tmpmsg(1:INDEX(tmpmsg, CHAR(0))))
+            errmsg = tmpmsg(1:errmsg_length-1)
+        END IF
 
     END SUBROUTINE PC_errmsg
     !==================================================================    
@@ -212,9 +205,15 @@ MODULE paraconf
     !==================================================================
     SUBROUTINE PC_errhandler(new_handler, old_handler)
         TYPE(PC_errhandler_t), INTENT(IN) :: new_handler
-        TYPE(PC_errhandler_t), INTENT(OUT) :: old_handler
+        TYPE(PC_errhandler_t), INTENT(OUT), OPTIONAL :: old_handler
 
-        old_handler = PC_errhandler_f(new_handler)
+        TYPE(PC_errhandler_t) :: tmp_handler
+
+        IF (PRESENT(old_handler)) THEN
+            old_handler = PC_errhandler_f(new_handler)
+        ELSE
+            tmp_handler = PC_errhandler_f(new_handler)
+        END IF
 
     END SUBROUTINE PC_errhandler
     !==================================================================
