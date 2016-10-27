@@ -125,3 +125,8 @@ char *PC_errmsg()
 {
 	return get_context()->buffer;
 }
+
+PC_status_t PC_status(PC_tree_t tree) 
+{ 
+        return tree.status; 
+}
