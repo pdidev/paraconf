@@ -93,14 +93,19 @@ MODULE paraconf
 
     INTERFACE
         TYPE(PC_tree_t) &
-          FUNCTION PC_get_f(tree,index_fmt) &
+          FUNCTION PC_get_f0_c(tree,index_fmt) &
             bind(C, name="PC_get")   
             USE iso_C_binding 
             USE paraconf_types
             TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: index_fmt
-          END FUNCTION PC_get_f
+          END FUNCTION PC_get_f0_c
     END INTERFACE
+
+    ! PC_get functions Generic interface to emulate variable argument list
+    INTERFACE PC_get
+        MODULE PROCEDURE PC_get_f0
+    END INTERFACE PC_get
 
     INTERFACE
         INTEGER(C_INT) &
@@ -267,13 +272,10 @@ MODULE paraconf
     END SUBROUTINE PC_len
     !==================================================================
     
-    
-    
     !==================================================================
-    SUBROUTINE PC_get(tree_in,index_fmt,tree_out)
-        TYPE(PC_tree_t), INTENT(IN) :: tree_in
+    TYPE(PC_tree_t) FUNCTION PC_get_f0(tree, index_fmt)
+        TYPE(PC_tree_t), INTENT(IN) :: tree
         CHARACTER(LEN=*), INTENT(IN) :: index_fmt
-        TYPE(PC_tree_t), INTENT(OUT) :: tree_out
 
         INTEGER :: i
         CHARACTER(C_CHAR), TARGET :: C_index_fmt(len_trim(index_fmt)+1)
@@ -283,12 +285,10 @@ MODULE paraconf
         end do
         C_index_fmt(len_trim(index_fmt)+1) = C_NULL_CHAR
 
-        tree_out = PC_get_f(tree_in,c_loc(C_index_fmt))
+        PC_get_f0 = PC_get_f0_c(tree,c_loc(C_index_fmt))
 
-    END SUBROUTINE PC_get
+    END FUNCTION PC_get_f0
     !==================================================================
-    
-    
     
     !==================================================================
     SUBROUTINE PC_int(tree_in,value,status)
