@@ -102,7 +102,6 @@ extern const PARACONF_EXPORT PC_errhandler_t PC_NULL_HANDLER;
  * \param tree the tree to check
  * \return the status
  */
-/* PC_status_t PARACONF_EXPORT PC_status(PC_tree_t tree); */
 static inline PC_status_t PC_status(PC_tree_t tree) { return tree.status; }
 
 /** Return a human-readabe message describing the last error that occured in paraconf
