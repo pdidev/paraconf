@@ -24,12 +24,19 @@
 module paraconf_types
 
     USE iso_C_binding
+ 
+    IMPLICIT NONE
 
     TYPE, bind(C) :: PC_tree_t
         INTEGER(C_INT) :: status
         TYPE(C_PTR) :: document
         TYPE(C_PTR) :: node
     END TYPE PC_tree_t
+
+    TYPE, bind(C) :: PC_errhandler_t
+        TYPE(C_FUNPTR) :: func
+        TYPE(C_PTR) :: context
+    END TYPE PC_errhandler_t
 
 endmodule
 MODULE paraconf
@@ -38,6 +45,41 @@ MODULE paraconf
     USE paraconf_types
 
     IMPLICIT NONE
+
+    !! Status of function execution
+    ENUM, BIND(C)
+        ENUMERATOR :: PC_OK = 0            ! No error
+        ENUMERATOR :: PC_INVALID_PARAMETER ! A parameter value is invalid
+        ENUMERATOR :: PC_INVALID_NODE_TYPE ! Unexpected type found for a node
+        ENUMERATOR :: PC_NODE_NOT_FOUND    ! The requested node doesn exist in the tree
+        ENUMERATOR :: PC_INVALID_FORMAT    ! The provided input is invalid
+        ENUMERATOR :: PC_SYSTEM_ERROR      ! An error occured with the system
+    END ENUM
+
+    ! Error handlers
+    TYPE(PC_errhandler_t), BIND(C, NAME="PC_ASSERT_HANDLER") :: PC_ASSERT_HANDLER
+    TYPE(PC_errhandler_t), BIND(C, NAME="PC_NULL_HANDLER") :: PC_NULL_HANDLER
+
+    ! character length parameters 
+    INTEGER, PARAMETER :: PC_ERRMSG_MAXLENGTH = 255
+
+    INTERFACE
+        TYPE(C_PTR) &
+          FUNCTION PC_errmsg_f() &
+            bind(C, name="PC_errmsg")
+            USE ISO_C_BINDING
+          END FUNCTION PC_errmsg_f
+    END INTERFACE
+
+    INTERFACE
+        TYPE(PC_errhandler_t) &
+          FUNCTION PC_errhandler_f(handler) &
+            bind(C, name="PC_errhandler")
+            USE iso_C_binding
+            USE paraconf_types
+            TYPE(PC_errhandler_t), VALUE :: handler
+          END FUNCTION PC_errhandler_f
+    END INTERFACE
 
     INTERFACE
         TYPE(PC_tree_t) & 
@@ -51,14 +93,19 @@ MODULE paraconf
 
     INTERFACE
         TYPE(PC_tree_t) &
-          FUNCTION PC_get_f(tree,index_fmt) &
+          FUNCTION PC_get_f0_c(tree,index_fmt) &
             bind(C, name="PC_get")   
             USE iso_C_binding 
             USE paraconf_types
             TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: index_fmt
-          END FUNCTION PC_get_f
+          END FUNCTION PC_get_f0_c
     END INTERFACE
+
+    ! PC_get functions Generic interface to emulate variable argument list
+    INTERFACE PC_get
+        MODULE PROCEDURE PC_get_f0
+    END INTERFACE PC_get
 
     INTERFACE
         INTEGER(C_INT) &
@@ -126,6 +173,61 @@ MODULE paraconf
     CONTAINS 
 
     !==================================================================
+    SUBROUTINE PC_status(tree,status)
+        TYPE(PC_tree_t), INTENT(IN) :: tree
+        INTEGER, INTENT(OUT) :: status
+
+        status = int(tree%status,kind(status))
+
+    END SUBROUTINE PC_status
+    !==================================================================
+
+   
+
+    !==================================================================
+    SUBROUTINE PC_errmsg(errmsg)
+        CHARACTER(*), INTENT(OUT) :: errmsg
+        CHARACTER(KIND=C_CHAR), POINTER, DIMENSION(:) :: errmsg_array
+        INTEGER :: errmsg_length
+        INTEGER :: I
+
+        errmsg_length = LEN(errmsg)
+        errmsg = ""
+        CALL C_F_POINTER(PC_errmsg_f(), errmsg_array, [errmsg_length])
+        IF (ASSOCIATED(errmsg_array)) THEN
+
+            DO I = 1, errmsg_length
+                IF (errmsg_array(i) == C_NULL_CHAR) EXIT
+                errmsg(i:i+1) = errmsg_array(i)
+            END DO
+
+            ! remove new line character at the end of the string
+            IF (errmsg(I-1:I) == ACHAR(10)) THEN
+                errmsg(I-1:I) = ""
+            END IF
+        END IF
+
+    END SUBROUTINE PC_errmsg
+    !==================================================================    
+
+    !==================================================================
+    SUBROUTINE PC_errhandler(new_handler, old_handler)
+        TYPE(PC_errhandler_t), INTENT(IN) :: new_handler
+        TYPE(PC_errhandler_t), INTENT(OUT), OPTIONAL :: old_handler
+
+        TYPE(PC_errhandler_t) :: tmp_handler
+
+        IF (PRESENT(old_handler)) THEN
+            old_handler = PC_errhandler_f(new_handler)
+        ELSE
+            tmp_handler = PC_errhandler_f(new_handler)
+        END IF
+
+    END SUBROUTINE PC_errhandler
+    !==================================================================
+
+
+    !==================================================================
     SUBROUTINE PC_parse_path(path,tree)
         CHARACTER(LEN=*), INTENT(IN) :: path
         TYPE(PC_tree_t), INTENT(OUT) :: tree
@@ -163,13 +265,10 @@ MODULE paraconf
     END SUBROUTINE PC_len
     !==================================================================
     
-    
-    
     !==================================================================
-    SUBROUTINE PC_get(tree_in,index_fmt,tree_out)
-        TYPE(PC_tree_t), INTENT(IN) :: tree_in
+    TYPE(PC_tree_t) FUNCTION PC_get_f0(tree, index_fmt)
+        TYPE(PC_tree_t), INTENT(IN) :: tree
         CHARACTER(LEN=*), INTENT(IN) :: index_fmt
-        TYPE(PC_tree_t), INTENT(OUT) :: tree_out
 
         INTEGER :: i
         CHARACTER(C_CHAR), TARGET :: C_index_fmt(len_trim(index_fmt)+1)
@@ -179,12 +278,10 @@ MODULE paraconf
         end do
         C_index_fmt(len_trim(index_fmt)+1) = C_NULL_CHAR
 
-        tree_out = PC_get_f(tree_in,c_loc(C_index_fmt))
+        PC_get_f0 = PC_get_f0_c(tree,c_loc(C_index_fmt))
 
-    END SUBROUTINE PC_get
+    END FUNCTION PC_get_f0
     !==================================================================
-    
-    
     
     !==================================================================
     SUBROUTINE PC_int(tree_in,value,status)
