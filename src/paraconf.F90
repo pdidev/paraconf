@@ -182,21 +182,31 @@ MODULE paraconf
     !==================================================================
     SUBROUTINE PC_errmsg(errmsg)
         CHARACTER(*), INTENT(OUT) :: errmsg
-        CHARACTER, POINTER, DIMENSION(:) :: errmsg_array
-        CHARACTER(LEN=PC_ERRMSG_MAXLENGTH) :: tmpmsg
+        CHARACTER(KIND=C_CHAR), POINTER, DIMENSION(:) :: errmsg_array
+        CHARACTER(LEN=:), ALLOCATABLE :: tmpmsg
         INTEGER :: errmsg_length
         INTEGER :: I
 
+        errmsg_length = LEN(errmsg)
         errmsg = ""
-        CALL C_F_POINTER(PC_errmsg_f(), errmsg_array, [PC_ERRMSG_MAXLENGTH])
+        CALL C_F_POINTER(PC_errmsg_f(), errmsg_array, [errmsg_length])
         IF (ASSOCIATED(errmsg_array)) THEN
-                
-            DO I = 1, PC_ERRMSG_MAXLENGTH
+
+           ! The allocate statement does not work with gfortran < 4.8 
+           ! so we use the suggested work around
+           ! https://gcc.gnu.org/bugzilla/show_bug.cgi?id=51055
+           ! ALLOCATE(CHARACTER(errmsg_length)::tmpmsg)     
+           tmpmsg = (REPEAT(' ', errmsg_length))
+
+            DO I = 1, errmsg_length
                 tmpmsg(i:i+1) = errmsg_array(i)
+                IF (errmsg_array(i) == CHAR(0)) EXIT                
             END DO
 
-            errmsg_length = LEN_TRIM(tmpmsg(1:INDEX(tmpmsg, CHAR(0))))
-            errmsg = tmpmsg(1:errmsg_length-1)
+            errmsg = tmpmsg(1:I-1)
+
+            ! rely on automatic deallocation?
+            ! IF (ALLOCATED(tmpmsg)) DEALLOCATE(tmpmsg)
         END IF
 
     END SUBROUTINE PC_errmsg
