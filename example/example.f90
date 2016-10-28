@@ -102,8 +102,7 @@ PROGRAM example
   print *, "trying to access an invalid node should print an error message"
   call PC_status(PC_get(tree1,".invalid_node"), ierr)
   call PC_errmsg(errmsg)
-  ! watch out for the new line character (achar(10))
-  if (trim(errmsg) /= ("Key `invalid_node' not found in (ROOT)"//achar(10))) then
+  if (trim(errmsg) /= ("Key `invalid_node' not found in (ROOT)")) then
      print *, "error with error message, got `", trim(errmsg),"'"
      stop 1
   endif
