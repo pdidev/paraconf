@@ -31,6 +31,8 @@
 #include "status.h"
 #include "tools.h"
 
+#include "ypath.h"
+
 static const char *nodetype[4] = {
 	"none",
 	"scalar",

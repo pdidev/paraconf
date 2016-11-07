@@ -34,7 +34,7 @@ extern "C" {
 #include <yaml.h>
 #include <mpi.h>
 
-#include <paraconf_export.h>
+#include "paraconf_export.h"
 
 /** \file paraconf.h
  */
