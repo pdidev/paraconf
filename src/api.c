@@ -202,7 +202,7 @@ PC_status_t PC_double(PC_tree_t tree, double* value)
 	char *endptr;
 	*value = strtod((char*)tree.node->data.scalar.value, &endptr);
 	if ( *endptr ) {
-		char *content; tree.status = PC_string(tree, &content);
+		char *content=NULL; tree.status = PC_string(tree, &content);
 		tree.status = PC_make_err(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
 		free(content);
 	}
@@ -217,7 +217,7 @@ PC_status_t PC_string(PC_tree_t tree, char** value)
 		tree.status = PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
 
-	int len; tree.status = PC_len(tree, &len); if (tree.status) return tree.status;
+	int len=0; tree.status = PC_len(tree, &len); if (tree.status) return tree.status;
 	*value = malloc(len+1);
 
 	strncpy(*value, (char*)tree.node->data.scalar.value, len+1);

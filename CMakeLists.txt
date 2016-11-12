@@ -39,6 +39,7 @@ endif()
 include(AddCCompilerFlags)
 include(GenerateExportHeader)
 include(CMakePackageConfigHelpers)
+include(ExternalProject)
 
 
 # Build options
@@ -68,7 +69,36 @@ find_package(MPI REQUIRED)
 if("${USE_SYSTEM_YAML}")
 	find_package(LibYaml REQUIRED)
 else()
-	add_subdirectory(vendor/libyaml/)
+	if("${BUILD_SHARED_LIBS}" OR "${CMAKE_POSITION_INDEPENDENT_CODE}")
+		set(YAML_PIC ON)
+	else()
+		set(YAML_PIC OFF)
+	endif()
+	ExternalProject_Add(LibYaml
+			EXCLUDE_FROM_ALL 1
+			SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/yaml-0.1.7/"
+			BINARY_DIR LibYaml-build/
+			CMAKE_CACHE_ARGS
+					"-DCMAKE_BUILD_TYPE:string=${CMAKE_BUILD_TYPE}"
+					"-DCMAKE_C_COMPILER:string=${CMAKE_C_COMPILER}"
+					"-DCMAKE_C_FLAGS:string=${CMAKE_C_FLAGS}"
+					"-DCMAKE_C_FLAGS_DEBUG:string=${CMAKE_C_FLAGS_DEBUG}"
+					"-DCMAKE_C_FLAGS_MINSIZEREL:string=${CMAKE_C_FLAGS_MINSIZEREL}"
+					"-DCMAKE_C_FLAGS_RELEASE:string=${CMAKE_C_FLAGS_RELEASE}"
+					"-DCMAKE_C_FLAGS_RELWITHDEBINFO:string=${CMAKE_C_FLAGS_RELWITHDEBINFO}"
+					"-DCMAKE_STATIC_LINKER_FLAGS:string=${CMAKE_STATIC_LINKER_FLAGS}"
+					"-DCMAKE_STATIC_LINKER_FLAGS_DEBUG:string=${CMAKE_STATIC_LINKER_FLAGS_DEBUG}"
+					"-DCMAKE_STATIC_LINKER_FLAGS_MINSIZEREL:string=${CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL}"
+					"-DCMAKE_STATIC_LINKER_FLAGS_RELEASE:string=${CMAKE_STATIC_LINKER_FLAGS_RELEASE}"
+					"-DCMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:string=${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO}"
+					"-DCMAKE_POSITION_INDEPENDENT_CODE:bool=${YAML_PIC}"
+			INSTALL_COMMAND true
+	)
+	add_library(yaml STATIC IMPORTED)
+	set_target_properties(yaml PROPERTIES
+			IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/LibYaml-build/libyaml.a
+			INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/vendor/yaml-0.1.7/include")
+	add_dependencies(yaml LibYaml)
 endif()
 
 
@@ -115,7 +145,6 @@ install(FILES include/paraconf.h "${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
 #Fortran version
 if("${ENABLE_FORTRAN}")
 	add_library(paraconf_f90 src/paraconf.F90)
-	add_compiler_flags(paraconf_f90 PRIVATE -fimplicit-none)
 	target_link_libraries(paraconf_f90 paraconf)
 	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modinclude")
 	target_include_directories(paraconf_f90 INTERFACE
