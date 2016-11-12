@@ -335,27 +335,25 @@ MODULE paraconf
         TYPE(C_PTR),TARGET :: C_pointer
         CHARACTER, DIMENSION(:), POINTER :: F_pointer
 
+        value = ""
+        tmp = int(PC_string_f(tree_in,c_loc(C_pointer)))
+        if (PRESENT(status)) status = tmp
 
-        if(PRESENT(status)) then
-            status = int(PC_string_f(tree_in,c_loc(C_pointer)))
-        else
-            tmp = int(PC_string_f(tree_in,c_loc(C_pointer)))
+        if (tmp == PC_OK) then
+
+           call PC_len(tree_in,tab_lengh(1))  
+           
+           call c_f_pointer(C_pointer,F_pointer,tab_lengh)
+           do i=1,tab_lengh(1)
+              value(i:i) = F_pointer(i)
+           end do
+           
+           do i=tab_lengh(1)+1,len(value)
+              value(i:i) = ' '
+           end do
+           
+           call free_f(C_pointer)
         end if
-
-        call PC_len(tree_in,tab_lengh(1))  
-
-        call c_f_pointer(C_pointer,F_pointer,tab_lengh)
-
-        do i=1,tab_lengh(1)
-            value(i:i) = F_pointer(i)
-        end do
-
-        do i=tab_lengh(1)+1,len(value)
-            value(i:i) = ' '
-        end do 
-
-        call free_f(C_pointer)
-
     END SUBROUTINE PC_string
     !==================================================================
     

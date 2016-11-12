@@ -6,7 +6,6 @@ PROGRAM example
   CHARACTER(20) :: a_string
   REAL(8) :: a_float
   INTEGER :: ierr
-  TYPE(PC_errhandler_t) :: old_handler, new_handler
   CHARACTER(LEN=PC_ERRMSG_MAXLENGTH) :: errmsg
 
   call PC_parse_path("example.yml",tree1)
@@ -75,8 +74,7 @@ PROGRAM example
   
   ! First we need to pass the NULL_HANDLER
   ! The default handler is the PC_ASSERT_HANDLER which aborts on error
-  new_handler = PC_NULL_HANDLER
-  call PC_errhandler(new_handler, old_handler)
+  call PC_errhandler(PC_NULL_HANDLER)
 
   print *, "reading a string as a string should be ok"
   call PC_string(PC_get(tree1,".a_string"), a_string, ierr)
@@ -101,11 +99,28 @@ PROGRAM example
 
   print *, "trying to access an invalid node should print an error message"
   call PC_status(PC_get(tree1,".invalid_node"), ierr)
+  if (ierr /= PC_NODE_NOT_FOUND) then
+    print *, "error with ierr==PC_NODE_NOT_FOUND, got ", ierr
+    stop 1
+  endif
   call PC_errmsg(errmsg)
   if (trim(errmsg) /= ("Key `invalid_node' not found in (ROOT)")) then
-     print *, "error with error message, got `", trim(errmsg),"'"
-     stop 1
+    print *, "error with error message, got `", trim(errmsg),"'"
+    stop 1
   endif
+
+  print *, "trying to access an invalid node as a string should print an error message"
+  call PC_string(PC_get(tree1,".invalid_node"), a_string, ierr)
+  if (ierr /= PC_NODE_NOT_FOUND) then
+    print *, "error with ierr==PC_NODE_NOT_FOUND, got ", ierr
+    stop 1
+  endif
+  call PC_errmsg(errmsg)
+  if (trim(errmsg) /= ("Key `invalid_node' not found in (ROOT)")) then
+    print *, "error with error message, got `", trim(errmsg),"'"
+    stop 1
+  endif
+
   
   call PC_tree_destroy(tree1)
 
