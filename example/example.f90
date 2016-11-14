@@ -5,6 +5,7 @@ PROGRAM example
   INTEGER :: a_int
   CHARACTER(20) :: a_string
   REAL(8) :: a_float
+  LOGICAL :: a_log
   INTEGER :: ierr
   CHARACTER(LEN=PC_ERRMSG_MAXLENGTH) :: errmsg
 
@@ -70,6 +71,79 @@ PROGRAM example
     stop 1
   endif
 
+  call PC_log(PC_get(tree1, ".a_true"), a_log)
+  if ( .not. a_log ) then
+    print *, "error with a_true, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_True"), a_log)
+  if ( .not. a_log ) then
+    print *, "error with a_True, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_TRUE"), a_log)
+  if ( .not. a_log ) then
+    print *, "error with a_TRUE, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_yes"), a_log)
+  if ( .not. a_log ) then
+    print *, "error with a_yes, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_Yes"), a_log)
+  if ( .not. a_log ) then
+    print *, "error with a_Yes, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_YES"), a_log)
+  if ( .not. a_log ) then
+    print *, "error with a_YES, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_false"), a_log)
+  if ( a_log ) then
+    print *, "error with a_false, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_False"), a_log)
+  if ( a_log ) then
+    print *, "error with a_False, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_FALSE"), a_log)
+  if ( a_log ) then
+    print *, "error with a_FALSE, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_no"), a_log)
+  if ( a_log ) then
+    print *, "error with a_no, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_No"), a_log)
+  if ( a_log ) then
+    print *, "error with a_No, ", a_log
+    stop 1
+  endif
+
+  call PC_log(PC_get(tree1, ".a_NO"), a_log)
+  if ( a_log ) then
+    print *, "error with a_NO, ", a_log
+    stop 1
+  endif
+
+
   ! Test status values
   
   ! First we need to pass the NULL_HANDLER
@@ -120,6 +194,8 @@ PROGRAM example
     print *, "error with error message, got `", trim(errmsg),"'"
     stop 1
   endif
+
+
 
   
   call PC_tree_destroy(tree1)

@@ -16,3 +16,18 @@ another_list:
 another_map:
     first: 40
     second: 41
+
+# logical
+a_true: true
+a_True: True
+a_TRUE: TRUE
+a_yes: yes
+a_Yes: Yes
+a_YES: YES
+a_false: false
+a_False: False
+a_FALSE: FALSE
+a_no: no
+a_No: No
+a_NO: NO
+a_badlog: toto

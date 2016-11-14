@@ -360,6 +360,53 @@ MODULE paraconf
     
     
     !==================================================================
+    SUBROUTINE PC_log(tree_in,value,status)
+        TYPE(PC_tree_t), INTENT(IN) :: tree_in
+        LOGICAL, INTENT(OUT) :: value
+        INTEGER, INTENT(OUT), OPTIONAL :: status
+
+        CHARACTER(8) :: log_string ! temp string to read a log entry
+        INTEGER :: tmp
+
+        ! Read the value as a string
+        ! Then check whether it corresponds to one of the valid logical
+        ! value (True/Yes/False/No), 
+        ! if the value is not valid, status returns PC_INVALID_PARAMETER
+        log_string = ""
+        CALL PC_string(tree_in, log_string, tmp)
+
+        IF (tmp == PC_OK) then
+
+           IF ( (log_string == "True") .OR. &
+                (log_string == "true") .OR. &
+                (log_string == "TRUE") .OR. &
+                (log_string == "Yes")  .OR. &
+                (log_string == "yes")  .OR. &
+                (log_string == "YES")) THEN
+              value = .true.
+
+           ELSE IF ((log_string == "False") .OR. &
+                    (log_string == "false") .OR. &
+                    (log_string == "FALSE") .OR. &
+                    (log_string == "No")    .OR. &
+                    (log_string == "no")    .OR. &
+                    (log_string == "NO"))   THEN
+              value = .false.
+
+           ELSE
+              value = .false.
+              tmp = PC_INVALID_PARAMETER
+
+           END IF
+        END IF
+
+        IF (PRESENT(status)) status = tmp
+    END SUBROUTINE PC_log
+    !==================================================================
+    
+    
+    
+    !==================================================================
     SUBROUTINE PC_tree_destroy(tree_in,status)
         TYPE(PC_tree_t), INTENT(INOUT), TARGET :: tree_in
         INTEGER, INTENT(OUT), OPTIONAL :: status
