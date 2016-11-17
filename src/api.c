@@ -173,7 +173,7 @@ PC_status_t PC_len(PC_tree_t tree, int *res)
 	return tree.status;
 }
 
-PC_status_t PC_int(PC_tree_t tree, int *res)
+PC_status_t PC_int(PC_tree_t tree, long *res)
 {
 	if ( tree.status ) return tree.status;
 

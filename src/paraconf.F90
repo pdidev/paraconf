@@ -286,19 +286,19 @@ MODULE paraconf
     !==================================================================
     SUBROUTINE PC_int(tree_in,value,status)
         TYPE(PC_tree_t), INTENT(IN) :: tree_in
-        INTEGER, INTENT(OUT), TARGET :: value
+        INTEGER, INTENT(OUT) :: value
         INTEGER, INTENT(OUT), OPTIONAL :: status
 
         INTEGER :: tmp
+        INTEGER(C_long), TARGET :: longvalue
 
         if(PRESENT(status)) then
-            status = int(PC_int_f(tree_in,c_loc(value)))
+            status = int(PC_int_f(tree_in,c_loc(longvalue)))
         else
-            tmp = int(PC_int_f(tree_in,c_loc(value)))
+            tmp = int(PC_int_f(tree_in,c_loc(longvalue)))
         end if
 
-        !value = Fp_value
-        !print *, "value =",Fp_value
+        value = int(longvalue)
 
     END SUBROUTINE PC_int
     !==================================================================
@@ -308,16 +308,19 @@ MODULE paraconf
     !==================================================================
     SUBROUTINE PC_double(tree_in,value,status)
         TYPE(PC_tree_t), INTENT(IN) :: tree_in
-        REAL(8), INTENT(OUT), TARGET :: value
+        REAL(8), INTENT(OUT) :: value
         INTEGER, INTENT(OUT), OPTIONAL :: status
 
         INTEGER :: tmp
+        REAL(C_double), TARGET :: doublevalue
 
         if(PRESENT(status)) then
-            status = int(PC_double_f(tree_in,c_loc(value)))
+            status = int(PC_double_f(tree_in,c_loc(doublevalue)))
         else
-            tmp = int(PC_double_f(tree_in,c_loc(value)))
+            tmp = int(PC_double_f(tree_in,c_loc(doublevalue)))
         end if
+        
+        value = real(doublevalue, 8)
 
     END SUBROUTINE PC_double
     !==================================================================
