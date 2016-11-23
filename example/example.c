@@ -33,6 +33,31 @@ int main(int argc, char *argv[])
 	assert(another_list_1==31);
 	int another_map_second; PC_int(PC_get(conf, ".another_map.second"), &another_map_second);
 	assert(another_map_second==41);
+
+	int a_true; PC_log(PC_get(conf, ".a_true"), &a_true);
+	assert(a_true == 1);
+	int a_True; PC_log(PC_get(conf, ".a_True"), &a_True);
+	assert(a_True == 1);
+	int a_TRUE; PC_log(PC_get(conf, ".a_TRUE"), &a_TRUE);
+	assert(a_TRUE == 1);
+	int a_yes; PC_log(PC_get(conf, ".a_yes"), &a_yes);
+	assert(a_yes == 1);
+	int a_Yes; PC_log(PC_get(conf, ".a_Yes"), &a_Yes);
+	assert(a_Yes == 1);
+	int a_YES; PC_log(PC_get(conf, ".a_YES"), &a_YES);
+	assert(a_YES == 1);
+	int a_false; PC_log(PC_get(conf, ".a_false"), &a_false);
+	assert(a_false == 0);
+	int a_False; PC_log(PC_get(conf, ".a_False"), &a_False);
+	assert(a_False == 0);
+	int a_FALSE; PC_log(PC_get(conf, ".a_FALSE"), &a_FALSE);
+	assert(a_FALSE == 0);
+	int a_no; PC_log(PC_get(conf, ".a_no"), &a_no);
+	assert(a_no == 0);
+	int a_No; PC_log(PC_get(conf, ".a_No"), &a_No);
+	assert(a_No == 0);
+	int a_NO; PC_log(PC_get(conf, ".a_NO"), &a_NO);
+	assert(a_NO == 0);
 	
 	return 0;
 }

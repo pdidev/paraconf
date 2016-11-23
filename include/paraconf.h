@@ -243,6 +243,18 @@ PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double *value);
  */
 PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
 
+/** Returns the logical value of a scalar node
+ *
+ * Does nothing if the provided tree is in error
+ *
+ * \param[in,out] status status of the command execution, does nothing if not valid in input
+ * \param[in] tree the node
+ * \param[out] value the logical value (false=0, true=1) of the scalar node
+ * \return the status of the execution (valid until the next PC_* call in the same thread)
+ */
+PC_status_t PARACONF_EXPORT PC_log(PC_tree_t tree, int *value);
+
+
 /** Broadcasts yaml documents over MPI
  *
  * \param[in,out] document an array of documents that should already be allocated.

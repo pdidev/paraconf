@@ -151,6 +151,18 @@ MODULE paraconf
           END FUNCTION PC_string_f
     END INTERFACE
 
+    INTERFACE
+        INTEGER(C_INT) &
+          FUNCTION PC_log_f(tree,value) &
+            bind(C, name="PC_log")   
+            USE iso_C_binding 
+            USE paraconf_types
+            TYPE(PC_tree_t), VALUE :: tree
+            TYPE(C_PTR), VALUE :: value
+          END FUNCTION PC_log_f
+    END INTERFACE
+
+
 
     INTERFACE
         INTEGER(C_INT) &
@@ -365,42 +377,22 @@ MODULE paraconf
         LOGICAL, INTENT(OUT) :: value
         INTEGER, INTENT(OUT), OPTIONAL :: status
 
-        CHARACTER(8) :: log_string ! temp string to read a log entry
         INTEGER :: tmp
+        INTEGER, TARGET :: ilog
 
-        ! Read the value as a string
-        ! Then check whether it corresponds to one of the valid logical
-        ! value (True/Yes/False/No), 
-        ! if the value is not valid, status returns PC_INVALID_PARAMETER
-        log_string = ""
-        CALL PC_string(tree_in, log_string, tmp)
+        ilog = 0
+        if(PRESENT(status)) then
+            status = int(PC_log_f(tree_in,c_loc(ilog)))
+        else
+            tmp = int(PC_log_f(tree_in,c_loc(ilog)))
+        end if
 
-        IF (tmp == PC_OK) then
+        if (ilog == 0) then
+           value = .false.
+        else
+           value = .true.
+        end if
 
-           IF ( (log_string == "True") .OR. &
-                (log_string == "true") .OR. &
-                (log_string == "TRUE") .OR. &
-                (log_string == "Yes")  .OR. &
-                (log_string == "yes")  .OR. &
-                (log_string == "YES")) THEN
-              value = .true.
-
-           ELSE IF ((log_string == "False") .OR. &
-                    (log_string == "false") .OR. &
-                    (log_string == "FALSE") .OR. &
-                    (log_string == "No")    .OR. &
-                    (log_string == "no")    .OR. &
-                    (log_string == "NO"))   THEN
-              value = .false.
-
-           ELSE
-              value = .false.
-              tmp = PC_INVALID_PARAMETER
-
-           END IF
-        END IF
-
-        IF (PRESENT(status)) status = tmp
     END SUBROUTINE PC_log
     !==================================================================
     

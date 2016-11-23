@@ -225,6 +225,45 @@ PC_status_t PC_string(PC_tree_t tree, char** value)
 	return tree.status;
 }
 
+PC_status_t PC_log(PC_tree_t tree, int *res)
+{
+	if ( tree.status ) return tree.status;
+
+	if ( tree.node->type != YAML_SCALAR_NODE ) {
+		tree.status = PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+	}
+
+	int len=0; tree.status = PC_len(tree, &len); 
+	if (tree.status) return tree.status;
+	
+	char *value = (char*)tree.node->data.scalar.value;
+
+	if ((strcmp(value,"True") == 0) ||
+	    (strcmp(value,"true") == 0) ||
+	    (strcmp(value,"TRUE") == 0))
+	  *res = 1;
+	else if ((strcmp(value,"Yes") == 0) ||
+		 (strcmp(value,"yes") == 0) ||
+		 (strcmp(value,"YES") == 0))
+	  *res = 1;
+	else if ((strcmp(value,"False") == 0) ||
+		 (strcmp(value,"false") == 0) ||
+		 (strcmp(value,"FALSE") == 0))
+	  *res = 0;
+	else if ((strcmp(value,"No") == 0) ||
+		 (strcmp(value,"no") == 0) ||
+		 (strcmp(value,"NO") == 0))
+	  *res = 0;
+	else
+	  {
+	    char *content=NULL; tree.status = PC_string(tree, &content);
+	    tree.status = PC_make_err(PC_INVALID_PARAMETER, "Expected logical expression, found `%s'\n", content);
+	    free(content);
+	  }
+	return tree.status;
+ }
+
+
 PC_status_t PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm)
 {
 	yaml_emitter_t emitter;
