@@ -227,14 +227,20 @@ PC_status_t PC_string(PC_tree_t tree, char** value)
 
 PC_status_t PC_log(PC_tree_t tree, int *res)
 {
-	if ( tree.status ) return tree.status;
+        char *content;
+	if ( tree.status ) 
+	  {
+	    PC_handle_err_tree(PC_make_err(tree.status, "Tree is in error"), err0);
+	  }
 
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		tree.status = PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+	  PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
 	}
 
 	int len=0; tree.status = PC_len(tree, &len); 
-	if (tree.status) return tree.status;
+	if (tree.status) {
+	  PC_handle_err_tree(PC_make_err(tree.status, "Could not access to node length parameter."), err0);
+	}
 	
 	char *value = (char*)tree.node->data.scalar.value;
 
@@ -256,10 +262,14 @@ PC_status_t PC_log(PC_tree_t tree, int *res)
 	  *res = 0;
 	else
 	  {
-	    char *content=NULL; tree.status = PC_string(tree, &content);
-	    tree.status = PC_make_err(PC_INVALID_PARAMETER, "Expected logical expression, found `%s'\n", content);
-	    free(content);
+	    tree.status = PC_string(tree, &content);
+	    PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "Expected logical expression, found `%s'\n", content), err1);
 	  }
+
+	return tree.status;
+ err1:
+	free(content);
+ err0:
 	return tree.status;
  }
 
