@@ -228,10 +228,9 @@ PC_status_t PC_string(PC_tree_t tree, char** value)
 PC_status_t PC_log(PC_tree_t tree, int *res)
 {
         char *content;
-	if ( tree.status ) 
-	  {
-	    PC_handle_err_tree(PC_make_err(tree.status, "Tree is in error"), err0);
-	  }
+	if ( tree.status ) {
+	  PC_handle_err_tree(PC_make_err(tree.status, "Tree is in error"), err0);
+	}
 
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
 	  PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
