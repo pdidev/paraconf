@@ -219,7 +219,7 @@ PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int *value);
  * \param[out] value the int value of the scalar node
  * \return the status of the execution (valid until the next PC_* call in the same thread)
  */
-PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, int *value);
+PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, long *value);
 
 /** Returns the floating point value of a scalar node
  *
@@ -263,7 +263,7 @@ PC_status_t PARACONF_EXPORT PC_log(PC_tree_t tree, int *value);
  * \param[in] root the rank of the root node
  * \param[in] comm the set of precesses over wich to broadcast
  */
-PC_status_t PARACONF_EXPORT PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm);
+//PC_status_t PARACONF_EXPORT PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm);
 
 /** Destroy the tree.
  * All the trees referring to this tree will become unusable
