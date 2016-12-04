@@ -153,13 +153,13 @@ MODULE paraconf
 
     INTERFACE
         INTEGER(C_INT) &
-          FUNCTION PC_log_f(tree,value) &
-            bind(C, name="PC_log")   
+          FUNCTION PC_bool_f(tree,value) &
+            bind(C, name="PC_bool")   
             USE iso_C_binding 
             USE paraconf_types
             TYPE(PC_tree_t), VALUE :: tree
             TYPE(C_PTR), VALUE :: value
-          END FUNCTION PC_log_f
+          END FUNCTION PC_bool_f
     END INTERFACE
 
 
@@ -185,13 +185,12 @@ MODULE paraconf
     CONTAINS 
 
     !==================================================================
-    SUBROUTINE PC_status(tree,status)
+    INTEGER FUNCTION PC_status(tree)
         TYPE(PC_tree_t), INTENT(IN) :: tree
-        INTEGER, INTENT(OUT) :: status
 
-        status = int(tree%status,kind(status))
+        PC_status = int(tree%status)
 
-    END SUBROUTINE PC_status
+    END FUNCTION PC_status
     !==================================================================
 
    
@@ -385,9 +384,9 @@ MODULE paraconf
 
         ilog = 0
         if(PRESENT(status)) then
-            status = int(PC_log_f(tree_in,c_loc(ilog)))
+            status = int(PC_bool_f(tree_in,c_loc(ilog)))
         else
-            tmp = int(PC_log_f(tree_in,c_loc(ilog)))
+            tmp = int(PC_bool_f(tree_in,c_loc(ilog)))
         end if
 
         if (ilog == 0) then

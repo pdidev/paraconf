@@ -1,63 +1,47 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <math.h>
-#include <yaml.h>
 #include <paraconf.h>
 
 int main(int argc, char *argv[])
 {
-
 	PC_tree_t conf = PC_parse_path("example.yml");
 	
 	long a_int; PC_int(PC_get(conf, ".a_int"), &a_int);
-	assert(a_int==100);
 	double a_float; PC_double(PC_get(conf, ".a_float"), &a_float);
-	assert(fabs(a_float-100.1)<1e-10);
 	char* a_string; PC_string(PC_get(conf, ".a_string"), &a_string);
-	assert(!strcmp("this is a string", a_string));
+	int a_yes; PC_bool(PC_get(conf, ".a_yes"), &a_yes);
+	printf("a_int=%ld a_float=%f a_string=%s a_yes=%s\n", a_int, a_float, a_string, a_yes?"true":"false");
 	free(a_string);
+	
+	printf("a_list=[ ");
 	int a_list_len; PC_len(PC_get(conf, ".a_list"), &a_list_len);
-	assert(a_list_len==2);
-	long a_list_0; PC_int(PC_get(conf, ".a_list[0]"), &a_list_0);
-	assert(a_list_0==10);
+	for ( int ii=0; ii<a_list_len; ++ii ) {
+		long a_list_ii; PC_int(PC_get(conf, ".a_list[%d]", ii), &a_list_ii);
+		printf("%ld ", a_list_ii);
+	}
+	printf("]\n");
+	
+	printf("a_map={   ");
 	int a_map_len; PC_len(PC_get(conf, ".a_map"), &a_map_len);
-	assert(a_map_len==2);
-	char *a_map_0_k; PC_string(PC_get(conf, ".a_map{0}"), &a_map_0_k);
-	assert(!strcmp("first", a_map_0_k));
-	free(a_map_0_k);
-	long a_map_0_v; PC_int(PC_get(conf, ".a_map<0>"), &a_map_0_v);
-	assert(a_map_0_v == 20);
-	long another_list_1; PC_int(PC_get(conf, ".another_list[1]"), &another_list_1);
-	assert(another_list_1==31);
-	long another_map_second; PC_int(PC_get(conf, ".another_map.second"), &another_map_second);
-	assert(another_map_second==41);
-
-	int a_true; PC_log(PC_get(conf, ".a_true"), &a_true);
-	assert(a_true == 1);
-	int a_True; PC_log(PC_get(conf, ".a_True"), &a_True);
-	assert(a_True == 1);
-	int a_TRUE; PC_log(PC_get(conf, ".a_TRUE"), &a_TRUE);
-	assert(a_TRUE == 1);
-	int a_yes; PC_log(PC_get(conf, ".a_yes"), &a_yes);
-	assert(a_yes == 1);
-	int a_Yes; PC_log(PC_get(conf, ".a_Yes"), &a_Yes);
-	assert(a_Yes == 1);
-	int a_YES; PC_log(PC_get(conf, ".a_YES"), &a_YES);
-	assert(a_YES == 1);
-	int a_false; PC_log(PC_get(conf, ".a_false"), &a_false);
-	assert(a_false == 0);
-	int a_False; PC_log(PC_get(conf, ".a_False"), &a_False);
-	assert(a_False == 0);
-	int a_FALSE; PC_log(PC_get(conf, ".a_FALSE"), &a_FALSE);
-	assert(a_FALSE == 0);
-	int a_no; PC_log(PC_get(conf, ".a_no"), &a_no);
-	assert(a_no == 0);
-	int a_No; PC_log(PC_get(conf, ".a_No"), &a_No);
-	assert(a_No == 0);
-	int a_NO; PC_log(PC_get(conf, ".a_NO"), &a_NO);
-	assert(a_NO == 0);
+	for ( int ii=0; ii<a_list_len; ++ii ) {
+		char *a_map_ii_k; PC_string(PC_get(conf, ".a_map{%d}", ii), &a_map_ii_k);
+		long a_map_ii_v; PC_int(PC_get(conf, ".a_map<%d>", ii), &a_map_ii_v);
+		printf("%s => %ld   ", a_map_ii_k, a_map_ii_v);
+		free(a_map_ii_k);
+	}
+	printf("}\n");
+	
+	PC_errhandler_t errh = PC_errhandler(PC_NULL_HANDLER);
+	PC_tree_t some_key = PC_get(conf, ".some_key");
+	PC_errhandler(errh);
+	
+	printf("config %s `some_key'\n", PC_status(some_key)?"does not contain":"contains");
+	
+	PC_tree_destroy(&conf);
 	
 	return 0;
 }

@@ -33,16 +33,22 @@ do { \
 	if ( status ) goto free_stamp; \
 } while( 0 )
 
-#define handle_tree(calltree, free_stamp)\
+#define PC_handle_tree(calltree, free_stamp)\
 do { \
-	tree = calltree; \
-	if ( PC_status(tree) ) goto free_stamp; \
+	restree = calltree; \
+	if ( PC_status(restree) ) goto free_stamp; \
 } while( 0 )
 
 #define PC_handle_err_tree(callstatus, free_stamp)\
 do { \
-	tree.status = callstatus; \
-	if ( PC_status(tree) ) goto free_stamp; \
+	restree.status = callstatus; \
+	if ( PC_status(restree) ) goto free_stamp; \
+} while( 0 )
+
+#define PC_handle_tree_err(calltree, free_stamp)\
+do { \
+	status = calltree.status; \
+	if ( status ) goto free_stamp; \
 } while( 0 )
 
 PC_status_t PC_make_err(PC_status_t status, const char* message, ...);

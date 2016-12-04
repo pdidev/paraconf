@@ -124,7 +124,6 @@ PC_errhandler_t PARACONF_EXPORT PC_errhandler(PC_errhandler_t handler);
  *
  * The tree created must be destroyed with PC_tree_destroy at the end.
  *
- * \param[out] status status of the command execution
  * \param[in] path the file path as a character string
  * \return the tree, valid as long as the containing document is
  */
@@ -137,7 +136,6 @@ PC_tree_t PARACONF_EXPORT PC_parse_path(const char *path);
  *
  * The tree created must be destroyed with PC_tree_destroy at the end.
  *
- * \param[out] status status of the command execution
  * \param[in] file the file containing the tree
  * \return the tree, valid as long as the containing document is
  */
@@ -150,7 +148,6 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
  *
  * The tree created must be destroyed with PC_tree_destroy at the end.
  *
- * \param[out] status status of the command execution
  * \param[in] document the document as a character string to parse
  * \return the tree, valid as long as the containing document is
  */
@@ -158,7 +155,6 @@ PC_tree_t PARACONF_EXPORT PC_parse_string(char *document);
 
 /** Returns the tree at the root of a document
  *
- * \param[out] status status of the command execution
  * \param[in] document the yaml document
  * \return the tree, valid as long as the containing document is
  */
@@ -179,7 +175,6 @@ PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
  *   e.g. .map<1>
  *   PC_get(0,map,"<1>"); is similar to k=PC_get(0,map,"{1}"); PC_get(0,map,".%s",k);
  *
- * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree a yaml tree
  * \param[in] index_fmt the ypath index, can be a printf-style format string
  * \param[in] ... the printf-style values
@@ -191,7 +186,6 @@ PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char *index_fmt, ...);
  *
  * Does nothing if the provided tree is in error
  *
- * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree a yaml tree
  * \param[in] index_fmt the ypath index, can be a printf-style format string
  * \param[in] va the printf-style values
@@ -203,10 +197,9 @@ PC_tree_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char *index_fmt, va_list
  *
  * Does nothing if the provided tree is in error
  *
- * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the sequence or mapping
  * \param[out] value the length
- * \return the status of the execution (valid until the next PC_* call in the same thread)
+ * \return the status of the execution
  */
 PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int *value);
 
@@ -214,10 +207,9 @@ PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int *value);
  *
  * Does nothing if the provided tree is in error
  *
- * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the int-valued node
  * \param[out] value the int value of the scalar node
- * \return the status of the execution (valid until the next PC_* call in the same thread)
+ * \return the status of the execution
  */
 PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, long *value);
 
@@ -225,10 +217,9 @@ PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, long *value);
  *
  * Does nothing if the provided tree is in error
  *
- * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the floating-point-valued node
  * \param[out] value the floating point value of the scalar node
- * \return the status of the execution (valid until the next PC_* call in the same thread)
+ * \return the status of the execution
  */
 PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double *value);
 
@@ -236,23 +227,21 @@ PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double *value);
  *
  * Does nothing if the provided tree is in error
  *
- * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the node
  * \param[out] value the content of the scalar node as a newly allocated string that must be deallocated using free
- * \return the status of the execution (valid until the next PC_* call in the same thread)
+ * \return the status of the execution
  */
 PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
 
-/** Returns the logical value of a scalar node
+/** Returns the boolean value of a scalar node
  *
  * Does nothing if the provided tree is in error
  *
- * \param[in,out] status status of the command execution, does nothing if not valid in input
  * \param[in] tree the node
  * \param[out] value the logical value (false=0, true=1) of the scalar node
- * \return the status of the execution (valid until the next PC_* call in the same thread)
+ * \return the status of the execution
  */
-PC_status_t PARACONF_EXPORT PC_log(PC_tree_t tree, int *value);
+PC_status_t PARACONF_EXPORT PC_bool(PC_tree_t tree, int *value);
 
 
 /** Broadcasts yaml documents over MPI
