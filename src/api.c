@@ -299,13 +299,19 @@ err0:
 
 PC_status_t PC_broadcast( yaml_document_t* document, int count, int root, MPI_Comm comm )
 {
+        PC_status_t status = PC_OK;
+	if (count /= 1) {
+	  status = PC_make_err(PC_INVALID_PARAMETER, 
+			       "PC_broadcast supports only 1 document, found %d\n", count);
+	  PC_handle_err(status, err0);
+        }
+
 	yaml_emitter_t emitter;
 	yaml_emitter_initialize(&emitter);
 	yaml_emitter_set_width(&emitter, -1);
 	yaml_emitter_set_canonical(&emitter, 1);
 	yaml_emitter_open(&emitter);
 
-	count = count; // prevent unused warning
 
 	size_t buf_size = PC_BUFFER_SIZE/2;
 	unsigned char *buf = 0;
@@ -330,7 +336,11 @@ PC_status_t PC_broadcast( yaml_document_t* document, int count, int root, MPI_Co
 		yaml_parser_set_input_string(&parser, buf, data_size);
 		yaml_parser_load(&parser, document);
 	}
-	return PC_OK;
+	return status;
+
+err0:
+	return status;
+
 }
 
 PC_status_t PC_tree_destroy( PC_tree_t* tree )
