@@ -300,7 +300,7 @@ err0:
 PC_status_t PC_broadcast( yaml_document_t* document, int count, int root, MPI_Comm comm )
 {
         PC_status_t status = PC_OK;
-	if (count /= 1) {
+	if ( ! (count == 1) ) {
 	  status = PC_make_err(PC_INVALID_PARAMETER, 
 			       "PC_broadcast supports only 1 document, found %d\n", count);
 	  PC_handle_err(status, err0);
