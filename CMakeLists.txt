@@ -123,7 +123,7 @@ add_library(paraconf
 	src/status.c
 	src/ypath.c
 )
-add_compiler_flags(paraconf PRIVATE -std=c99 -Wall -Wextra -Werror)
+add_compiler_flags(paraconf PRIVATE -std=c99 -Wall -Wextra)
 generate_export_header(paraconf)
 set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
 set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
