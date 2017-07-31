@@ -1,0 +1,24 @@
+# Data
+
+key_1:
+  - abc
+  - def
+  - hij
+
+key_2:
+  pi: 3.141
+  e: 2.71
+
+functions:
+  fct1: x->3*x
+  fct2: x->e^x
+  fct3: y->cos(pi*y)
+
+complexKey:
+  k1: 3
+  k2: 5.18
+  k3: abc
+
+foo:
+  i1: x
+  i2: y

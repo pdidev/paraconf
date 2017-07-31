@@ -1,0 +1,33 @@
+# Schema
+
+key_1: list(str(max=3))
+key_2: map(num())
+functions: map(str())
+taratata: include('very_deep', required=False)
+
+complexKey:
+  k1: int()
+  k2: num()
+  k3: str()
+  k4: include('toto', required=False)
+  k5: include('very_deep', required=False)
+
+foo: include('bar')
+
+
+---
+bar:
+  i1: str()
+  i2: str()
+
+toto:
+  x: int()
+  y: str()
+  z: include('very_deep', required=False)
+
+non_used:
+  a: num()
+
+---
+very_deep:
+  t: num()
