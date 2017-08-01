@@ -2,6 +2,8 @@
 
 key_1: list(str(max=3))
 key_2: map(num())
+key_3: map(include('toto'), required=False)
+key_4: map(include('very_deep'), required=False)
 functions: map(str())
 taratata: include('very_deep', required=False)
 
@@ -19,11 +21,12 @@ foo: include('bar')
 bar:
   i1: str()
   i2: str()
+  # i3: include('very_deep', required=False)
 
 toto:
   x: int()
   y: str()
-  z: include('very_deep', required=False)
+  # z: include('very_deep', required=False)
 
 non_used:
   a: num()

@@ -30,6 +30,17 @@ class Struct_Array():
 
 
 
+class Struct_Boolean():
+    """Boolean primitive type"""
+
+    def __str__(self):
+        return 'Boolean()'
+
+    def declare(self, name):
+        return 'int ' + name + ';'
+
+
+
 class Struct_Float():
     """Float primitive type"""
     # type = None
@@ -50,8 +61,14 @@ class Struct_Include():
     # C_tag = 'int'
     # Fortran_tag = 'INTEGER'
 
+    def __init__(self, name=None):
+        self.included_type_name = name
+
     def __str__(self):
         return 'Include()'
+
+    def declare(self, name):
+        return '{} {};'.format(self.included_type_name, name)
 
     
 
@@ -76,22 +93,34 @@ class Struct_Map():
     # Fortran_tag = 'INTEGER'
 
     def __init__(self, sub_class=Null()):
+        
+        self.keys_sub_class = Struct_String()
+        
         if isinstance(sub_class, Number):
             self.sub_class = Struct_Float()
+            self.values_type_name = 'double'
         elif isinstance(sub_class, Integer):
             self.sub_class = Struct_Integer()
+            self.values_type_name = 'integer'
         elif isinstance(sub_class, String):
             self.sub_class = Struct_String()
+            self.values_type_name = 'string'
+        elif isinstance(sub_class, Include):
+            self.sub_class = Struct_Include(name=sub_class.get_name())
+            self.values_type_name = 'include'
         elif isinstance(sub_class, Null):
             self.sub_class = Struct_Null()
-        # self.type = type
-        self.C_tag = self.sub_class.C_tag + '*'
+
+        if self.values_type_name != 'include':
+            self.tag = 'MAP_ITEM_{}_t'.format(self.values_type_name)
+        else:
+            self.tag = 'MAP_ITEM_{}_t'.format(self.sub_class.included_type_name)
 
     def __str__(self):
-        return 'Map()'
+        return 'Map({}, {})'.format(str(self.keys_sub_class), str(self.sub_class))
 
     def declare(self, name):
-        return self.sub_class.C_tag + '* ' + name + '; // CHANGE ME!  <--- Map type'
+        return self.tag + '* ' + name + ';'
 
 
     

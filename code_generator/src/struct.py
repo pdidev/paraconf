@@ -20,6 +20,7 @@ class Structure(Schema):
         """Generate Intermediate Representation and schedule"""
         self._process_structure()
         self._merge_included_types()
+        self._handle_map_types()
         max_depth = self._update_depth()
         self._replace_forbidden_chars()
         schedule = self._make_schedule(max_depth)
@@ -55,10 +56,59 @@ class Structure(Schema):
                 self.update_struct(name=parent_key+'.'+key+'_t', struct_var_name=key, struct_type=value, struct_parents=parent)
 
 
+    def _handle_map_types(self):
+        """Create MAP_ITEM_<type>_t sub-types and merge all dependencies"""
+
+        print('Handling Map types', end=' ... ')
+
+        # We gather all keys corresponding to a map and the type of associated values
+        L = []
+        for key in self.structure.keys():
+            if isinstance(self.structure[key].primitive_type, Struct_Map):
+                L.append((key, self.structure[key].primitive_type.tag))
+
+        # We iterate over each element of L
+        for element in L:
+            key = element[0]
+            values_type_name = element[1]
+            self.structure[key].dependencies.append(values_type_name)
+
+            if 'ITEM_KEY_t' not in self.structure.keys():
+                self.update_struct(name='ITEM_KEY_t', struct_parents=[values_type_name], struct_var_name='key')
+
+            # The case where the values' type is defined by an include is treated apart
+            if self.structure[key].primitive_type.values_type_name != 'include':
+                self.update_struct(name='ITEM_{}_t'.format(self.structure[key].primitive_type.values_type_name), struct_parents=[values_type_name], struct_var_name='value')
+                self.update_struct(name=values_type_name, struct_dependencies=['ITEM_KEY_t', 'ITEM_{}_t'.format(self.structure[key].primitive_type.values_type_name)], struct_var_name=values_type_name[:-2], struct_parents=[key])
+            else:
+                self.update_struct(name='ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name), struct_parents=[values_type_name], struct_dependencies=[self.structure[key].primitive_type.sub_class.included_type_name+'_t'], struct_var_name='value')
+                self.update_struct(name=values_type_name, struct_dependencies=['ITEM_KEY_t', 'ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name)], struct_var_name=values_type_name[:-2], struct_parents=[key])
+                # The included type has the map values' type as parent
+                self.structure[self.structure[key].primitive_type.sub_class.included_type_name+'_t'].parents.append('ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name))
+
+            if self.structure[key].primitive_type.values_type_name == 'boolean':
+                self.structure['ITEM_boolean_t'].primitive_type = Struct_Bool()
+            if self.structure[key].primitive_type.values_type_name == 'integer':
+                self.structure['ITEM_integer_t'].primitive_type = Struct_Integer()
+            elif self.structure[key].primitive_type.values_type_name == 'double':
+                self.structure['ITEM_double_t'].primitive_type = Struct_Float()
+            elif self.structure[key].primitive_type.values_type_name == 'string':
+                self.structure['ITEM_string_t'].primitive_type = Struct_String()
+            elif self.structure[key].primitive_type.values_type_name == 'include':
+                self.structure['ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name)].primitive_type = Struct_Include(name=self.structure[key].primitive_type.sub_class.included_type_name+'_t')
+
+            self.structure[key].primitive_type = Struct_Include(name=self.structure[key].dependencies[0]+'*')
+
+        if len(L) != 0:
+            self.structure['ITEM_KEY_t'].primitive_type = Struct_String()
+
+        print('[Success, {} Maps were found]'.format(len(L)))
+            
+
     def _merge_included_types(self):
         """Detect all included types and merge them"""
         for key in self.structure.keys():
-            if isinstance(self.structure[key].primitive_type, Struct_Include) and not isinstance(self.structure[key].primitive_type, Struct_None):
+            if isinstance(self.structure[key].primitive_type, Struct_Include):
                 if key[:-2] in self._schema.keys():
                     dependence_name = self._schema[key[:-2]].get_name()+'_t'
                 else:
@@ -66,6 +116,7 @@ class Structure(Schema):
                 print('Found one include at ' + key, end=' ... ')
                 self.structure[key].dependencies.append(dependence_name)
                 self.structure[key].dependencies.sort()
+                self.structure[key].primitive_type.included_type_name = dependence_name
                 self.structure[dependence_name].parents.append(key)
                 self.structure[dependence_name].parents.sort()
                 print('[Merged with {}]'.format(dependence_name))
@@ -113,26 +164,20 @@ class Structure(Schema):
                 elif self.structure[key].is_leaf() and not self.structure[key].is_root():
                     schedule[i].remove(key)
 
-        # We shift the depth of all dependencies impacted by the removal of each empty sub-schedule(s)
+        depth_of_removed_keys = sorted(depth_of_removed_keys, key=lambda x: x[0]) # The deepest is the last to be pulled
+        removed_includes = [k[1] for k in depth_of_removed_keys]
+
+        # We pull all dependencies due to intermediate types removal
+        pull_dependencies(self.structure, schedule, removed_includes)
+
+        # We shift the depth of all dependencies that will be impacted by the removal of each empty sub-schedule(s)
         for i, sub_schedule in enumerate(schedule[::-1]):
             if len(sub_schedule) == 0:
                 # The i-th sub-schedule is empty => all keys (types) with depth >= i are raised by 1
                 for key in self.structure.keys():
-                    self.structure[key].depth += 0 -(self.structure[key].depth >= i)
+                    self.structure[key].depth += -(self.structure[key].depth >= i)
 
         # We remove empty sub-schedule(s)
-        schedule = [k for k in schedule[:] if not 0==len(k)]
-
-        # We shift (pull) all dependencies due to intermediate types removal
-        depth_of_removed_keys = sorted(depth_of_removed_keys, key=lambda x: x[0]) # The deepest is the last to be pulled
-        removed_includes = [k[1] for k in depth_of_removed_keys]
-        pull_dependencies(self.structure, schedule, removed_includes)
-
-        # There are empty sub-schedules again
-        for i, sub_schedule in enumerate(schedule[::-1]):
-            if len(sub_schedule) == 0:
-                for key in self.structure.keys():
-                    self.structure[key].depth += -(self.structure[key].depth >= i)
         schedule = [k for k in schedule[:] if not 0==len(k)]
 
         print('[Success, new max depth is {}]'.format(len(schedule)))
@@ -150,22 +195,18 @@ class Structure(Schema):
 
         if isinstance(struct_type, List):
             self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[name[:-2]].args[0])
-        
         elif isinstance(struct_type, Map):
             self.structure[name].primitive_type = Struct_Map(sub_class=self._schema[name[:-2]].args[0])
-
+        elif isinstance(struct_type, Boolean):
+            self.structure[name].primitive_type = Struct_Boolean()
         elif isinstance(struct_type, Integer):
             self.structure[name].primitive_type = Struct_Integer()
-
         elif isinstance(struct_type, Null):
             self.structure[name].primitive_type = Struct_Null()
-
         elif isinstance(struct_type, Number):
             self.structure[name].primitive_type = Struct_Float()
-
         elif isinstance(struct_type, String):
             self.structure[name].primitive_type = Struct_String()
-
         elif isinstance(struct_type, Include):
             self.structure[name].primitive_type = Struct_Include()
 
@@ -203,15 +244,13 @@ class _Structure():
                 str_parents = 'PARENT=' + self.parents[0]
             else:
                 str_parents = 'PARENTS=' + str(self.parents)
-
         if self.is_leaf():
             str_object = 'PRIMITIVE_TYPE=' + str(self.primitive_type)
         else:
             str_object = 'DEPENDENCIES=' + str(self.dependencies)
-
+        str_depth = 'DEPTH=' + str(self.depth)
         str_var_name = 'VAR_NAME=' + self.var_name
-            
-        return "{}, {}, {}".format(str_parents, str_object, str_var_name)
+        return "{}, {}, {}, {}".format(str_parents, str_object, str_var_name, str_depth)
 
     def is_leaf(self):
         return (len(self.dependencies) == 0)
@@ -233,9 +272,9 @@ def walk_through_struct(struct, key, depth=0):
         struct[key].depth = depth
     else:
         depth = struct[key].depth
-    max_depth = depth
 
     # We iterate recursively over the dependencies
+    max_depth = depth
     for dependency in struct[key].dependencies:
         new_depth = walk_through_struct(struct, dependency, depth=depth+1)
         if max_depth < new_depth:
@@ -248,15 +287,16 @@ def pull_dependencies(struct, schedule, removed_includes):
 
     # We iterate over all removed keys (types) to pull the included types
     for removed_key in removed_includes:
-        # Every dependency has to be pulled
+        # Every dependency has to be pulled as much as possible
         for sub_key in struct[removed_key].dependencies:
             # We caclulte the max parents' depth
             max_parent_depth = struct[struct[sub_key].parents[0]].depth
             for parent in struct[sub_key].parents:
                 if struct[parent].depth > max_parent_depth:
                     max_parent_depth = struct[parent].depth
+            depths = [struct[parent].depth for parent in struct[sub_key].parents]
 
-            # We put the dependency in the shallowest sub-schedule possible
+            # We put the dependency in the shallowest sub-schedule possible (= under the deepest parent)
             schedule[-max_parent_depth-1].append(sub_key)
             schedule[-max_parent_depth-1].sort()
             # We remove the dependency from its original sub-schedule

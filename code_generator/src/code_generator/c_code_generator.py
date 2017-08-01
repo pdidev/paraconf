@@ -34,7 +34,7 @@ def generate_c_structure_code(IR, schedule):
 
             # If the type is defined by an include
             elif isinstance(IR[type].primitive_type, Struct_Include):
-                c_code_expressions.append((indent_level, 'typedef ' + IR[type].dependencies[0] + ' ' + type + ';'))
+                c_code_expressions.append((indent_level, 'typedef ' + IR[type].primitive_type.included_type_name + ' ' + type + ';'))
                 insert_space(c_code_expressions)
 
             # If the type is primitive (not defined by the user) and root (no parent)
