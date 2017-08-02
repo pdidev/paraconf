@@ -13,6 +13,8 @@ complexKey:
   k3: str()
   k4: include('toto', required=False)
   k5: include('very_deep', required=False)
+  k6:
+    k7: str()
 
 foo: include('bar')
 
@@ -21,12 +23,12 @@ foo: include('bar')
 bar:
   i1: str()
   i2: str()
-  # i3: include('very_deep', required=False)
+  i3: include('very_deep', required=False)
 
 toto:
   x: int()
   y: str()
-  # z: include('very_deep', required=False)
+  z: include('very_deep', required=False)
 
 non_used:
   a: num()

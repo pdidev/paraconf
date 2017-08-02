@@ -1,7 +1,5 @@
 from yamale.validators import *
 
-_BUFFER_LENGTH_ = 256
-
 
 class Struct_Array():
     """Array primitive type"""
@@ -24,8 +22,6 @@ class Struct_Array():
         return 'Array({})'.format(str(self.sub_class))
 
     def declare(self, name):
-        if isinstance(self.sub_class, Struct_String):
-            return '{} {}[{}];'.format(self.sub_class.C_tag, name, _BUFFER_LENGTH_)
         return '{}* {};'.format(self.sub_class.C_tag, name)
 
 
@@ -145,4 +141,4 @@ class Struct_String():
         return 'String()'
 
     def declare(self, name):
-        return 'char ' + name + '[' + str(_BUFFER_LENGTH_) + '];'
+        return 'char* {};'.format(name)

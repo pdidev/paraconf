@@ -30,22 +30,21 @@ class Structure(Schema):
 
     def _process_structure(self):
         """Extract usefull information from self._schema and put it in dict self.structure"""
+        
         for key, value in self._schema.items():
-            # We handle the case where the key has a mother-key
             parent = []
             var_name = []
-            if '.' in key:
-                parent_key = key.split('.')[0]
-                if parent_key not in self.structure.keys():
-                    # We gather the dependencies (types/variables names)
-                    dependencies = []
-                    for _key in self._schema.keys():
-                        if parent_key in _key and parent_key+'_t' != _key:
-                            dependencies.append(_key+'_t')
-                            var_name = _key.split('.')[0]
-                    self.update_struct(name=parent_key+'_t', struct_var_name=var_name, struct_dependencies=dependencies)
-                parent = [parent_key+'_t']
-            self.update_struct(name=key+'_t', struct_var_name=key.split('.')[-1], struct_type=value, struct_parents=parent)
+            keys = key.split('.')
+            for i, _key in enumerate(keys):
+                dependencies = []
+                parents = []
+                if i != 0:
+                    parents.append('.'.join(keys[:i])+'_t')
+                if i != len(keys)-1:
+                    dependencies.append('.'.join(keys[:i+2])+'_t')
+                    self.update_struct(name='.'.join(keys[:i+1])+'_t', struct_var_name=_key, struct_dependencies=dependencies, struct_parents=parents, struct_path='.'.join(keys[:i+1]))
+                else:
+                    self.update_struct(name='.'.join(keys[:i+1])+'_t', struct_var_name=_key, struct_type=value, struct_dependencies=dependencies, struct_parents=parents, struct_path='.'.join(keys[:i+1]))
 
         for sub_schema in self.includes.values():
             parent_key = sub_schema.name
@@ -53,7 +52,7 @@ class Structure(Schema):
             self.update_struct(name=parent_key+'_t', struct_var_name=parent_key, struct_dependencies=dependencies)
             for key, value in sub_schema._schema.items():
                 parent = [parent_key+'_t']
-                self.update_struct(name=parent_key+'.'+key+'_t', struct_var_name=key, struct_type=value, struct_parents=parent)
+                self.update_struct(name='.'.join([parent_key, key])+'_t', struct_var_name=key, struct_type=value, struct_parents=parent, struct_path='.'.join([parent_key, key]))
 
 
     def _handle_map_types(self):
@@ -160,9 +159,12 @@ class Structure(Schema):
                 if isinstance(self.structure[key].primitive_type, Struct_Include) and not self.structure[key].is_root():
                     schedule[i].remove(key)
                     depth_of_removed_keys.append((self.structure[key].depth, key))
-                # If the key is a leaf and not a root it is useless
-                elif self.structure[key].is_leaf() and not self.structure[key].is_root():
+                                # If the key is not a root and is not included in another one it is useless
+                elif not self.is_included(key) and not self.structure[key].is_root():
                     schedule[i].remove(key)
+                # # If the key is a leaf and not a root it is useless
+                # elif self.structure[key].is_leaf() and not self.structure[key].is_root():
+                #     schedule[i].remove(key)
 
         depth_of_removed_keys = sorted(depth_of_removed_keys, key=lambda x: x[0]) # The deepest is the last to be pulled
         removed_includes = [k[1] for k in depth_of_removed_keys]
@@ -185,18 +187,21 @@ class Structure(Schema):
         return schedule
 
 
-    def update_struct(self, name, struct_type=[], struct_var_name=None, struct_dependencies=[], struct_parents=[]):
+    def update_struct(self, name, struct_type=[], struct_var_name=None, struct_dependencies=[], struct_parents=[], struct_path=''):
         if name not in self.structure.keys():
             self.structure[name] = _Structure()
 
         self.structure[name].var_name = struct_var_name
-        self.structure[name].dependencies = struct_dependencies[:]
-        self.structure[name].parents.extend(struct_parents)
+        self.structure[name].dependencies.extend([k for k in struct_dependencies[:] if not k in self.structure[name].dependencies])
+        self.structure[name].parents.extend([k for k in struct_parents if not k in self.structure[name].parents])
+        self.structure[name].path = struct_path
 
         if isinstance(struct_type, List):
-            self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[name[:-2]].args[0])
+            # self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[name[:-2]].args[0])
+            self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[struct_path].args[0])
         elif isinstance(struct_type, Map):
-            self.structure[name].primitive_type = Struct_Map(sub_class=self._schema[name[:-2]].args[0])
+            # self.structure[name].primitive_type = Struct_Map(sub_class=self._schema[name[:-2]].args[0])
+            self.structure[name].primitive_type = Struct_Map(sub_class=self._schema[struct_path].args[0])
         elif isinstance(struct_type, Boolean):
             self.structure[name].primitive_type = Struct_Boolean()
         elif isinstance(struct_type, Integer):
@@ -228,6 +233,15 @@ class Structure(Schema):
         print('[Success]')
 
 
+    def is_included(self, type):
+        """Test if a given type is included by another"""
+        for parent in self.structure[type].parents:
+            if isinstance(self.structure[parent].primitive_type, Struct_Include):
+                return True
+        return False
+
+
+
 class _Structure():
     def __init__(self):
         self.parents = []
@@ -235,6 +249,7 @@ class _Structure():
         self.var_name = None
         self.dependencies = []
         self.primitive_type = Struct_None()
+        self.path = ''
 
     def __str__(self):
         if self.is_root():
@@ -264,6 +279,7 @@ class _Structure():
         return self.primitive_type.declare(name)
 
 
+
 def walk_through_struct(struct, key, depth=0):
     """Walk through the struct dict, update all nodes' depth and return the max depth"""
 
@@ -280,6 +296,7 @@ def walk_through_struct(struct, key, depth=0):
         if max_depth < new_depth:
             max_depth = new_depth
     return max_depth
+
 
 
 def pull_dependencies(struct, schedule, removed_includes):

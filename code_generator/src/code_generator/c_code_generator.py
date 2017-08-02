@@ -16,6 +16,10 @@ def generate_c_structure_code(IR, schedule):
     generate_header(c_code_expressions, indent_level, _HEADER_STRING_)
     insert_space(c_code_expressions)
 
+    # We write the typedef definitions
+    generate_typedef(c_code_expressions, indent_level, IR, schedule)
+    insert_space(c_code_expressions)
+
     # We iterate over all sub-schedules (the deepest is the first)
     for i, sub_schedule in enumerate(schedule):
 
@@ -51,20 +55,35 @@ def generate_c_structure_code(IR, schedule):
     return c_code_expressions
 
 
+def generate_typedef(c_code_expressions, indent_level, IR, schedule):
+    """Generate expressions corresponding to a typedef"""
+
+    for sub_schedule in schedule:
+        for element in sub_schedule:
+            if not IR[element].is_leaf() and not isinstance(IR[element].primitive_type, Struct_Include):
+                c_code_expressions.append((indent_level, 'typedef struct {} {};'.format(element[:-2]+'_s', element)))
+
+
 def generate_struct(code_expressions, indent_level, IR, type):
     """Generate expressions defining a struct type"""
 
-    code_expressions.append((indent_level, 'typedef struct {'))
+    code_expressions.append((indent_level, 'struct ' + type[:-2] + '_s {'))
     # We iterate over all the sub-types required by type
     for sub_type in IR[type].dependencies:
         # If the sub-type is a leaf it corresponds to a primitive type
         if IR[sub_type].is_leaf():
             declaration = IR[sub_type].declare()
+            code_expressions.append((indent_level+1, declaration))
+        elif not isinstance(IR[sub_type].primitive_type, Struct_Include):
+            generate_struct(code_expressions, indent_level+1, IR, sub_type)
         # Else the sub-type is defined by the user in an include
         else:
             declaration = IR[sub_type].dependencies[0] + ' ' + IR[sub_type].var_name + ';'
-        code_expressions.append((indent_level+1, declaration))
-    code_expressions.append((indent_level, '} ' + type + ';'))
+            code_expressions.append((indent_level+1, declaration))
+    if indent_level == 0:
+        code_expressions.append((indent_level, '};'))
+    else:
+        code_expressions.append((indent_level, '} ' + IR[type].var_name + ';'))
 
 
 def generate_primitive(code_expressions, indent_level, IR, type):
