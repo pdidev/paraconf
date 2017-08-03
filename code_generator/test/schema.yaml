@@ -2,19 +2,20 @@
 
 key_1: list(str(max=3))
 key_2: map(num())
-key_3: map(include('toto'), required=False)
+key_3: map(list(include('toto')), required=False)
 key_4: map(include('very_deep'), required=False)
 functions: map(str())
 taratata: include('very_deep', required=False)
 
 complexKey:
-  k1: int()
+  k1: int(required=False)
   k2: num()
   k3: str()
   k4: include('toto', required=False)
   k5: include('very_deep', required=False)
   k6:
     k7: str()
+    k8: list(str())
 
 foo: include('bar')
 

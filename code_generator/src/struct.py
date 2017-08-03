@@ -49,7 +49,7 @@ class Structure(Schema):
         for sub_schema in self.includes.values():
             parent_key = sub_schema.name
             dependencies = [parent_key+'.'+k+'_t' for k in sub_schema._schema.keys()]
-            self.update_struct(name=parent_key+'_t', struct_var_name=parent_key, struct_dependencies=dependencies)
+            self.update_struct(name=parent_key+'_t', struct_var_name=parent_key, struct_dependencies=dependencies, struct_path=parent_key)
             for key, value in sub_schema._schema.items():
                 parent = [parent_key+'_t']
                 self.update_struct(name='.'.join([parent_key, key])+'_t', struct_var_name=key, struct_type=value, struct_parents=parent, struct_path='.'.join([parent_key, key]))
@@ -64,7 +64,7 @@ class Structure(Schema):
         L = []
         for key in self.structure.keys():
             if isinstance(self.structure[key].primitive_type, Struct_Map):
-                L.append((key, self.structure[key].primitive_type.tag))
+                L.append((key, self.structure[key].primitive_type.C_tag))
 
         # We iterate over each element of L
         for element in L:
@@ -93,16 +93,19 @@ class Structure(Schema):
                 self.structure['ITEM_double_t'].primitive_type = Struct_Float()
             elif self.structure[key].primitive_type.values_type_name == 'string':
                 self.structure['ITEM_string_t'].primitive_type = Struct_String()
+            ### MAP OF LIST(S) ###
+            elif self.structure[key].primitive_type.values_type_name == 'list':
+                self.structure['ITEM_{}_t'.format(self.structure[key].primitive_type.values_type_name)].primitive_type = Struct_Type(type=self.get_type_from_path(self.structure[key].path), pointer_order=1)
             elif self.structure[key].primitive_type.values_type_name == 'include':
                 self.structure['ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name)].primitive_type = Struct_Include(name=self.structure[key].primitive_type.sub_class.included_type_name+'_t')
 
-            self.structure[key].primitive_type = Struct_Include(name=self.structure[key].dependencies[0]+'*')
+            self.structure[key].primitive_type = Struct_Include(name=self.structure[key].dependencies[0], pointer_order=self.structure[key].primitive_type.pointer_order+1)
 
         if len(L) != 0:
             self.structure['ITEM_KEY_t'].primitive_type = Struct_String()
 
         print('[Success, {} Maps were found]'.format(len(L)))
-            
+
 
     def _merge_included_types(self):
         """Detect all included types and merge them"""
@@ -113,12 +116,11 @@ class Structure(Schema):
                 else:
                     dependence_name = self.includes[key[:-2].split('.')[0]]._schema[key[:-2].split('.')[1]].get_name()+'_t'
                 print('Found one include at ' + key, end=' ... ')
-                self.structure[key].dependencies.append(dependence_name)
+                self.structure[key].dependencies.append(self.structure[key].primitive_type.included_type_name+'_t')
                 self.structure[key].dependencies.sort()
-                self.structure[key].primitive_type.included_type_name = dependence_name
-                self.structure[dependence_name].parents.append(key)
-                self.structure[dependence_name].parents.sort()
-                print('[Merged with {}]'.format(dependence_name))
+                self.structure[self.structure[key].primitive_type.included_type_name+'_t'].parents.append(key)
+                self.structure[self.structure[key].primitive_type.included_type_name+'_t'].parents.sort()
+                print('[Merged with {}]'.format(self.structure[key].primitive_type.included_type_name+'_t'))
 
 
     def _update_depth(self):
@@ -159,7 +161,7 @@ class Structure(Schema):
                 if isinstance(self.structure[key].primitive_type, Struct_Include) and not self.structure[key].is_root():
                     schedule[i].remove(key)
                     depth_of_removed_keys.append((self.structure[key].depth, key))
-                                # If the key is not a root and is not included in another one it is useless
+                # If the key is not a root and is not included in another one it is useless
                 elif not self.is_included(key) and not self.structure[key].is_root():
                     schedule[i].remove(key)
                 # # If the key is a leaf and not a root it is useless
@@ -195,25 +197,8 @@ class Structure(Schema):
         self.structure[name].dependencies.extend([k for k in struct_dependencies[:] if not k in self.structure[name].dependencies])
         self.structure[name].parents.extend([k for k in struct_parents if not k in self.structure[name].parents])
         self.structure[name].path = struct_path
-
-        if isinstance(struct_type, List):
-            # self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[name[:-2]].args[0])
-            self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[struct_path].args[0])
-        elif isinstance(struct_type, Map):
-            # self.structure[name].primitive_type = Struct_Map(sub_class=self._schema[name[:-2]].args[0])
-            self.structure[name].primitive_type = Struct_Map(sub_class=self._schema[struct_path].args[0])
-        elif isinstance(struct_type, Boolean):
-            self.structure[name].primitive_type = Struct_Boolean()
-        elif isinstance(struct_type, Integer):
-            self.structure[name].primitive_type = Struct_Integer()
-        elif isinstance(struct_type, Null):
-            self.structure[name].primitive_type = Struct_Null()
-        elif isinstance(struct_type, Number):
-            self.structure[name].primitive_type = Struct_Float()
-        elif isinstance(struct_type, String):
-            self.structure[name].primitive_type = Struct_String()
-        elif isinstance(struct_type, Include):
-            self.structure[name].primitive_type = Struct_Include()
+        if len(struct_path) > 0:
+            self.set_type_from_path(name, struct_path)
 
 
     def _replace_forbidden_chars(self): # OTHER POSSIBILITY: RAISE AN ERROR IF FORBIDDEN CHARACTER FOUND
@@ -239,6 +224,74 @@ class Structure(Schema):
             if isinstance(self.structure[parent].primitive_type, Struct_Include):
                 return True
         return False
+
+
+    def is_optional(self, path):
+        if path in self._schema.keys():
+            return self._schema[path].is_optional
+        else:
+            included_path = path.split('.')
+            return self.includes[included_path[0]]._schema[included_path[1]].is_optional
+
+
+    def get_type_from_path(self, path):
+        if path in self._schema.keys():
+            return self._schema[path]
+        else:
+            included_path = path.split('.')
+            return self.includes[included_path[0]]._schema[included_path[1]]
+
+
+    def set_type_from_path(self, name, path):
+        if self.structure[name].is_leaf():
+            if path not in self._schema.keys(): # Key is included in sub-file
+                included_path = path.split('.')
+                if self.includes[included_path[0]]._schema[included_path[1]].is_optional: # If the key is optional, it will be an array
+                    # self.structure[name].primitive_type = Struct_Array(sub_class=self.includes[included_path[0]]._schema[included_path[1]])
+                    self.structure[name].primitive_type = Struct_Type(type=self.includes[included_path[0]]._schema[included_path[1]], pointer_order=1)
+                else: # If the key is not optional
+                    if isinstance(self.includes[included_path[0]]._schema[included_path[1]], List):
+                        # self.structure[name].primitive_type = Struct_Array(sub_class=self.includes[included_path[0]]._schema[included_path[1]].args[0])
+                        self.structure[name].primitive_type = Struct_Type(type=self.includes[included_path[0]]._schema[included_path[1]].args[0], pointer_order=1)
+                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Map):
+                        self.structure[name].primitive_type = Struct_Map(sub_class=self.includes[included_path[0]]._schema[included_path[1]].args[0])
+                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Boolean):
+                        self.structure[name].primitive_type = Struct_Boolean()
+                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Integer):
+                        self.structure[name].primitive_type = Struct_Integer()
+                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Null):
+                        self.structure[name].primitive_type = Struct_Null()
+                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Number):
+                        self.structure[name].primitive_type = Struct_Float()
+                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], String):
+                        self.structure[name].primitive_type = Struct_String()
+                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Include):
+                        self.structure[name].primitive_type = Struct_Include()
+
+            else: # If the key is defined in the main file
+                if self._schema[path].is_optional:
+                    # self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[path])
+                    self.structure[name].primitive_type = Struct_Type(type=self._schema[path], pointer_order=1)
+                else:
+                    if isinstance(self._schema[path], List):
+                        # self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[path].args[0])
+                        self.structure[name].primitive_type = Struct_Type(type=self._schema[path].args[0], pointer_order=1)
+                    elif isinstance(self._schema[path], Map):
+                        self.structure[name].primitive_type = Struct_Map(sub_class=self._schema[path].args[0])
+                    elif isinstance(self._schema[path], Boolean):
+                        self.structure[name].primitive_type = Struct_Boolean()
+                    elif isinstance(self._schema[path], Integer):
+                        self.structure[name].primitive_type = Struct_Integer()
+                    elif isinstance(self._schema[path], Null):
+                        self.structure[name].primitive_type = Struct_Null()
+                    elif isinstance(self._schema[path], Number):
+                        self.structure[name].primitive_type = Struct_Float()
+                    elif isinstance(self._schema[path], String):
+                        self.structure[name].primitive_type = Struct_String()
+                    elif isinstance(self._schema[path], Include):
+                        self.structure[name].primitive_type = Struct_Include(self._schema[path].args[0])
+        else:
+            self.structure[name].primitive_type = Struct_None()
 
 
 
@@ -280,25 +333,6 @@ class _Structure():
 
 
 
-def walk_through_struct(struct, key, depth=0):
-    """Walk through the struct dict, update all nodes' depth and return the max depth"""
-
-    # If an included type has several parents, its depth is calculated according to the deepest parent
-    if struct[key].depth < depth:
-        struct[key].depth = depth
-    else:
-        depth = struct[key].depth
-
-    # We iterate recursively over the dependencies
-    max_depth = depth
-    for dependency in struct[key].dependencies:
-        new_depth = walk_through_struct(struct, dependency, depth=depth+1)
-        if max_depth < new_depth:
-            max_depth = new_depth
-    return max_depth
-
-
-
 def pull_dependencies(struct, schedule, removed_includes):
     """Pull all dependencies of removed keys as much as possible"""
 
@@ -320,3 +354,22 @@ def pull_dependencies(struct, schedule, removed_includes):
             schedule[-struct[sub_key].depth-1].remove(sub_key)
             # We update the depth
             struct[sub_key].depth = max_parent_depth
+
+
+
+def walk_through_struct(struct, key, depth=0):
+    """Walk through the struct dict, update all nodes' depth and return the max depth"""
+
+    # If an included type has several parents, its depth is calculated according to the deepest parent
+    if struct[key].depth < depth:
+        struct[key].depth = depth
+    else:
+        depth = struct[key].depth
+
+    # We iterate recursively over the dependencies
+    max_depth = depth
+    for dependency in struct[key].dependencies:
+        new_depth = walk_through_struct(struct, dependency, depth=depth+1)
+        if max_depth < new_depth:
+            max_depth = new_depth
+    return max_depth

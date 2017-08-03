@@ -1,95 +1,111 @@
 from yamale.validators import *
 
 
-class Struct_Array():
-    """Array primitive type"""
-    # C_tag = 'void*'
-    # Fortran_tag = 'INTEGER'
+class Struct_Type():
+    def __init__(self, type=Null(), pointer_order=0):
+        if isinstance(type, List):
+            self.__class__ = Struct_Type
+            self.__init__(type=type.validators[0], pointer_order=pointer_order+1)
+        elif isinstance(type, Number):
+            self.__class__ = Struct_Float
+            self.__init__(pointer_order=pointer_order)
+        elif isinstance(type, Integer):
+            self.__class__ = Struct_Integer
+            self.__init__(pointer_order=pointer_order)
+        elif isinstance(type, Boolean):
+            self.__class__ = Struct_Boolean
+            self.__init__(pointer_order=pointer_order)
+        elif isinstance(type, String):
+            self.__class__ = Struct_String
+            self.__init__(pointer_order=pointer_order)
+        elif isinstance(type, Include):
+            self.__class__ = Struct_Include
+            self.__init__(name=type.args[0], pointer_order=pointer_order)
+        elif isinstance(type, Map):
+            self.__class__ = Struct_Map
+            self.__init__(sub_class=type.validators[0], pointer_order=pointer_order)
+        elif isinstance(type, Null):
+            self.__class__ = Struct_Null
+            self.__init__(pointer_order=pointer_order)
 
-    def __init__(self, sub_class=Null(), type=None):
-        if isinstance(sub_class, Number):
-            self.sub_class = Struct_Float()
-        elif isinstance(sub_class, Integer):
-            self.sub_class = Struct_Integer()
-        elif isinstance(sub_class, String):
-            self.sub_class = Struct_String()
-        elif isinstance(sub_class, Null):
-            self.sub_class = Struct_Null()
-        # self.type = type
-        self.C_tag = self.sub_class.C_tag + '*'
-
-    def __str__(self):
-        return 'Array({})'.format(str(self.sub_class))
-
-    def declare(self, name):
-        return '{}* {};'.format(self.sub_class.C_tag, name)
+    def make_pointer_string(self):
+        string = ''
+        for i in range(self.pointer_order):
+            string += '*'
+        return string
 
 
 
-class Struct_Boolean():
+class Struct_Boolean(Struct_Type):
     """Boolean primitive type"""
 
+    def __init__(self, pointer_order=0):
+        self.pointer_order = pointer_order
+        self.C_tag = 'int'
+        self.Fortran_tag = 'INTEGER'
+
     def __str__(self):
-        return 'Boolean()'
+        return 'Boolean{}()'.format(self.make_pointer_string())
 
     def declare(self, name):
-        return 'int ' + name + ';'
+        return 'int{} {};'.format(self.make_pointer_string(), name)
 
 
 
-class Struct_Float():
+class Struct_Float(Struct_Type):
     """Float primitive type"""
-    # type = None
 
-    C_tag = 'double'
-    Fortran_tag = 'DOUBLE PRECISION'
+    def __init__(self, pointer_order=0):
+        self.pointer_order = pointer_order
+        self.C_tag = 'double'
+        self.Fortran_tag = 'DOUBLE PRECISION'
 
     def __str__(self):
-        return 'Float()'
+        return 'Float{}()'.format(self.make_pointer_string())
 
     def declare(self, name):
-        return 'double ' + name + ';'
+        return 'double{} {};'.format(self.make_pointer_string(), name)
 
     
 
-class Struct_Include():
+class Struct_Include(Struct_Type):
     """Include primitive type"""
-    # C_tag = 'int'
-    # Fortran_tag = 'INTEGER'
 
-    def __init__(self, name=None):
+    def __init__(self, name, pointer_order=0):
+        self.pointer_order = pointer_order
         self.included_type_name = name
+        self.C_tag = name+'_t'
 
     def __str__(self):
-        return 'Include()'
+        return "Include{}('{}_t')".format(self.make_pointer_string(), self.included_type_name)
 
     def declare(self, name):
-        return '{} {};'.format(self.included_type_name, name)
+        return '{}{} {};'.format(self.included_type_name, self.make_pointer_string(), name)
 
-    
 
-class Struct_Integer():
+
+class Struct_Integer(Struct_Type):
     """Integer primitive type"""
-    C_tag = 'int'
-    Fortran_tag = 'INTEGER'
+
+    def __init__(self, pointer_order=0):
+        self.pointer_order = pointer_order
+        self.C_tag = 'int'
+        Fortran_tag = 'INTEGER'
 
     def __str__(self):
-        return 'Integer()'
+        return 'Integer{}()'.format(self.make_pointer_string())
 
     def declare(self, name):
-        return 'int ' + name + ';'
+        return 'int{} {};'.format(self.make_pointer_string(), name)
 
     
 
-class Struct_Map():
+class Struct_Map(Struct_Type):
     """Map primitive type"""
-    
-    # type = None
-    # C_tag = 'void*'
-    # Fortran_tag = 'INTEGER'
 
-    def __init__(self, sub_class=Null()):
-        
+    def __init__(self, sub_class=Null(), pointer_order=0):
+
+        self.pointer_order = pointer_order
         self.keys_sub_class = Struct_String()
         
         if isinstance(sub_class, Number):
@@ -104,41 +120,55 @@ class Struct_Map():
         elif isinstance(sub_class, Include):
             self.sub_class = Struct_Include(name=sub_class.get_name())
             self.values_type_name = 'include'
+        elif isinstance(sub_class, List):
+            self.sub_class = Struct_Type(type=sub_class, pointer_order=1)
+            self.values_type_name = 'list'
         elif isinstance(sub_class, Null):
             self.sub_class = Struct_Null()
 
         if self.values_type_name != 'include':
-            self.tag = 'MAP_ITEM_{}_t'.format(self.values_type_name)
+            self.C_tag = 'MAP_ITEM_{}_t'.format(self.values_type_name)
         else:
-            self.tag = 'MAP_ITEM_{}_t'.format(self.sub_class.included_type_name)
+            self.C_tag = 'MAP_ITEM_{}_t'.format(self.sub_class.included_type_name)
 
     def __str__(self):
-        return 'Map({}, {})'.format(str(self.keys_sub_class), str(self.sub_class))
+        return 'Map{}({}, {})'.format(self.make_pointer_string(), str(self.keys_sub_class), str(self.sub_class))
 
     def declare(self, name):
-        return self.tag + '* ' + name + ';'
+        return '{}{}* {};'.format(self.C_tag, self.make_pointer_string(), name)
 
 
+
+class Struct_None(Struct_Type):
+
+    def __init__(self):
+        pass
     
-class Struct_None():
     def __str__(self):
         return 'None()'
 
     
 
-class Struct_Null():
+class Struct_Null(Struct_Type):
+
+    def __init__(self):
+        pass
+    
     def __str__(self):
         return 'Null()'
 
 
 
-class Struct_String():
+class Struct_String(Struct_Type):
     """String primitive type"""
-    C_tag = 'char*'
-    Fortran_tag = 'CHARACTER (LEN=*)'
+
+    def __init__(self, pointer_order=0):
+        self.pointer_order = pointer_order
+        self.C_tag = 'char*'
+        self.Fortran_tag = 'CHARACTER (LEN=*)'
 
     def __str__(self):
-        return 'String()'
+        return 'String{}()'.format(self.make_pointer_string())
 
     def declare(self, name):
-        return 'char* {};'.format(name)
+        return 'char{}* {};'.format(self.make_pointer_string(), name)

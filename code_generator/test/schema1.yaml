@@ -1,0 +1,13 @@
+key1:
+  k1: list(list(num()))
+  k2: include('taratata')
+  k3: list(list(list(map(include('toto')))))
+
+---
+toto:
+  foo: int()
+  bar: int()
+
+taratata:
+  bar: str()
+  foo: bool()

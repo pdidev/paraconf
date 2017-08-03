@@ -37,12 +37,11 @@ def generate_c_structure_code(IR, schedule):
                 insert_space(c_code_expressions)
 
             # If the type is defined by an include
-            elif isinstance(IR[type].primitive_type, Struct_Include):
-                c_code_expressions.append((indent_level, 'typedef ' + IR[type].primitive_type.included_type_name + ' ' + type + ';'))
+            elif isinstance(IR[type].primitive_type, Struct_Include) and not IR[type].is_root():
+                c_code_expressions.append((indent_level, 'typedef ' + IR[type].primitive_type.included_type_name + IR[type].primitive_type.make_pointer_string() + ' ' + type + ';'))
                 insert_space(c_code_expressions)
 
-            # If the type is primitive (not defined by the user) and root (no parent)
-            # elif IR[type].is_root():   # Useless since the schedule is optimized (all non-root primitive types are suppressed)
+            # # If the type is primitive (not defined by the user) and root (no parent)
             else:
                 generate_primitive(c_code_expressions, indent_level, IR, type)
                 insert_space(c_code_expressions)
@@ -58,10 +57,14 @@ def generate_c_structure_code(IR, schedule):
 def generate_typedef(c_code_expressions, indent_level, IR, schedule):
     """Generate expressions corresponding to a typedef"""
 
+    # We extract the variables defined by a typedef and alphabetically sort them
+    typedef_types = []
     for sub_schedule in schedule:
-        for element in sub_schedule:
-            if not IR[element].is_leaf() and not isinstance(IR[element].primitive_type, Struct_Include):
-                c_code_expressions.append((indent_level, 'typedef struct {} {};'.format(element[:-2]+'_s', element)))
+        typedef_types.extend([type for type in sub_schedule if not IR[type].is_leaf() and not isinstance(IR[type].primitive_type, Struct_Include)])
+    typedef_types.sort()
+
+    for type in typedef_types:
+        c_code_expressions.append((indent_level, 'typedef struct {} {};'.format(type[:-2]+'_s', type)))
 
 
 def generate_struct(code_expressions, indent_level, IR, type):
@@ -78,7 +81,7 @@ def generate_struct(code_expressions, indent_level, IR, type):
             generate_struct(code_expressions, indent_level+1, IR, sub_type)
         # Else the sub-type is defined by the user in an include
         else:
-            declaration = IR[sub_type].dependencies[0] + ' ' + IR[sub_type].var_name + ';'
+            declaration = IR[sub_type].dependencies[0] + IR[sub_type].primitive_type.make_pointer_string() + ' ' + IR[sub_type].var_name + ';'
             code_expressions.append((indent_level+1, declaration))
     if indent_level == 0:
         code_expressions.append((indent_level, '};'))
