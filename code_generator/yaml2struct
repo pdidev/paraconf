@@ -2,5 +2,3 @@
 
 BINPATH=`dirname $0`
 python3 "$BINPATH/src/main.py" $@
-
-# bin/cryptogram $@

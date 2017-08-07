@@ -20,6 +20,8 @@ class Structure(Schema):
         """Generate Intermediate Representation and schedule"""
         self._process_structure()
         self._merge_included_types()
+        # self._handle_complex_types()
+        self._handle_list_of_unions_()
         self._handle_map_types()
         max_depth = self._update_depth()
         self._replace_forbidden_chars()
@@ -30,6 +32,8 @@ class Structure(Schema):
 
     def _process_structure(self):
         """Extract usefull information from self._schema and put it in dict self.structure"""
+
+        print('Processing parsed schema', end=' ... ')
         
         for key, value in self._schema.items():
             parent = []
@@ -54,77 +58,210 @@ class Structure(Schema):
                 parent = [parent_key+'_t']
                 self.update_struct(name='.'.join([parent_key, key])+'_t', struct_var_name=key, struct_type=value, struct_parents=parent, struct_path='.'.join([parent_key, key]))
 
+        print('[Success]')
+
+
+    def _handle_list_of_unions_(self):
+        """Detect and handle map types"""
+
+        print('Detecting lists of unions', end=' ... ')
+
+        L = []
+        list_types = [k for k in self.structure.keys() if isinstance(self.structure[k].primitive_type, Struct_List)]
+        list_types.sort()
+        i = 0
+        for key in list_types:
+            pointer_order = []
+            list_sub_types = []
+            sub_types = self.structure[key].primitive_type.sub_types
+            for sub_type in sub_types:
+                pointer_order.append(sub_type.pointer_order)
+                if isinstance(sub_type, Struct_List):
+                    raise Exception('Error: nested lists not implemented')
+                elif isinstance(sub_type, Struct_Map):
+                    raise Exception('Error: list of unions does not support maps')
+                list_sub_types.append(sub_type)
+            L.append((i, key, list_sub_types, pointer_order))
+            i += 1
+
+        for element in L:
+            n = element[0]
+            key = element[1]
+            list_sub_types = element[2]
+            pointer_order = element[3]
+
+            list_item_name = 'UNION_LIST_{}_t'.format(n)
+            types = []
+            dependencies = []
+            for i in range(len(list_sub_types)):
+                s = ''
+                for j in range(pointer_order[i]):
+                    s += '_'
+                types.append(list_sub_types[i])
+                if isinstance(types[-1], Struct_Boolean):
+                    dependencies.append(s+'ITEM_VALUE_{}_bool_t'.format(i))
+                    self.update_struct(name=dependencies[-1], struct_parents=[list_item_name], struct_var_name='value'+str(i))
+                elif isinstance(types[-1], Struct_Float):
+                    dependencies.append(s+'ITEM_VALUE_{}_double_t'.format(i))
+                    self.update_struct(name=dependencies[-1], struct_parents=[list_item_name], struct_var_name='value'+str(i))
+                elif isinstance(types[-1], Struct_Include):
+                    dependencies.append(s+'ITEM_VALUE_{}_{}_t'.format(i, types[-1].included_type_name))
+                    self.update_struct(name=dependencies[-1], struct_parents=[list_item_name], struct_dependencies=[types[-1].included_type_name+'_t'], struct_var_name='value'+str(i))
+                    if not dependencies[-1] in self.structure[types[-1].included_type_name+'_t'].parents:
+                        self.structure[types[-1].included_type_name+'_t'].parents.append(dependencies[-1])
+                elif isinstance(types[-1], Struct_Integer):
+                    dependencies.append(s+'ITEM_VALUE_{}_int_t'.format(i))
+                    self.update_struct(name=dependencies[-1], struct_parents=[list_item_name], struct_var_name='value'+str(i))
+                elif isinstance(types[-1], Struct_String):
+                    dependencies.append(s+'ITEM_VALUE_{}_string_t'.format(i))
+                    self.update_struct(name=dependencies[-1], struct_parents=[list_item_name], struct_var_name='value'+str(i))
+
+                self.structure[dependencies[-1]].primitive_type = types[-1]
+                self.structure[dependencies[-1]].primitive_type.pointer_order = pointer_order[i]+1 # The values of the list are initialized to NULL by default --> the pointer's "order" is at least 1
+
+            self.update_struct(name=list_item_name, struct_parents=[key], struct_dependencies=dependencies)
+            self.structure[key].primitive_type = Struct_Include(name=list_item_name[:-2], pointer_order=self.structure[key].primitive_type.pointer_order)
+            self.structure[key].dependencies.append(list_item_name)
+
+        print('[Success, {} root lists of unions were found]'.format(len(L)))
+
+
+    def _handle_complex_types(self):
+        """Detect and handle complex types (maps of unions and lists of unions)"""
+
+        print('Detecting nested unions types', end=' ... ')
+
+        _nested_unions = []
+        complex_types = [(isinstance(self.structure[k].primitive_type, Struct_Map), k) for k in self.structure.keys() if isinstance(self.structure[k].primitive_type, Struct_List)]
+
+        list_counter = 0
+        nested_lists_counter = 0
+        map_counter = 0
+        nested_maps_counter = 0
+        for element in complex_types:
+            type = element[0]
+            key = element[1]
+            list_counter += (type==0)
+            map_counter += (type==1)
+            _pointer_order = []
+            _sub_types = self.structure[key].primitive_type.sub_types
+            for sub_type in _sub_types:
+                _pointer_order.append(sub_type.pointer_order)
+                if isinstance(sub_type, Struct_Map): # Nested map
+                    complex_types.append((1, 'NESTED_MAP_{}_t'.format(nested_maps_counter)))
+                    self.update_struct(name='NESTED_MAP_{}_t'.format(nested_maps_counter))
+                    self.structure['NESTED_MAP_{}_t'.format(nested_maps_counter)].primitive_type = sub_type
+                    nested_maps_counter += 1
+                elif isinstance(sub_type, Struct_List): # Nested list of unions
+                    complex_types.append((1, 'NESTED_UNION_LIST_{}_t'.format(nested_lists_counter)))
+                    self.update_struct(name='NESTED_UNION_LIST_{}_t'.format(nested_maps_counter))
+                    self.structure['NESTED_UNION_LIST_{}_t'.format(nested_maps_counter)].primitive_type = sub_type
+                    nested_lists_counter += 1
+            if type == 0:
+                _nested_unions.append((type, list_counter, _sub_types, _pointer_order))
+            else:
+                _nested_unions.append((type, map_counter, _sub_types[:], _pointer_order[:]))
+
+        print()
+        for i, union in enumerate(_nested_unions):
+            print(complex_types[i][1], [str(k) for k in union[2]])
+            print()
+
+        print('[Success]')
+                
+        
 
     def _handle_map_types(self):
-        """Create MAP_ITEM_<type>_t sub-types and merge all dependencies"""
+        """Detect and handle map types"""
 
-        print('Handling Map types', end=' ... ')
+        print('Detecting map types', end=' ... ')
 
-        # We gather all keys corresponding to a map and the type of associated values
         L = []
-        for key in self.structure.keys():
-            if isinstance(self.structure[key].primitive_type, Struct_Map):
-                L.append((key, self.structure[key].primitive_type.C_tag))
-
-        # We iterate over each element of L
-        for element in L:
-            key = element[0]
-            values_type_name = element[1]
-            self.structure[key].dependencies.append(values_type_name)
-
-            if 'ITEM_KEY_t' not in self.structure.keys():
-                self.update_struct(name='ITEM_KEY_t', struct_parents=[values_type_name], struct_var_name='key')
-
-            # The case where the values' type is defined by an include is treated apart
-            if self.structure[key].primitive_type.values_type_name != 'include':
-                self.update_struct(name='ITEM_{}_t'.format(self.structure[key].primitive_type.values_type_name), struct_parents=[values_type_name], struct_var_name='value')
-                self.update_struct(name=values_type_name, struct_dependencies=['ITEM_KEY_t', 'ITEM_{}_t'.format(self.structure[key].primitive_type.values_type_name)], struct_var_name=values_type_name[:-2], struct_parents=[key])
-            else:
-                self.update_struct(name='ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name), struct_parents=[values_type_name], struct_dependencies=[self.structure[key].primitive_type.sub_class.included_type_name+'_t'], struct_var_name='value')
-                self.update_struct(name=values_type_name, struct_dependencies=['ITEM_KEY_t', 'ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name)], struct_var_name=values_type_name[:-2], struct_parents=[key])
-                # The included type has the map values' type as parent
-                self.structure[self.structure[key].primitive_type.sub_class.included_type_name+'_t'].parents.append('ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name))
-
-            if self.structure[key].primitive_type.values_type_name == 'boolean':
-                self.structure['ITEM_boolean_t'].primitive_type = Struct_Bool()
-            if self.structure[key].primitive_type.values_type_name == 'integer':
-                self.structure['ITEM_integer_t'].primitive_type = Struct_Integer()
-            elif self.structure[key].primitive_type.values_type_name == 'double':
-                self.structure['ITEM_double_t'].primitive_type = Struct_Float()
-            elif self.structure[key].primitive_type.values_type_name == 'string':
-                self.structure['ITEM_string_t'].primitive_type = Struct_String()
-            ### MAP OF LIST(S) ###
-            elif self.structure[key].primitive_type.values_type_name == 'list':
-                self.structure['ITEM_{}_t'.format(self.structure[key].primitive_type.values_type_name)].primitive_type = Struct_Type(type=self.get_type_from_path(self.structure[key].path), pointer_order=1)
-            elif self.structure[key].primitive_type.values_type_name == 'include':
-                self.structure['ITEM_{}_t'.format(self.structure[key].primitive_type.sub_class.included_type_name)].primitive_type = Struct_Include(name=self.structure[key].primitive_type.sub_class.included_type_name+'_t')
-
-            self.structure[key].primitive_type = Struct_Include(name=self.structure[key].dependencies[0], pointer_order=self.structure[key].primitive_type.pointer_order+1)
+        map_types = [k for k in self.structure.keys() if isinstance(self.structure[k].primitive_type, Struct_Map)]
+        map_types.sort()
+        i = 0
+        for key in map_types:
+            pointer_order = []
+            map_sub_types = []
+            sub_types = self.structure[key].primitive_type.sub_types
+            for sub_type in sub_types:
+                pointer_order.append(sub_type.pointer_order)
+                if isinstance(sub_type, Struct_Map):
+                    raise Exception('Error: nested maps not implemented')
+                map_sub_types.append(sub_type)
+            L.append((i, key, map_sub_types, pointer_order))
+            i += 1
 
         if len(L) != 0:
+            self.update_struct(name='ITEM_KEY_t', struct_parents=map_types, struct_var_name='key')
             self.structure['ITEM_KEY_t'].primitive_type = Struct_String()
 
-        print('[Success, {} Maps were found]'.format(len(L)))
+        for element in L:
+            n = element[0]
+            key = element[1]
+            map_sub_types = element[2]
+            pointer_order = element[3]
+
+            map_item_name = 'MAP_ITEM_{}_t'.format(n)
+            types = []
+            dependencies = ['ITEM_KEY_t']
+            for i in range(len(map_sub_types)):
+                s = ''
+                for j in range(pointer_order[i]):
+                    s += '_'
+                types.append(map_sub_types[i])
+                if isinstance(types[-1], Struct_Boolean):
+                    dependencies.append(s+'ITEM_VALUE_{}_bool_t'.format(i))
+                    self.update_struct(name=dependencies[-1], struct_parents=[map_item_name], struct_var_name='value'+str(i))
+                elif isinstance(types[-1], Struct_Float):
+                    dependencies.append(s+'ITEM_VALUE_{}_double_t'.format(i))
+                    self.update_struct(name=dependencies[-1], struct_parents=[map_item_name], struct_var_name='value'+str(i))
+                elif isinstance(types[-1], Struct_Include):
+                    dependencies.append(s+'ITEM_VALUE_{}_{}_t'.format(i, types[-1].included_type_name))
+                    self.update_struct(name=dependencies[-1], struct_parents=[map_item_name], struct_dependencies=[types[-1].included_type_name+'_t'], struct_var_name='value'+str(i))
+                    if not dependencies[-1] in self.structure[types[-1].included_type_name+'_t'].parents:
+                        self.structure[types[-1].included_type_name+'_t'].parents.append(dependencies[-1])
+                elif isinstance(types[-1], Struct_Integer):
+                    dependencies.append(s+'ITEM_VALUE_{}_int_t'.format(i))
+                    self.update_struct(name=dependencies[-1], struct_parents=[map_item_name], struct_var_name='value'+str(i))
+                elif isinstance(types[-1], Struct_String):
+                    dependencies.append(s+'ITEM_VALUE_{}_string_t'.format(i))
+                    self.update_struct(name=dependencies[-1], struct_parents=[map_item_name], struct_var_name='value'+str(i))
+
+                self.structure[dependencies[-1]].primitive_type = types[-1]
+                self.structure[dependencies[-1]].primitive_type.pointer_order = pointer_order[i]+1 # The values are initialized to NULL by default --> the pointer's "order" is at least 1
+
+            self.update_struct(name=map_item_name, struct_parents=[key], struct_dependencies=dependencies)
+            self.structure[key].primitive_type = Struct_Include(name=map_item_name[:-2], pointer_order=self.structure[key].primitive_type.pointer_order)
+            self.structure[key].dependencies.append(map_item_name)
+
+        print('[Success, {} root maps were found]'.format(len(L)))
 
 
     def _merge_included_types(self):
         """Detect all included types and merge them"""
+
+        print('Merging included types', end=' ... ')
+
         for key in self.structure.keys():
             if isinstance(self.structure[key].primitive_type, Struct_Include):
                 if key[:-2] in self._schema.keys():
                     dependence_name = self._schema[key[:-2]].get_name()+'_t'
                 else:
                     dependence_name = self.includes[key[:-2].split('.')[0]]._schema[key[:-2].split('.')[1]].get_name()+'_t'
-                print('Found one include at ' + key, end=' ... ')
+                # print('Found one include at ' + key, end=' ... ')
                 self.structure[key].dependencies.append(self.structure[key].primitive_type.included_type_name+'_t')
                 self.structure[key].dependencies.sort()
                 self.structure[self.structure[key].primitive_type.included_type_name+'_t'].parents.append(key)
                 self.structure[self.structure[key].primitive_type.included_type_name+'_t'].parents.sort()
-                print('[Merged with {}]'.format(self.structure[key].primitive_type.included_type_name+'_t'))
+                # print('[Merged with {}]'.format(self.structure[key].primitive_type.included_type_name+'_t'))
+
+        print('[Success]')
 
 
     def _update_depth(self):
         """Update the depth of all nodes and return the max depth"""
+        
         print('Updating depth of all nodes', end=' ... ')
         max_depth = 0
         for key in self.structure.keys():
@@ -138,11 +275,15 @@ class Structure(Schema):
 
     def _make_schedule(self, max_depth):
         """Return a list storing the keys (types) in the right order"""
+
+        print('Making the schedule', end=' ... ')
         schedule = [[] for i in range(max_depth+1)]
         for key in self.structure.keys():
             schedule[max_depth-self.structure[key].depth].append(key)
         for element in schedule:
             element.sort()
+
+        print('[Success]')
 
         return schedule
 
@@ -165,8 +306,8 @@ class Structure(Schema):
                 elif not self.is_included(key) and not self.structure[key].is_root():
                     schedule[i].remove(key)
                 # # If the key is a leaf and not a root it is useless
-                # elif self.structure[key].is_leaf() and not self.structure[key].is_root():
-                #     schedule[i].remove(key)
+                elif self.structure[key].is_leaf() and not self.structure[key].is_root():
+                    schedule[i].remove(key)
 
         depth_of_removed_keys = sorted(depth_of_removed_keys, key=lambda x: x[0]) # The deepest is the last to be pulled
         removed_includes = [k[1] for k in depth_of_removed_keys]
@@ -189,7 +330,7 @@ class Structure(Schema):
         return schedule
 
 
-    def update_struct(self, name, struct_type=[], struct_var_name=None, struct_dependencies=[], struct_parents=[], struct_path=''):
+    def update_struct(self, name, struct_type=[], struct_var_name='', struct_dependencies=[], struct_parents=[], struct_path=''):
         if name not in self.structure.keys():
             self.structure[name] = _Structure()
 
@@ -198,7 +339,7 @@ class Structure(Schema):
         self.structure[name].parents.extend([k for k in struct_parents if not k in self.structure[name].parents])
         self.structure[name].path = struct_path
         if len(struct_path) > 0:
-            self.set_type_from_path(name, struct_path)
+            self.set_type_from_name(name)
 
 
     def _replace_forbidden_chars(self): # OTHER POSSIBILITY: RAISE AN ERROR IF FORBIDDEN CHARACTER FOUND
@@ -225,6 +366,15 @@ class Structure(Schema):
                 return True
         return False
 
+    def is_in_nested_struct(self, name):
+        if not self.structure[name].is_root():
+            for parent in self.structure[name].parents:
+                if not isinstance(self.structure[parent].primitive_type,Struct_None) or self.is_included(parent):
+                    return False
+            return True
+        else:
+            return False
+
 
     def is_optional(self, path):
         if path in self._schema.keys():
@@ -234,7 +384,8 @@ class Structure(Schema):
             return self.includes[included_path[0]]._schema[included_path[1]].is_optional
 
 
-    def get_type_from_path(self, path):
+    def get_type_from_key(self, key):
+        path = self.structure[key].path
         if path in self._schema.keys():
             return self._schema[path]
         else:
@@ -242,58 +393,17 @@ class Structure(Schema):
             return self.includes[included_path[0]]._schema[included_path[1]]
 
 
-    def set_type_from_path(self, name, path):
+    def set_type_from_name(self, name):
         if self.structure[name].is_leaf():
-            if path not in self._schema.keys(): # Key is included in sub-file
-                included_path = path.split('.')
-                if self.includes[included_path[0]]._schema[included_path[1]].is_optional: # If the key is optional, it will be an array
-                    # self.structure[name].primitive_type = Struct_Array(sub_class=self.includes[included_path[0]]._schema[included_path[1]])
-                    self.structure[name].primitive_type = Struct_Type(type=self.includes[included_path[0]]._schema[included_path[1]], pointer_order=1)
-                else: # If the key is not optional
-                    if isinstance(self.includes[included_path[0]]._schema[included_path[1]], List):
-                        # self.structure[name].primitive_type = Struct_Array(sub_class=self.includes[included_path[0]]._schema[included_path[1]].args[0])
-                        self.structure[name].primitive_type = Struct_Type(type=self.includes[included_path[0]]._schema[included_path[1]].args[0], pointer_order=1)
-                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Map):
-                        self.structure[name].primitive_type = Struct_Map(sub_class=self.includes[included_path[0]]._schema[included_path[1]].args[0])
-                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Boolean):
-                        self.structure[name].primitive_type = Struct_Boolean()
-                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Integer):
-                        self.structure[name].primitive_type = Struct_Integer()
-                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Null):
-                        self.structure[name].primitive_type = Struct_Null()
-                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Number):
-                        self.structure[name].primitive_type = Struct_Float()
-                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], String):
-                        self.structure[name].primitive_type = Struct_String()
-                    elif isinstance(self.includes[included_path[0]]._schema[included_path[1]], Include):
-                        self.structure[name].primitive_type = Struct_Include()
-
-            else: # If the key is defined in the main file
-                if self._schema[path].is_optional:
-                    # self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[path])
-                    self.structure[name].primitive_type = Struct_Type(type=self._schema[path], pointer_order=1)
-                else:
-                    if isinstance(self._schema[path], List):
-                        # self.structure[name].primitive_type = Struct_Array(sub_class=self._schema[path].args[0])
-                        self.structure[name].primitive_type = Struct_Type(type=self._schema[path].args[0], pointer_order=1)
-                    elif isinstance(self._schema[path], Map):
-                        self.structure[name].primitive_type = Struct_Map(sub_class=self._schema[path].args[0])
-                    elif isinstance(self._schema[path], Boolean):
-                        self.structure[name].primitive_type = Struct_Boolean()
-                    elif isinstance(self._schema[path], Integer):
-                        self.structure[name].primitive_type = Struct_Integer()
-                    elif isinstance(self._schema[path], Null):
-                        self.structure[name].primitive_type = Struct_Null()
-                    elif isinstance(self._schema[path], Number):
-                        self.structure[name].primitive_type = Struct_Float()
-                    elif isinstance(self._schema[path], String):
-                        self.structure[name].primitive_type = Struct_String()
-                    elif isinstance(self._schema[path], Include):
-                        self.structure[name].primitive_type = Struct_Include(self._schema[path].args[0])
+            if self.structure[name].path not in self._schema.keys(): # Key is included in sub-file
+                included_path = self.structure[name].path.split('.')
+                self.structure[name].primitive_type = Struct_Type(type=self.includes[included_path[0]]._schema[included_path[1]])
+            else: # Key is defined in the main file
+                self.structure[name].primitive_type = Struct_Type(type=self._schema[self.structure[name].path])
         else:
             self.structure[name].primitive_type = Struct_None()
 
-
+    
 
 class _Structure():
     def __init__(self):
@@ -326,10 +436,32 @@ class _Structure():
     def is_root(self):
         return (len(self.parents) == 0)
 
+
     def declare(self, name=None):
         if name is None:
             name = self.var_name
         return self.primitive_type.declare(name)
+
+
+
+def is_in_nested_struct(struct, name):
+    """Test if the key is in a nested structure (in that case its depth will be the same as parent's struct depth)"""
+    if not struct[name].is_root():
+        for parent in struct[name].parents:
+            if struct[parent].is_root() or not isinstance(struct[parent].primitive_type, Struct_None) or is_included(struct, parent):
+                return False
+        return True
+    else:
+        return False
+
+
+    
+def is_included(struct, name):
+    """Test if a given type is included by another"""
+    for parent in struct[name].parents:
+        if isinstance(struct[parent].primitive_type, Struct_Include):
+            return True
+    return False
 
 
 
@@ -369,7 +501,8 @@ def walk_through_struct(struct, key, depth=0):
     # We iterate recursively over the dependencies
     max_depth = depth
     for dependency in struct[key].dependencies:
-        new_depth = walk_through_struct(struct, dependency, depth=depth+1)
+        # new_depth = walk_through_struct(struct, dependency, depth=depth+1)
+        new_depth = walk_through_struct(struct, dependency, depth=depth+(not is_in_nested_struct(struct, dependency)))
         if max_depth < new_depth:
             max_depth = new_depth
     return max_depth

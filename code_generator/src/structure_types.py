@@ -2,31 +2,39 @@ from yamale.validators import *
 
 
 class Struct_Type():
+    
     def __init__(self, type=Null(), pointer_order=0):
-        if isinstance(type, List):
-            self.__class__ = Struct_Type
-            self.__init__(type=type.validators[0], pointer_order=pointer_order+1)
-        elif isinstance(type, Number):
-            self.__class__ = Struct_Float
-            self.__init__(pointer_order=pointer_order)
-        elif isinstance(type, Integer):
-            self.__class__ = Struct_Integer
-            self.__init__(pointer_order=pointer_order)
-        elif isinstance(type, Boolean):
+        if isinstance(type, Boolean):
             self.__class__ = Struct_Boolean
-            self.__init__(pointer_order=pointer_order)
-        elif isinstance(type, String):
-            self.__class__ = Struct_String
-            self.__init__(pointer_order=pointer_order)
+            self.__init__(pointer_order=pointer_order+type.is_optional)
         elif isinstance(type, Include):
             self.__class__ = Struct_Include
-            self.__init__(name=type.args[0], pointer_order=pointer_order)
+            self.__init__(name=type.args[0], pointer_order=pointer_order+type.is_optional)
+        elif isinstance(type, Integer):
+            self.__class__ = Struct_Integer
+            self.__init__(pointer_order=pointer_order+type.is_optional)
+        elif isinstance(type, List):
+            # self.__init__(type=type.validators[0], pointer_order=pointer_order+1+type.is_optional)
+            if len(type.validators) == 1:
+                self.__class__ = Struct_Type
+                self.__init__(type=type.validators[0], pointer_order=pointer_order+1+type.is_optional)
+            else:
+                self.__class__ = Struct_List
+                self.__init__(sub_types=[Struct_Type(type=k, pointer_order=0) for k in type.validators], pointer_order=pointer_order+1+type.is_optional)
         elif isinstance(type, Map):
             self.__class__ = Struct_Map
-            self.__init__(sub_class=type.validators[0], pointer_order=pointer_order)
+            self.__init__(sub_types=[Struct_Type(type=k, pointer_order=0) for k in type.validators], sub_class=type.validators[0], pointer_order=pointer_order+1+type.is_optional)
         elif isinstance(type, Null):
             self.__class__ = Struct_Null
-            self.__init__(pointer_order=pointer_order)
+            self.__init__(pointer_order=pointer_order+type.is_optional)
+        elif isinstance(type, Number):
+            self.__class__ = Struct_Float
+            self.__init__(pointer_order=pointer_order+type.is_optional)
+        elif isinstance(type, String):
+            self.__class__ = Struct_String
+            self.__init__(pointer_order=pointer_order+type.is_optional)
+        else:
+            raise Exception('Unrecognised validator: {}'.format(type))
 
     def make_pointer_string(self):
         string = ''
@@ -66,7 +74,7 @@ class Struct_Float(Struct_Type):
     def declare(self, name):
         return 'double{} {};'.format(self.make_pointer_string(), name)
 
-    
+
 
 class Struct_Include(Struct_Type):
     """Include primitive type"""
@@ -80,7 +88,7 @@ class Struct_Include(Struct_Type):
         return "Include{}('{}_t')".format(self.make_pointer_string(), self.included_type_name)
 
     def declare(self, name):
-        return '{}{} {};'.format(self.included_type_name, self.make_pointer_string(), name)
+        return '{}{} {};'.format(self.C_tag, self.make_pointer_string(), name)
 
 
 
@@ -98,17 +106,38 @@ class Struct_Integer(Struct_Type):
     def declare(self, name):
         return 'int{} {};'.format(self.make_pointer_string(), name)
 
-    
+
+
+class Struct_List(Struct_Type):
+    """Map primitive type"""
+
+    def __init__(self, sub_types = [], pointer_order=0):
+
+        self.pointer_order = pointer_order
+        self.sub_types = sub_types
+        self.C_tag = 'CHANGE_ME_t' # TO BE CHANGED!
+
+    def __str__(self):
+        return 'List{}({})'.format(self.make_pointer_string(), str(self.sub_types))
+
+    def declare(self, name):
+        return '{}{} {};'.format(self.C_tag, self.make_pointer_string(), name)
+
+
 
 class Struct_Map(Struct_Type):
     """Map primitive type"""
 
-    def __init__(self, sub_class=Null(), pointer_order=0):
+    def __init__(self, sub_types = [], sub_class=Null(), pointer_order=0):
 
         self.pointer_order = pointer_order
+        self.sub_types = sub_types
         self.keys_sub_class = Struct_String()
-        
-        if isinstance(sub_class, Number):
+
+        if isinstance(sub_class, Boolean):
+            self.sub_class = Struct_Boolean()
+            self.values_type_name = 'boolean'
+        elif isinstance(sub_class, Number):
             self.sub_class = Struct_Float()
             self.values_type_name = 'double'
         elif isinstance(sub_class, Integer):
@@ -125,6 +154,8 @@ class Struct_Map(Struct_Type):
             self.values_type_name = 'list'
         elif isinstance(sub_class, Null):
             self.sub_class = Struct_Null()
+        else:
+            raise Exception('Unrecognised validator: {}'.format(sub_types))
 
         if self.values_type_name != 'include':
             self.C_tag = 'MAP_ITEM_{}_t'.format(self.values_type_name)
@@ -135,7 +166,7 @@ class Struct_Map(Struct_Type):
         return 'Map{}({}, {})'.format(self.make_pointer_string(), str(self.keys_sub_class), str(self.sub_class))
 
     def declare(self, name):
-        return '{}{}* {};'.format(self.C_tag, self.make_pointer_string(), name)
+        return '{}{} {};'.format(self.C_tag, self.make_pointer_string(), name)
 
 
 

@@ -1,0 +1,30 @@
+key1: num()
+key2: list(num())
+key3: list(num(required=False))
+key4: list(num(), required=False)
+key5: list(num(required=False), required=False)
+
+key6:
+  k1: list(include('toto', required=False), required=False)
+  k2:
+    _k: list(include('taratata'))
+    k3: list(num(required=False), required=False)
+    k4: list(map(bool()))
+    k5:
+      k6: list(list(include('titi'), required=False), bool())
+
+key7: list(int(), int(required=False))#, list(num(), int()))
+
+
+---
+toto:
+  foo: list(str(required=False), required=False)
+  bar: list(list(str(required=False), required=False))
+  o2: include('taratata')
+
+taratata:
+  h20: int()
+
+titi:
+  example1: str()
+  exemple2: list(include('toto'))
