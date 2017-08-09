@@ -25,17 +25,18 @@
 #ifndef PARACONF_H__
 #define PARACONF_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <mpi.h>
+
 
 #include <string.h>
 #include <stdarg.h>
 #include <yaml.h>
-#include <mpi.h>
 
 #include "paraconf_export.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /** \file paraconf.h
  */
 
