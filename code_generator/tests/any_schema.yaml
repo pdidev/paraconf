@@ -1,0 +1,6 @@
+key1: any(int(), num())
+key2: any(str(), bool(), required=False)
+key3:
+  k1: int()
+  k2: any(int(), num())
+  k3: any(str(), bool(), required=False)

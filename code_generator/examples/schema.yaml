@@ -1,0 +1,16 @@
+k1: int()
+k2: num()
+k3: bool()
+k4: str()
+k5: include('toto', required=True)
+k6: map(int(), required=True)
+
+# k5: include('toto', required=False)
+# k6: map(int(), required=False)
+
+
+---
+toto:
+  a: int()
+  b: num()
+  # c: str(required=False)
