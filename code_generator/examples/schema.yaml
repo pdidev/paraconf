@@ -4,6 +4,10 @@ k3: bool()
 k4: str()
 k5: include('toto', required=True)
 k6: map(int(), required=True)
+k7: map(num(), required=True)
+
+node:
+  sub_node: int()
 
 # k5: include('toto', required=False)
 # k6: map(int(), required=False)

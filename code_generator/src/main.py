@@ -17,7 +17,7 @@ def _run(schema_path, data_path, output_path, parser):
         yamale.validate(schema, data)
 
         c_init = C_DataLoader(schema, data)
-        c_init.define_init_functions()
+        c_init.define_init_function()
         c_init.dump_init('init.c')
 
         c_generate_header('init.h')

@@ -5,7 +5,7 @@ def generate_main(main_path, data_path):
 #include "init.h"
 
 
-int main(int argc, char* argv[]) {
+int main() {
 
     PC_tree_t conf = PC_parse_path("%s");
     root_t* root = load_data(conf);
