@@ -1,0 +1,5 @@
+node2: 2
+node1: -1.6e-16
+node3:
+  n1: True
+  n2: SOME TEXT

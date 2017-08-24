@@ -1,7 +1,7 @@
 from c_code_generator.type_handler import *
 
-_INDENT_SPACE_ = 4
-_HEADER_STRING_ = '_PARACONF_C_TYPES_DEFINITION_'
+_INDENT_SPACE_ = 8
+_HEADER_STRING_ = 'PARACONF_C_TYPES_DEFINITION__'
 
 
 class C_TypesGenerator():
@@ -15,7 +15,6 @@ class C_TypesGenerator():
         #     3rd element -> string identifying the variable defined by the line of code
         # These tuples are gathered in sub-lists (blocks) corresponding to their depth level
         self.code = []
-        
         self.schema = schema
 
 
@@ -26,8 +25,7 @@ class C_TypesGenerator():
         self.code.append([(0, '#endif', None)])
 
         # We generate the code lines corresponding to the main nodes of the YAML schema
-        #  -> typedef_list stores all the struct types to declare later
-        #  -> included_types stores all the included types that need to be defined later
+        #  * typedef_list stores all the struct types to declare later
         typedef_list = self._make_root_struct()
 
         # We define the included types while updating typedef_list
@@ -39,7 +37,7 @@ class C_TypesGenerator():
         # We geenrate the header
         self._make_header()
 
-        
+
 
     def _make_root_struct(self):
         """Generate the code lines corresponding to the nodes of the main YAML document"""
@@ -50,18 +48,18 @@ class C_TypesGenerator():
         self.code[-1].append((indent_level, 'struct root_s {', 'root'))
 
         # We make a flat tree (dict) where:
-        #     -> the keys correspond to the main nodes (root nodes) of the schema
-        #     -> the value associated to a key is a list of paths to the dependencies:
+        #     * the keys correspond to the main nodes (root nodes) of the schema
+        #     * the value associated to a key is a list of paths to the dependencies:
         #          / root_node_1 -> [paths to dependencies_1]
         #  .{root} - root_node_2 -> [paths to dependencies_2]
         #          \ root_node_n -> [paths to dependencies_n]
         root_nodes = {}
 
         for path in self.schema._schema.keys():
-            
+
             # The 1st element of the splitted path is the root node
             splitted_path = path.split('.')
-            
+
             # If type is a primitive one -> no dependency
             if len(splitted_path) == 1:
                 root_nodes[splitted_path[0]] = None
@@ -108,15 +106,14 @@ class C_TypesGenerator():
     def _make_nested_struct(self, path_to_current_node, path_list, indent_level):
         """Create code lines for a nested struct"""
 
-        # -> path_to_current_node stores the path to the current node
-        # -> path_list stores the paths of all current node's dependencies
-        # -> included_types gathers names of included types
+        # * path_to_current_node stores the path to the current node
+        # * path_list stores the paths of all current node's dependencies
 
         self.code[-1].append((indent_level, 'struct {', 'root'))
 
         # We make a flat tree (dict) where:
-        #     -> the keys correspond to the current node's direct dependencies
-        #     -> the value associated to a direct dependency is a list of relative paths to its own dependencies:
+        #     * the keys correspond to the current node's direct dependencies
+        #     * the value associated to a direct dependency is a list of relative paths to its own dependencies:
         #                  / direct_dependency_1 -> [paths to sub-dependencies_1]
         #  .{current node} - direct_dependency_2 -> [paths to sub-dependencies_2]
         #                  \ direct_dependency_n -> [paths to sub-dependencies_n]
@@ -218,7 +215,7 @@ class C_TypesGenerator():
             type_list.sort()
             self.code[-1].append((indent_level, 'struct ' + replace_chars(node) + '_s {', node))
             for key in type_list:
-                type = Type_Handler(self.schema.includes[node]._schema[key])
+                type = Type_Handler(self.schema.includes[node]._schema[key], included_types=included_types)
                 self.code[-1].extend(type.c_declare(key, indent_level+1, node, path=node))
 
                 # We test if we have to later define an included type

@@ -12,10 +12,10 @@ B:
   bb: include('C', required=False)
 
 C:
-  cc: list(include('A'), required=True)
+  cc: list(include('A', required=False), required=True)
 
 D:
-  dd: map(int(), include('C'))
+  dd: map(int(), str(), include('C'))
 
 
 ---
@@ -23,9 +23,9 @@ E:
   ee: list(include('F'))
 
 F:
-  ff: include('E')
+  ff: include('E', required=False)
   fff: include('G')
 
 ---
 G:
-  gg: list(include('G'))
+  gg: list(include('G', required=False))

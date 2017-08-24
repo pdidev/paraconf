@@ -1,0 +1,5 @@
+node2: int()
+node1: num()
+node3:
+  n1: bool()
+  n2: str()

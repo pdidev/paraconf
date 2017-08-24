@@ -3,7 +3,7 @@ k2: num()
 k3: bool()
 k4: str()
 k5: include('toto', required=True)
-k6: map(int(), required=True)
+k6: map(int(), any(num()), required=True)
 k7: map(num(), required=True)
 
 node:

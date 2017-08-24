@@ -15,7 +15,6 @@ k7:
   b: 2.0
   c: 3.0
   d: 4.0
-
 node:
   sub_node: 3
 
