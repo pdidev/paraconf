@@ -1,7 +1,7 @@
 import argparse, yamale
 from c_code_generator.c_types_generator import C_TypesGenerator
 from c_code_generator.c_data_loader import C_DataLoader
-from c_code_generator.c_main_generator import generate_main
+from c_code_generator.c_functions import MAIN_FUNCTION
 
 
 def _run(schema_path, output_path, parser):
@@ -15,8 +15,10 @@ def _run(schema_path, output_path, parser):
     c_init.gen_init_code()
     c_init.dump_init_code()
     c_init.dump_init_header()
-    generate_main('main.c')
 
+    f = open('main.c', 'w')
+    f.write(MAIN_FUNCTION)
+    f.close()
 
 
 def main():
@@ -29,7 +31,6 @@ def main():
                         help='YAML library to load files, choices are "PyYAML" or "ruamel" (default)')
     args = parser.parse_args()
     _run(args.schema, args.output, args.parser)
-
 
 
 if __name__ == '__main__':

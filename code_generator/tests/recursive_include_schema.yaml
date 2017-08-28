@@ -5,14 +5,14 @@ var:
 
 ---
 A:
-  aa: include('B', required=False)
-  aaa: include('D', required=False)
+  aa: include('B', required=True)
+  aaa: include('D', required=True)
 
 B:
-  bb: include('C', required=False)
+  bb: include('C', required=True)
 
 C:
-  cc: list(include('A', required=False), required=True)
+  cc: list(include('A', required=True), required=True)
 
 D:
   dd: map(int(), str(), include('C'))
@@ -23,9 +23,9 @@ E:
   ee: list(include('F'))
 
 F:
-  ff: include('E', required=False)
+  ff: include('E', required=True)
   fff: include('G')
 
 ---
 G:
-  gg: list(include('G', required=False))
+  gg: list(include('G', required=True))

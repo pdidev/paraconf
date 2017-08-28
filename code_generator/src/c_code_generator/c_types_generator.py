@@ -1,7 +1,8 @@
 from c_code_generator.type_handler import *
+from c_code_generator.tools import make_flat_tree
 
-_INDENT_SPACE_ = 8
-_HEADER_STRING_ = 'PARACONF_C_TYPES_DEFINITION__'
+INDENT_SPACE = 8
+HEADER_STRING = 'PARACONF_C_TYPES_DEFINITION__'
 
 
 class C_TypesGenerator():
@@ -50,29 +51,10 @@ class C_TypesGenerator():
         # We make a flat tree (dict) where:
         #     * the keys correspond to the main nodes (root nodes) of the schema
         #     * the value associated to a key is a list of paths to the dependencies:
-        #          / root_node_1 -> [paths to dependencies_1]
-        #  .{root} - root_node_2 -> [paths to dependencies_2]
-        #          \ root_node_n -> [paths to dependencies_n]
-        root_nodes = {}
-
-        for path in self.schema._schema.keys():
-
-            # The 1st element of the splitted path is the root node
-            splitted_path = path.split('.')
-
-            # If type is a primitive one -> no dependency
-            if len(splitted_path) == 1:
-                root_nodes[splitted_path[0]] = None
-
-            # If the type has dependencies
-            else:
-                # If the dependency list has not been initialized yet
-                if not splitted_path[0] in root_nodes.keys():
-                    root_nodes[splitted_path[0]] = ['.'.join(splitted_path[1:])]
-                    
-                # If the dependency list has already been initialized
-                else:
-                    root_nodes[splitted_path[0]].append('.'.join(splitted_path[1:]))
+        #          / root_node_1: [paths to dependencies_1]
+        #  .{root} - root_node_2: [paths to dependencies_2]
+        #          \ root_node_n: [paths to dependencies_n]
+        root_nodes = make_flat_tree(self.schema._schema.keys())
 
         # We extract and sort the keys of root_nodes
         root_key_list = [k for k in root_nodes.keys()]
@@ -112,30 +94,12 @@ class C_TypesGenerator():
         self.code[-1].append((indent_level, 'struct {', 'root'))
 
         # We make a flat tree (dict) where:
-        #     * the keys correspond to the current node's direct dependencies
-        #     * the value associated to a direct dependency is a list of relative paths to its own dependencies:
-        #                  / direct_dependency_1 -> [paths to sub-dependencies_1]
-        #  .{current node} - direct_dependency_2 -> [paths to sub-dependencies_2]
-        #                  \ direct_dependency_n -> [paths to sub-dependencies_n]
-        struct_nodes = {}
-
-        for path in path_list:
-            
-            # The 1st element of the splitted path is one of the current node's direct dependency
-            splitted_path = path.split('.')
-
-            # If the node has no dependency it is a primitive type
-            if len(splitted_path)==1:
-                struct_nodes[splitted_path[0]] = None
-
-            # If the node has some dependencies it will be a nested struct
-            else:
-                # If the dependency list has not been initialized yet
-                if not splitted_path[0] in struct_nodes.keys():
-                    struct_nodes[splitted_path[0]] = ['.'.join(splitted_path[1:])]
-                # If the dependency list has already been initialized
-                else:
-                    struct_nodes[splitted_path[0]].append('.'.join(splitted_path[1:]))
+        #     * the keys correspond to the current node's children dependencies
+        #     * the value associated to a child dependency is a list of relative paths to its own dependencies:
+        #                  / child_dependency_1: [paths to sub-dependencies_1]
+        #  .{current_node} - child_dependency_2: [paths to sub-dependencies_2]
+        #                  \ child_dependency_n: [paths to sub-dependencies_n]
+        struct_nodes = make_flat_tree(path_list)
 
         # We extract and sort the keys of struct_nodes
         struct_key_list = [k for k in struct_nodes.keys()]
@@ -215,8 +179,8 @@ class C_TypesGenerator():
             type_list.sort()
             self.code[-1].append((indent_level, 'struct ' + replace_chars(node) + '_s {', node))
             for key in type_list:
-                type = Type_Handler(self.schema.includes[node]._schema[key], included_types=included_types)
-                self.code[-1].extend(type.c_declare(key, indent_level+1, node, path=node))
+                type = Type_Handler(self.schema.includes[node]._schema[key])
+                self.code[-1].extend(type.c_declare(key, indent_level+1, node, path=node+'.'+key))
 
                 # We test if we have to later define an included type
                 if isinstance(self.schema.includes[node]._schema[key], Include) and not self.schema.includes[node]._schema[key].args[0] in included_types and not type.pointer_order+int(type.is_optional)>0:
@@ -250,10 +214,10 @@ class C_TypesGenerator():
         
     def _make_header(self):
         """Generate lines corresponding to the header"""
-        
+
         header = []
-        header.append((0, '#ifndef {}'.format(_HEADER_STRING_), None))
-        header.append((0, '#define {}'.format(_HEADER_STRING_), None))
+        header.append((0, '#ifndef {}'.format(HEADER_STRING), None))
+        header.append((0, '#define {}'.format(HEADER_STRING), None))
         self.code.append(header)
         self._insert_space(None)
         self.code[-1].append((0, "#include <paraconf.h>", None))    
@@ -272,12 +236,12 @@ class C_TypesGenerator():
 
     def dump_types_definition(self, output='types.h'):
         """Write the code lines in the output file"""
-        
+
         f = open(output, "w")
         for expression in self.code[::-1]:
             for line in expression:
                 indent = ''
-                for i in range(line[0]*_INDENT_SPACE_):
+                for i in range(line[0] * INDENT_SPACE):
                     indent += ' '
                 f.write(indent + line[1] + '\n')
 
