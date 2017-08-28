@@ -290,10 +290,10 @@ PC_status_t PC_bool( const PC_tree_t tree, int *res )
 		PC_handle_err(status, err0);
 	}
 	
-	return tree.status;
+	return status;
 	
 err0:
-	return tree.status;
+	return status;
  }
 
 
