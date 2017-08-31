@@ -89,6 +89,7 @@ class Boolean_Handler(Type_Handler):
         return 'load_bool(PC_get(tree, ".%s"%s), &(%s))' % (position, format_string(indices), c_variable)
 
 
+
 class Double_Handler(Type_Handler):
 
     def __init__(self, type):
@@ -124,6 +125,7 @@ class Enum_Handler(Type_Handler):
         return self.type.c_declare(name, indent_level, defined_key, path)
 
 
+
 class Include_Handler(Type_Handler):
 
     def __init__(self, type):
@@ -138,6 +140,7 @@ class Include_Handler(Type_Handler):
         c_code = []
         c_code.append((indent_level, self.include_name + '_t' + self.make_pointer_string() + ' ' + name + ';', defined_key))
         return c_code
+
 
 
 class Integer_Handler(Type_Handler):
@@ -178,6 +181,7 @@ class List_Handler(Type_Handler):
         return c_code
 
 
+
 class Map_Handler(Type_Handler):
 
     def __init__(self, type):
@@ -195,6 +199,7 @@ class Map_Handler(Type_Handler):
         c_code.extend(self.sub_types.c_declare('map', indent_level+1, defined_key, path=path))
         c_code.append((indent_level, '}' + self.make_pointer_string() + ' ' + name + ';', defined_key))
         return c_code
+
 
 
 class String_Handler(Type_Handler):
@@ -217,6 +222,7 @@ class String_Handler(Type_Handler):
         if self.is_optional:
             return 'load_string(PC_get(tree, ".%s"%s), &(%s))' % (position, format_string(indices), c_variable)
         return 'load_string(PC_get(tree, ".%s"%s), &(%s))' % (position, format_string(indices), c_variable)
+
 
 
 class Union_Handler(Type_Handler):
@@ -255,10 +261,7 @@ class Union_Handler(Type_Handler):
                 type = Type_Handler(type=_type)
                 if isinstance(type, Include_Handler):
                     type_name = _type.args[0] + '_value'
-                    if self.has_map_parent or self.has_list_parent:
-                        type.is_optional = True # Only included types should be optional to allow recursive definitions
-                    else:
-                        type.is_optional = False
+                    type.is_optional = True # Only included types are optional to allow recursive definitions
                 else:
                     type_name = enum_types[i].split('_')[-1].lower() + '_value'
                     type.optional = False

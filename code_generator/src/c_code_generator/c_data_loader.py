@@ -9,7 +9,7 @@ INIT_HEADER = 'PARACONF_DATA_LOADER_H__'
 
 class C_DataLoader():
 
-    def __init__(self, schema, init_name='pcgen_init', main_name='main', type_name='types'):
+    def __init__(self, schema, init_name='pcgen_loader', main_name='main', type_name='types'):
         """Initialize the data loader"""
 
         self.schema = schema
@@ -36,7 +36,6 @@ class C_DataLoader():
         # Beginning of the C init code
         self.init_code.append((0, '#include <paraconf.h>'))
         self.init_code.append((0, '#include "%s.h"' % (self.init_name)))
-        self.init_code.append((0, '#include "pcgen_free.h"'))
         self._insert_space_init(n=2)
         self.init_code.append((0, LOAD_BOOL_DEFINITION))
         self._insert_space_init(n=2)
@@ -56,10 +55,6 @@ class C_DataLoader():
         # load_root_<path_to_node>() functions
         root_keys = make_flat_tree(self.schema._schema.keys())
         self.iter_dependencies(root_keys, previous_path='', previous_var='root->', path_to_enum=['root'])
-
-        # End of the C init header source
-        self.init_header.append((0, ''))
-        self.init_header.append((0, '#endif'))
 
 
     def gen_init_header(self):
@@ -97,8 +92,6 @@ class C_DataLoader():
         self.init_code.append((indent_level, 'PC_status_t load_root(PC_tree_t tree, root_t* root) {'))
 
         self._insert_space_init()
-
-        self.init_code.append((indent_level+1, 'PC_errhandler_t errh = PC_errhandler(PC_NULL_HANDLER);'))
 
         self.init_code.append((indent_level+1, 'int root_len;'))
         self.init_code.append((indent_level+1, 'PC_status_t status = PC_len(tree, &root_len);'))
@@ -138,12 +131,10 @@ class C_DataLoader():
         self.init_code.append((indent_level+1, '}'))
 
         self._insert_space_init()
-        self.init_code.append((indent_level+1, 'PC_errhandler(errh);'))
         self.init_code.append((indent_level+1, 'return PC_OK;'))
 
         self._insert_space_init()
         self.init_code.append((indent_level, 'err:'))
-        self.init_code.append((indent_level+1, 'PC_errhandler(errh);'))
         self.init_code.append((indent_level+1, 'free_root(root);'))
         self.init_code.append((indent_level+1, 'return status;'))
         self.init_code.append((indent_level, '}'))
@@ -168,8 +159,6 @@ class C_DataLoader():
             self.init_code.append((indent_level, 'PC_status_t load_%s(PC_tree_t tree, %s_t* %s) {' % (replace_chars(included_key), replace_chars(included_key), replace_chars(included_key))))
 
             self._insert_space_init()
-
-            self.init_code.append((indent_level+1, 'PC_errhandler_t errh = PC_errhandler(PC_NULL_HANDLER);'))
 
             self.init_code.append((indent_level+1, 'int %s_len;' % (replace_chars(included_key))))
             self.init_code.append((indent_level+1, 'PC_status_t status = PC_len(tree, &%s_len);' % (replace_chars(included_key))))
@@ -209,17 +198,15 @@ class C_DataLoader():
             self.init_code.append((indent_level+1, '}'))
 
             self._insert_space_init()
-            self.init_code.append((indent_level+1, 'PC_errhandler(errh);'))
             self.init_code.append((indent_level+1, 'return PC_OK;'))
 
             self._insert_space_init()
             self.init_code.append((indent_level, 'err:'))
-            self.init_code.append((indent_level+1, 'PC_errhandler(errh);'))
             self.init_code.append((indent_level+1, 'free_%s(%s);' % (replace_chars(included_key), replace_chars(included_key))))
             self.init_code.append((indent_level+1, 'return status;'))
             self.init_code.append((indent_level, '}'))
 
-            # We iterate over the included node's dependencues to generate the sub-init functions
+            # We iterate over the included node's dependencies to generate the sub-init functions
             keys = make_flat_tree(self.schema.includes[included_key]._schema.keys())
             self.iter_dependencies(keys, '', replace_chars(included_key)+'->', [replace_chars(included_key)], included_key)
 
@@ -475,6 +462,8 @@ class C_DataLoader():
 
         if recursion_depth==0: # We have to declare the status
             self.init_code.append((indent_level, 'PC_status_t status = PC_len(PC_get(tree, ".%s"), &(%s%slen));' % (position, c_variable, struct_ref)))
+            if len(validator.validators)>0: # We initialize errh only if the list/map has at least one validator
+                self.init_code.append((indent_level, 'PC_errhandler_t errh;'))
         else: # We don't have to declare the status
             self.init_code.append((indent_level, 'status = PC_len(PC_get(tree, ".%s"%s), &(%s%slen));' % (position, format_string(indices), c_variable, struct_ref)))
 
@@ -486,6 +475,11 @@ class C_DataLoader():
         if len(validator.validators)==0:
             if isinstance(validator, List):
                 self.init_code.append((indent_level+1, '%s%stab[i%d].item.node = PC_get(tree, ".%s[%%d]"%s);' % (c_variable, struct_ref, recursion_depth, position, format_string(indices))))
+                self.init_code.append((indent_level+1, 'status = PC_status(%s%stab[i%d].item.node);' % (c_variable, struct_ref, recursion_depth)))
+                self.init_code.append((indent_level+1, 'if (status) {'))
+                self.init_code.extend(c_free_memory(self.schema, validator, c_variable, path_to_enum, indent_level+1, indices, recursion_depth))
+                self.init_code.append((indent_level+2, 'return status;'))
+                self.init_code.append((indent_level+1, '}'))
             else:
                 self.init_code.append((indent_level+1, 'status = PC_string(PC_get(tree, ".%s{%%d}"%s), &(%s%smap[i%d].key));' % (position, format_string(indices), c_variable, struct_ref, recursion_depth)))
                 self.init_code.append((indent_level+1, '%s%smap[i%d].item.node = PC_get(tree, ".%s<%%d>"%s);' % (c_variable, struct_ref, recursion_depth, position, format_string(indices))))
@@ -521,7 +515,7 @@ class C_DataLoader():
         else:
             struct_ref = '.'
 
-        # We flatten the nested anys
+        # We flatten the nested any
         validators = find_nested_any(validator.validators)
 
         # We try to load the data as if it was validated by "validators[0]"
@@ -534,7 +528,9 @@ class C_DataLoader():
 
         if isinstance(val, String) or isinstance(val, Include):
             self.init_code.append((indent_level, '%s = NULL;' % (c_variable+'.item.'+name)))
+        self.init_code.append((indent_level, 'errh = PC_errhandler(PC_NULL_HANDLER);'))
         self.load_primitive_data(val, position, c_variable+'.item.'+name, path_to_enum, indent_level, indices, recursion_depth=recursion_depth+1)
+        self.init_code.append((indent_level, 'PC_errhandler(errh);'))
         # We check if it succeeded
         self.init_code.append((indent_level, 'if (!status) {'))
         self.init_code.append((indent_level+1, '%s = %s;' % (c_variable+'.type', '_'.join(path_to_enum))))
@@ -560,7 +556,9 @@ class C_DataLoader():
             if isinstance(val, String) or isinstance(val, Include):
                 self.init_code.append((indent_level+i+1, '%s = NULL;' % (c_variable+'.item.'+name)))
             # We load the primitive data at "position" in "c_variable+'item.'+name"
+            self.init_code.append((indent_level+i+1, 'errh = PC_errhandler(PC_NULL_HANDLER);'))
             self.load_primitive_data(val, position, c_variable+'.item.'+name, path_to_enum, indent_level+i+1, indices, recursion_depth=recursion_depth+1)
+            self.init_code.append((indent_level+i+1, 'PC_errhandler(errh);'))
             # We check if it succeeded
             self.init_code.append((indent_level+i+1, 'if (!status) {'))
             self.init_code.append((indent_level+i+2, '%s = %s;' % (c_variable+'.type', '_'.join(path_to_enum))))
@@ -586,7 +584,9 @@ class C_DataLoader():
             path_to_enum.append(enum_names[-1])
 
             # We load the primitive data at "position" in "c_variable+'item.'+name"
+            self.init_code.append((indent_level+i-1, 'errh = PC_errhandler(PC_NULL_HANDLER);'))
             self.load_primitive_data(validators[-1], position, c_variable+'.item.'+name, path_to_enum, indent_level+i-1, indices, recursion_depth=recursion_depth+1)
+            self.init_code.append((indent_level+i-1, 'PC_errhandler(errh);'))
             # We check if it succeeded
             self.init_code.append((indent_level+i-1, 'if (!status) {'))
             self.init_code.append((indent_level+i, '%s = %s;' % (c_variable+'.type', '_'.join(path_to_enum))))
@@ -619,7 +619,10 @@ class C_DataLoader():
 
         validators = find_nested_any(validator.validators) # There are no more nested any
         for validator in validators:
-            validator.is_required = True
+            if not isinstance(validator, Include):
+                validator.is_required = True
+            else:
+                validator.is_required = False
 
         val = validators[0]
         name = enum_names[0] + '_value'
@@ -627,11 +630,14 @@ class C_DataLoader():
 
         if recursion_depth==0: # We have to declare the status
             self.init_code.append((indent_level, 'PC_status_t status;'))
+            self.init_code.append((indent_level, 'PC_errhandler_t errh;'))
 
         if isinstance(val, String) or isinstance(val, Include) and val.is_optional:
             self.init_code.append((indent_level, '%s = NULL;' % (c_variable+struct_ref+'item.'+name)))
         # We load the primitive data at "position" in "c_variable+struct_ref+'item.'+name"
+        self.init_code.append((indent_level, 'errh = PC_errhandler(PC_NULL_HANDLER);'))
         self.load_primitive_data(val, position, c_variable+struct_ref+'item.'+name, path_to_enum, indent_level, indices, recursion_depth=recursion_depth+1)
+        self.init_code.append((indent_level, 'PC_errhandler(errh);'))
         # We check if it succeeded
         self.init_code.append((indent_level, 'if (!status) {'))
         self.init_code.append((indent_level+1, '%s = %s;' % (c_variable+struct_ref+'type', '_'.join(path_to_enum))))
@@ -652,7 +658,9 @@ class C_DataLoader():
             if isinstance(val, String) or isinstance(val, Include) and val.is_optional:
                 self.init_code.append((indent_level, '%s = NULL;' % (c_variable+struct_ref+'item.'+name)))
             # We load the primitive data at "position" in "c_variable+struct_ref+'item.'+name"
+            self.init_code.append((indent_level+i+1, 'errh = PC_errhandler(PC_NULL_HANDLER);'))
             self.load_primitive_data(val, position, c_variable+struct_ref+'item.'+name, path_to_enum, indent_level+i+1, indices, recursion_depth=recursion_depth+1)
+            self.init_code.append((indent_level+i+1, 'PC_errhandler(errh);'))
             # We check if it succeeded
             self.init_code.append((indent_level+i+1, 'if (!status) {'))
             self.init_code.append((indent_level+i+2, '%s = %s;' % (c_variable+struct_ref+'type', '_'.join(path_to_enum))))
@@ -671,7 +679,9 @@ class C_DataLoader():
             path_to_enum.append(enum_names[-1])
 
             # We load the primitive data at "position" in "c_variable+struct_ref+'item.'+name"
+            self.init_code.append((indent_level+i-1, 'errh = PC_errhandler(PC_NULL_HANDLER);'))
             self.load_primitive_data(validators[-1], position, c_variable+struct_ref+'item.'+name, path_to_enum, indent_level+i-1, indices, recursion_depth=recursion_depth+1)
+            self.init_code.append((indent_level+i-1, 'PC_errhandler(errh);'))
             # We check if it succeeded
             self.init_code.append((indent_level+i-1, 'if (!status) {'))
             self.init_code.append((indent_level+i, '%s = %s;' % (c_variable+struct_ref+'type', '_'.join(path_to_enum))))
@@ -681,6 +691,9 @@ class C_DataLoader():
             self.init_code.append((indent_level+i, 'return PC_INVALID_NODE_TYPE;')) # We don't have to separate the cases where recursion depth > 0 and recursion depth = 0 (inside List/Map, "any" validators are replaced with their sub-validators)
 
             path_to_enum.pop()
+
+        else:
+            self.init_code.append((indent_level+1, 'return PC_INVALID_NODE_TYPE;'))
 
         while i>0:
             i -= 1
@@ -697,7 +710,7 @@ class C_DataLoader():
             n += -1
 
 
-    def dump_init_code(self):
+    def dump_code(self):
         """Dump the initialization functions code in <self.init_name>.c"""
 
         f = open(self.init_name+'.c', "w")
@@ -711,7 +724,7 @@ class C_DataLoader():
         f.close()
 
 
-    def dump_init_header(self):
+    def dump_header(self):
         """Dump the initialization functions header in <self.init_name>.h"""
 
         f = open(self.init_name+'.h', "w")

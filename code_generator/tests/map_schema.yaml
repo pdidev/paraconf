@@ -1,4 +1,0 @@
-key1: map(int())
-key2: map(num(), bool(), required=False)
-key3:
-  k1: map(str(), list(num()), map(bool(), required=False))

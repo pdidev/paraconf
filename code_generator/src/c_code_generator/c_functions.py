@@ -33,8 +33,8 @@ LOAD_STRING_DEFINITION = '''PC_status_t load_string(PC_tree_t tree, char** strin
 %s%sgoto not_a_string;
 %s}
 
-%sstatus = PC_string(tree, string_res);
 %sPC_errhandler(errh);
+%sstatus = PC_string(tree, string_res);
 %sreturn status;
 
 not_a_string:
@@ -60,8 +60,8 @@ LOAD_DOUBLE_DEFINITION = '''PC_status_t load_double(PC_tree_t tree, double* doub
 %s%sgoto not_a_double;
 %s}
 
-%sstatus = PC_double(tree, double_res);
 %sPC_errhandler(errh);
+%sstatus = PC_double(tree, double_res);
 %sreturn status;
 
 not_a_double:
@@ -72,34 +72,28 @@ not_a_double:
 
 # Integer loader
 
-LOAD_INT_NB_INDENTS = 4
+LOAD_INT_NB_INDENTS = 2
 LOAD_INT_FORMAT = ()
 for i in range(LOAD_INT_NB_INDENTS):
     LOAD_INT_FORMAT += (INDENT_STRING,)
 LOAD_INT_DECLARATION = '''PC_status_t load_int(PC_tree_t tree, long* int_res);'''
 LOAD_INT_DEFINITION = '''PC_status_t load_int(PC_tree_t tree, long* int_res) {
 
-%sPC_errhandler_t errh = PC_errhandler(PC_NULL_HANDLER);
-
 %sPC_status_t status = PC_int(tree, int_res);
-%sPC_errhandler(errh);
 %sreturn status;
 }''' % LOAD_INT_FORMAT
 
 
 # Boolean loader
 
-LOAD_BOOL_NB_INDENTS = 4
+LOAD_BOOL_NB_INDENTS = 2
 LOAD_BOOL_FORMAT = ()
 for i in range(LOAD_BOOL_NB_INDENTS):
     LOAD_BOOL_FORMAT += (INDENT_STRING,)
 LOAD_BOOL_DECLARATION = '''PC_status_t load_bool(PC_tree_t tree, int* bool_res);'''
 LOAD_BOOL_DEFINITION = '''PC_status_t load_bool(PC_tree_t tree, int* bool_res) {
 
-%sPC_errhandler_t errh = PC_errhandler(PC_NULL_HANDLER);
-
 %sPC_status_t status = PC_bool(tree, bool_res);
-%sPC_errhandler(errh);
 %sreturn status;
 }''' % LOAD_BOOL_FORMAT
 
@@ -112,8 +106,7 @@ for i in range(MAIN_NB_INDENTS):
     MAIN_FORMAT += (INDENT_STRING,)
 MAIN_FUNCTION = '''#include <stdio.h>
 #include <paraconf.h>
-#include "pcgen_init.h"
-#include "pcgen_free.h"
+#include "pcgen_loader.h"
 
 
 int main(int argc, char* argv[]) {

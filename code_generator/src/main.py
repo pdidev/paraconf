@@ -1,6 +1,6 @@
 import argparse, yamale
 from c_code_generator.c_data_loader import C_DataLoader
-from c_code_generator.c_free_memory import c_free_root, dump_free_code, dump_free_header
+from c_code_generator.c_free_memory import c_free_root
 from c_code_generator.c_types_generator import C_TypesGenerator
 from c_code_generator.c_functions import MAIN_FUNCTION
 
@@ -12,14 +12,14 @@ def _run(schema_path, output_path, parser):
     c_types_header.define_types()
     c_types_header.dump_types_definition(output_path)
 
-    c_init = C_DataLoader(schema, init_name='pcgen_init', main_name='main', type_name='types')
-    c_init.gen_init_code()
-    c_init.dump_init_code()
-    c_init.dump_init_header()
+    c_loader = C_DataLoader(schema, init_name='pcgen_loader', main_name='main', type_name='types')
+    c_loader.gen_init_code()
 
     c_free_code, c_free_header = c_free_root(schema)
-    dump_free_code('pcgen_free.c', c_free_code)
-    dump_free_header('pcgen_free.h', c_free_header)
+    c_loader.init_code.extend(c_free_code)
+    c_loader.init_header.extend(c_free_header)
+    c_loader.dump_code()
+    c_loader.dump_header()
 
     f = open('main.c', 'w')
     f.write(MAIN_FUNCTION)

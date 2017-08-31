@@ -9,11 +9,10 @@ To generate the source code, the following command can be entered:
 ```Bash
 ./pcgen PATH_TO_SCHEMA
 ```
-Five files will be created: types.h, pcgen\_free.h, pcgen\_free.c, pcgen\_init.h, pcgen\_init.c. The first header defines the types and structures that will store the data. The pcgen\_init files declare and define the functions that will load the data. To use these resources, the three following headers should be included in the C source:
+Three files will be created: types.h, pcgen\_loader.h, pcgen\_loader.c. The first header defines the types and structures that will store the data. The pcgen\_loader files declare and define the functions that will load and free the data. To use these resources, the three following headers should be included in the C source:
 ```C
 #include <paraconf.h>
-#include "pcgen_free.h"
-#include "pcgen_init.h"
+#include "pcgen_loader.h"
 ```
 
 ## How to use it
@@ -95,7 +94,7 @@ struct {
 ## Noticeable behaviors
 When a node is defined in the schema as being optional (required=False), its associated type will be a pointer. If the type already is a pointer (for ex. str() <-> char*), adding required=False changes nothing. It is also useless to declare a node as optional inside an any/list/map object.
 
-In an any object, only strings are pointers. In list/map objects, both strings and included types are pointers to allow recursive type definition.
+In any/list/map objects, both strings and included types are pointers in order to allow recursive type definition.
 
 Finally, adding a nested any inside an any/list/map object does not change anything. For example, `map(any(int(), num()))` will be equivalent to `map(int(), num())`. Similar behavior can be seen with nested enum: `list(enum(3.14, 'pi'))` will be equivalent to `list(num(), str())` in PCgen.
 

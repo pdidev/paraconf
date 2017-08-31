@@ -136,6 +136,7 @@ def c_free_memory(schema, validator, c_variable, path_to_enum, indent_level, ind
 
 
 def c_free_includes(schema, code_lines, header_lines):
+    """Generate the free functions corresponding to the included nodes"""
 
     indent_level = 0
 
@@ -160,7 +161,14 @@ def c_free_includes(schema, code_lines, header_lines):
                     if isinstance(val, (Include, List, Map, String)):
                         allocated_variables[-1].append(key)
                         break
+            elif isinstance(schema.includes[included_key]._schema[key], Enum):
+                any_val = convert_enum_to_any(schema.includes[included_key]._schema[key])
+                for val in any_val.validators:
+                    if isinstance(val, String):
+                        allocated_variables[-1].append(key)
+                        break
 
+    # We add the declaration/edfinition of free functions in the header/code
     for i, included_key in enumerate(sorted_key_list):
 
         header_lines.append((indent_level, 'void free_%s(%s_t* %s);' % (replace_chars(included_key), replace_chars(included_key), replace_chars(included_key))))
@@ -181,6 +189,7 @@ def c_free_includes(schema, code_lines, header_lines):
 
         code_lines.append((indent_level, '}'))
 
+    # We add the declaration/edfinition of free sub-functions in the header/code
     for i, included_key in enumerate(sorted_key_list):
 
         for key in allocated_variables[i]:
@@ -198,25 +207,12 @@ def c_free_root(schema):
     header_lines = []
     indent_level = 0
 
-    # We generate the beginning of the code source
-    code_lines.append((indent_level, '#include <stdlib.h>'))
-    code_lines.append((indent_level, '#include "pcgen_free.h"'))
-    code_lines.append((indent_level, '#include "types.h"'))
-
-    # We generate the beginning of the header source
-    header_lines.append((indent_level, '#ifndef %s' % (FREE_HEADER)))
-    header_lines.append((indent_level, '#define %s' % (FREE_HEADER)))
-    header_lines.append((indent_level, ''))
-    header_lines.append((indent_level, '#include "types.h"'))
-    header_lines.append((indent_level, ''))
-    header_lines.append((indent_level, ''))
-
     c_free_includes(schema, code_lines, header_lines)
 
     code_lines.append((indent_level, ''))
     code_lines.append((indent_level, 'void free_root(root_t* root) {'))
     code_lines.append((indent_level, ''))
-    
+
     header_lines.append((indent_level, ''))
     header_lines.append((indent_level, 'void free_root(root_t* root);'))
     header_lines.append((indent_level, ''))
@@ -264,6 +260,7 @@ def c_free_root(schema):
 
 
 def c_free_generic(dependency_tree, previous_path, previous_var, indent_level):
+    """Free the generic fields of the root/included nodes structs"""
 
     code_lines = []
 
@@ -283,6 +280,7 @@ def c_free_generic(dependency_tree, previous_path, previous_var, indent_level):
 
 
 def c_free_node(schema, validator, c_variable, path_to_enum):
+    """Generate the function to deallocate a root/included node leaf (= primitive type)"""
 
     code_lines = []
     indent_level = 0
@@ -313,31 +311,8 @@ def c_free_node(schema, validator, c_variable, path_to_enum):
 
 
 
-def dump_free_code(path, code_lines):
-
-    f = open(path, 'w')
-    for line in code_lines:
-        indent_string = ''
-        for i in range(line[0] * INDENT_SPACE):
-            indent_string += ' '
-        f.write(indent_string + line[1] + '\n')
-    f.close()
-
-
-
-def dump_free_header(path, header_lines):
-
-    f = open(path, 'w')
-    for line in header_lines:
-        indent_string = ''
-        for i in range(line[0] * INDENT_SPACE):
-            indent_string += ' '
-        f.write(indent_string + line[1] + '\n')
-    f.close()
-
-
-
 def has_allocated_member(validator):
+    """Test if a validator should has an allocatable field"""
 
     if validator.is_optional or isinstance(validator, (Include, List, Map, String)):
         return True

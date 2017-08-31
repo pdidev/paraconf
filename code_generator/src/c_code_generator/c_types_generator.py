@@ -50,10 +50,10 @@ class C_TypesGenerator():
 
         # We make a flat tree (dict) where:
         #     * the keys correspond to the main nodes (root nodes) of the schema
-        #     * the value associated to a key is a list of paths to the dependencies:
-        #          / root_node_1: [paths to dependencies_1]
-        #  .{root} - root_node_2: [paths to dependencies_2]
-        #          \ root_node_n: [paths to dependencies_n]
+        #     * the value associated to a key is a list of paths to the leaves:
+        #          / root_node_1: [paths to leaves_1]
+        #  .{root} - root_node_2: [paths to leaves_2]
+        #          \ root_node_n: [paths to leaves_n]
         root_nodes = make_flat_tree(self.schema._schema.keys())
 
         # We extract and sort the keys of root_nodes
@@ -62,7 +62,10 @@ class C_TypesGenerator():
 
         # We generate the code line(s) for each root node
         for key in root_key_list:
-            
+
+            if key=='generic':
+                raise ValueError('found an node with name "generic" at root')
+
             # If the node is a primitive type
             if root_nodes[key] is None:
                 
@@ -95,10 +98,10 @@ class C_TypesGenerator():
 
         # We make a flat tree (dict) where:
         #     * the keys correspond to the current node's children dependencies
-        #     * the value associated to a child dependency is a list of relative paths to its own dependencies:
-        #                  / child_dependency_1: [paths to sub-dependencies_1]
-        #  .{current_node} - child_dependency_2: [paths to sub-dependencies_2]
-        #                  \ child_dependency_n: [paths to sub-dependencies_n]
+        #     * the value associated to a child dependency is a list of relative paths to its own leaves:
+        #                  / child_dependency_1: [paths to leaves_1]
+        #  .{current_node} - child_dependency_2: [paths to leaves_2]
+        #                  \ child_dependency_n: [paths to leaves_n]
         struct_nodes = make_flat_tree(path_list)
 
         # We extract and sort the keys of struct_nodes
@@ -107,6 +110,9 @@ class C_TypesGenerator():
 
         # We generate the code lines for each direct dependency of the struct definition
         for key in struct_key_list:
+
+            if key=='generic':
+                raise ValueError('found an node with name "generic" at root.%s' % (path_to_current_node))
 
             # If the node is a primitive type
             if struct_nodes[key] is None:
@@ -179,6 +185,8 @@ class C_TypesGenerator():
             type_list.sort()
             self.code[-1].append((indent_level, 'struct ' + replace_chars(node) + '_s {', node))
             for key in type_list:
+                if key=='generic':
+                    raise ValueError('found an included node with name "root" at %s.%s' % (node, key))
                 type = Type_Handler(self.schema.includes[node]._schema[key])
                 self.code[-1].extend(type.c_declare(key, indent_level+1, node, path=node+'.'+key))
 

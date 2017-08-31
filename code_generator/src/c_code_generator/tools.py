@@ -70,10 +70,10 @@ def make_flat_tree(path_list):
 
     # We make a flat tree (dict) where:
     #     * the keys correspond to the current node's children dependencies
-    #     * the value associated to a child dependency is a list of relative paths to its own dependencies:
-    #                  / child_dependency_1: [paths to sub-dependencies_1]
-    #  .{current_node} - child_dependency_2: [paths to sub-dependencies_2]
-    #                  \ child_dependency_n: [paths to sub-dependencies_n]
+    #     * the value associated to a child dependency is a list of relative paths to its own leaves:
+    #                  / child_dependency_1: [paths to leaves_1]
+    #  .{current_node} - child_dependency_2: [paths to leaves_2]
+    #                  \ child_dependency_n: [paths to leaves_n]
 
     # If path_list is empty the current node has no children and we return None
     if path_list is None:
@@ -106,7 +106,6 @@ def make_union_names(validators, path=''):
 
     enum_names = []
 
-    any_counter = 0
     list_counter = 0
     map_counter = 0
 
@@ -116,20 +115,12 @@ def make_union_names(validators, path=''):
         path = replace_chars(path) + '_'
 
     for i, validator in enumerate(validators):
-        
-        if isinstance(validator, Any):
-            enum_names.append(path+'any{}'.format(any_counter))
-            any_counter += 1
-        elif isinstance(validator, Boolean):
+
+        if isinstance(validator, Boolean):
             if not path+'int' in enum_names:
                 enum_names.append(path+'int')
             else:
                 validators_to_remove.append(i)
-        # elif isinstance(validator, Enum):
-        #     if not path+'int' in enum_names:
-        #         enum_names.append(path+'int')
-        #     else:
-        #         validators_to_remove.append(i)
         elif isinstance(validator, Integer):
             if not path+'long' in enum_names:
                 enum_names.append(path+'long')
