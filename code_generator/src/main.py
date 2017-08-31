@@ -1,6 +1,7 @@
 import argparse, yamale
-from c_code_generator.c_types_generator import C_TypesGenerator
 from c_code_generator.c_data_loader import C_DataLoader
+from c_code_generator.c_free_memory import c_free_root, dump_free_code, dump_free_header
+from c_code_generator.c_types_generator import C_TypesGenerator
 from c_code_generator.c_functions import MAIN_FUNCTION
 
 
@@ -15,6 +16,10 @@ def _run(schema_path, output_path, parser):
     c_init.gen_init_code()
     c_init.dump_init_code()
     c_init.dump_init_header()
+
+    c_free_code, c_free_header = c_free_root(schema)
+    dump_free_code('pcgen_free.c', c_free_code)
+    dump_free_header('pcgen_free.h', c_free_header)
 
     f = open('main.c', 'w')
     f.write(MAIN_FUNCTION)

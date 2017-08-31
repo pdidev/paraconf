@@ -113,7 +113,6 @@ class Enum_Handler(Type_Handler):
 
     def __init__(self, type):
         self.is_optional = type.is_optional
-        self.sub_types = []
         
         _val = convert_enum_to_any(type)
         self.type = Union_Handler(_val, pointer_order=int(self.is_optional))
@@ -258,6 +257,8 @@ class Union_Handler(Type_Handler):
                     type_name = _type.args[0] + '_value'
                     if self.has_map_parent or self.has_list_parent:
                         type.is_optional = True # Only included types should be optional to allow recursive definitions
+                    else:
+                        type.is_optional = False
                 else:
                     type_name = enum_types[i].split('_')[-1].lower() + '_value'
                     type.optional = False

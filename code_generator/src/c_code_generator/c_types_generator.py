@@ -211,7 +211,7 @@ class C_TypesGenerator():
         self._insert_space(None, n=2)
 
 
-        
+
     def _make_header(self):
         """Generate lines corresponding to the header"""
 

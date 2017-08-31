@@ -1,6 +1,7 @@
 from yamale.validators import *
 from c_code_generator.tools import convert_enum_to_any, make_flat_tree, replace_chars
 from c_code_generator.type_handler import *
+from c_code_generator.c_free_memory import c_free_memory, has_allocated_member
 
 INDENT_SPACE = 8
 INIT_HEADER = 'PARACONF_DATA_LOADER_H__'
@@ -19,10 +20,11 @@ class C_DataLoader():
         # Lines of code will be represented as tuples:
         #     1st element -> indent level
         #     2nd element -> string corresponding to the line of code
-        
-        self.main_code = []         # Main function
+
         self.init_code = []         # Initialization functions
         self.init_header = []       # Initialization functions' header
+        self.free_code = []         # Deallocation functions
+        self.free_header = []       # Deallocation functions' header
 
 
     def gen_init_code(self):
@@ -34,6 +36,7 @@ class C_DataLoader():
         # Beginning of the C init code
         self.init_code.append((0, '#include <paraconf.h>'))
         self.init_code.append((0, '#include "%s.h"' % (self.init_name)))
+        self.init_code.append((0, '#include "pcgen_free.h"'))
         self._insert_space_init(n=2)
         self.init_code.append((0, LOAD_BOOL_DEFINITION))
         self._insert_space_init(n=2)
@@ -52,7 +55,7 @@ class C_DataLoader():
 
         # load_root_<path_to_node>() functions
         root_keys = make_flat_tree(self.schema._schema.keys())
-        self.iter_dependencies(root_keys, previous_path='', previous_var='root->', path_to_enum=['ROOT'])
+        self.iter_dependencies(root_keys, previous_path='', previous_var='root->', path_to_enum=['root'])
 
         # End of the C init header source
         self.init_header.append((0, ''))
@@ -141,6 +144,7 @@ class C_DataLoader():
         self._insert_space_init()
         self.init_code.append((indent_level, 'err:'))
         self.init_code.append((indent_level+1, 'PC_errhandler(errh);'))
+        self.init_code.append((indent_level+1, 'free_root(root);'))
         self.init_code.append((indent_level+1, 'return status;'))
         self.init_code.append((indent_level, '}'))
 
@@ -211,11 +215,13 @@ class C_DataLoader():
             self._insert_space_init()
             self.init_code.append((indent_level, 'err:'))
             self.init_code.append((indent_level+1, 'PC_errhandler(errh);'))
+            self.init_code.append((indent_level+1, 'free_%s(%s);' % (replace_chars(included_key), replace_chars(included_key))))
             self.init_code.append((indent_level+1, 'return status;'))
             self.init_code.append((indent_level, '}'))
 
+            # We iterate over the included node's dependencues to generate the sub-init functions
             keys = make_flat_tree(self.schema.includes[included_key]._schema.keys())
-            self.iter_dependencies(keys, '', replace_chars(included_key)+'->', [replace_chars(included_key).upper()], included_key)
+            self.iter_dependencies(keys, '', replace_chars(included_key)+'->', [replace_chars(included_key)], included_key)
 
             self.init_header.append((0, ''))
 
@@ -225,10 +231,10 @@ class C_DataLoader():
 
         # dependency_tree is a flat tree where:
         #     * the keys correspond to the current node's children dependencies
-        #     * the value associated to a child dependency is a list of relative paths to its own dependencies:
-        #                  / child_dependency_1: [paths to sub-dependencies_1]
-        #  .{current_node} - child_dependency_2: [paths to sub-dependencies_2]
-        #                  \ child_dependency_n: [paths to sub-dependencies_n]
+        #     * the value associated to a child dependency is a list of relative paths to its own leaves:
+        #                  / child_dependency_1: [paths to leaves_1]
+        #  .{current_node} - child_dependency_2: [paths to leaves_2]
+        #                  \ child_dependency_n: [paths to leaves_n]
         # previous_path is the path to the current node
         # previous_var is the C string corresponding to the current variable
         # path_to_enum is a list allowing to recreate an enum name (for ex.: ['ROOT', 'NODE1', 'SUB_NODE1', ...])
@@ -241,13 +247,13 @@ class C_DataLoader():
             current_tree = make_flat_tree(path_to_dependencies) # Returns None if there are no more dependencies
             current_path = previous_path+key
             current_var = previous_var+replace_chars(key)
-            path_to_enum.append(replace_chars(key).upper())
+            path_to_enum.append(replace_chars(key))
 
             if included_key==None:
-                # load_root_<path_to_dependency>() function's declaration
+                # Declaration of load_root_<path_to_dependency>()
                 self.init_header.append((0, 'PC_status_t load_root_%s(PC_tree_t tree, root_t* root);' % (replace_chars(previous_path+key))))
             else:
-                # load_<included_key>_<path_to_dependency>() function's declaration
+                # Declaration of load_<included_key>_<path_to_dependency>()
                 self.init_header.append((0, 'PC_status_t load_%s_%s(PC_tree_t tree, %s_t* %s);' % (replace_chars(included_key), replace_chars(previous_path+key), replace_chars(included_key), replace_chars(included_key))))
 
             # We create the lines of code
@@ -264,7 +270,7 @@ class C_DataLoader():
 
 
     def gen_init_node_code(self, dependency_tree, position, c_variable, path_to_enum, included_key=None):
-        """Generate the load_root_<node>() and load_<included_key>_<path_to_dependencies>() functions"""
+        """Generate the load_root_<path_to_node>() and load_<included_key>_<path_to_node>() functions"""
 
         # Generate the initialization function for a given node
         # * position gives the path to the current node in the schema
@@ -294,15 +300,14 @@ class C_DataLoader():
         else:
             # Else there is at least one dependency
 
-            current_keys = []
-            for key in dependency_tree.keys():
-                key = key.split('.')[0]
-                if not key in current_keys:
-                    current_keys.append(key)
+            current_keys = [k for k in dependency_tree.keys()]
 
             # We generate the lines of code that will load all the sub-nodes
             self.init_code.append((indent_level+1, 'int root_%s_len;' % (replace_chars(position))))
             self.init_code.append((indent_level+1, 'PC_status_t status = PC_len(PC_get(tree, ".%s"), &root_%s_len);' % (position, replace_chars(position))))
+            self.init_code.append((indent_level+1, 'if (status) {'))
+            self.init_code.append((indent_level+2, 'goto err;'))
+            self.init_code.append((indent_level+1, '}'))
 
             self._insert_space_init()
 
@@ -310,6 +315,9 @@ class C_DataLoader():
 
             self.init_code.append((indent_level+2, 'char* node_name = NULL;'))
             self.init_code.append((indent_level+2, 'status = PC_string(PC_get(tree, ".%s{%%d}", i), &node_name);' % (position)))
+            self.init_code.append((indent_level+2, 'if (status) {'))
+            self.init_code.append((indent_level+3, 'goto err;'))
+            self.init_code.append((indent_level+2, '}'))
 
             key = current_keys[0]
             self.init_code.append((indent_level+2, 'if (!strcmp(node_name, "%s")) {' % (key)))
@@ -323,21 +331,39 @@ class C_DataLoader():
             self.init_code.append((indent_level+2, 'else {'))
             self.init_code.append((indent_level+3, '%s.generic.node = realloc(%s.generic.node, ++%s.generic.len * sizeof(PC_tree_t));' % (c_variable, c_variable, c_variable)))
             self.init_code.append((indent_level+3, '%s.generic.node[%s.generic.len-1] = PC_get(tree, ".%s.%%s", node_name);' % (c_variable, c_variable, position)))
+            self.init_code.append((indent_level+3, 'status = PC_status(%s.generic.node[%s.generic.len-1]);' % (c_variable, c_variable)))
             self.init_code.append((indent_level+2, '}'))
 
             self.init_code.append((indent_level+2, 'free(node_name);'))
+            self.init_code.append((indent_level+1, 'if (status) {'))
+            self.init_code.append((indent_level+2, 'goto err;'))
+            self.init_code.append((indent_level+1, '}'))
             self.init_code.append((indent_level+1, '}'))
 
+            self.init_code.append((indent_level+1, 'return PC_OK;'))
+
+            self.init_code.append((indent_level, 'err:'))
+            for key in dependency_tree.keys():
+                self.init_code.append((indent_level+1, 'if (NULL != %s.generic.node) {' % (c_variable)))
+                self.init_code.append((indent_level+2, 'free(%s.generic.node);' % (c_variable)))
+                self.init_code.append((indent_level+1, '}'))
+                if dependency_tree[key]==None:
+                    if has_allocated_member(self.schema._schema[position+'.'+key]):
+                        self.init_code.append((indent_level+1, 'free_root_%s(root);' % (replace_chars(position+'_'+replace_chars(key)))))
+                else:
+                    for path_to_leaf in dependency_tree[key]:
+                        if has_allocated_member(self.schema._schema[position+'.'+key+'.'+path_to_leaf]):
+                            self.init_code.append((indent_level+1, 'free_root_%s(root);' % (replace_chars(position+'_'+key+'_'+path_to_leaf))))
             self.init_code.append((indent_level+1, 'return status;'))
 
         self.init_code.append((indent_level, '}'))
 
 
     def load_primitive_data(self, validator, position, c_variable, path_to_enum, indent_level, indices=[], recursion_depth=0):
-        """Load data of primitive type (any, bool, int, enum, list, map, num, str)"""
+        """Load data of primitive type (any, bool, include, int, enum, list, map, num, str)"""
 
         # * indices is a list of current indices allowing to create a format string completing the position
-        #   (for ex.: position="{%d}", indices=["i0"] and format string=", i0")
+        #   (for ex.: position="{%s}", indices=["i0"] and format string=', "i0"')
         # * recursion_depth will allow us to know:
         #     - if we have to declare the status variable
         #     - if we have to return a result
@@ -384,7 +410,11 @@ class C_DataLoader():
                 if recursion_depth==0:
                     self.init_code.append((indent_level, 'return PC_OK;'))
             elif isinstance(validator, Enum):
-                pass
+                new_validator = convert_enum_to_any(validator)
+                new_validator.is_required = False
+                enum_names, _ = make_union_names(new_validator.validators)
+                self.init_code.append((indent_level, '%s = calloc(1, sizeof(*(%s)));' % (c_variable, c_variable)))
+                self.load_union_item(new_validator, position, c_variable, path_to_enum, enum_names, indent_level, indices, recursion_depth=recursion_depth)
                 if recursion_depth==0:
                     self.init_code.append((indent_level, 'return PC_OK;'))
             elif isinstance(validator, List):
@@ -396,7 +426,7 @@ class C_DataLoader():
                 self.init_code.append((indent_level, '%s = calloc(1, sizeof(*(%s)));' % (c_variable, c_variable)))
                 self.load_map_list(validator, position, c_variable, path_to_enum, indent_level, indices, recursion_depth=recursion_depth)
             elif isinstance(validator, Include):
-                self.init_code.append((indent_level, '%s = calloc(1, sizeof(%s_t));' % (c_variable, validator.args[0])))
+                self.init_code.append((indent_level, '%s = calloc(1, sizeof(%s_t));' % (c_variable, replace_chars(validator.args[0]))))
                 if recursion_depth==0:
                     self.init_code.append((indent_level, 'return load_%s(PC_get(tree, ".%s"%s), %s);' % (replace_chars(validator.args[0]), position, format_string(indices), c_variable)))
                 else:
@@ -451,20 +481,27 @@ class C_DataLoader():
         # We allocate the list/map array and write the "for" loop while introducing a new indice
         self.init_code.append((indent_level, '%s%s%s = calloc(%s%slen, sizeof(*(%s%s%s)));' % (c_variable, struct_ref, item_name, c_variable, struct_ref, c_variable, struct_ref, item_name)))
         self.init_code.append((indent_level, 'for (int i%d = 0 ; i%d < %s%slen ; ++i%d) {' % (recursion_depth, recursion_depth, c_variable, struct_ref, recursion_depth)))
-
-        validator.validators = find_nested_any(validator.validators) # There are no more nested any
-        enum_names, _ = make_union_names(validator.validators)
         indices.append('i%d' %(recursion_depth))
 
-        if isinstance(validator, Map):
-            # We load the key
-            self.init_code.append((indent_level+1, 'status = PC_string(PC_get(tree, ".%s{%%d}"%s), &(%s%smap[i%d].key));' % (position, format_string(indices), c_variable, struct_ref, recursion_depth)))
-            # We load the value
-            self.load_map_list_item(validator, position+'<%d>', '%s%s%s[i%d]' % (c_variable, struct_ref, item_name, recursion_depth), path_to_enum, enum_names, indent_level+1, indices, recursion_depth=recursion_depth)
-
+        if len(validator.validators)==0:
+            if isinstance(validator, List):
+                self.init_code.append((indent_level+1, '%s%stab[i%d].item.node = PC_get(tree, ".%s[%%d]"%s);' % (c_variable, struct_ref, recursion_depth, position, format_string(indices))))
+            else:
+                self.init_code.append((indent_level+1, 'status = PC_string(PC_get(tree, ".%s{%%d}"%s), &(%s%smap[i%d].key));' % (position, format_string(indices), c_variable, struct_ref, recursion_depth)))
+                self.init_code.append((indent_level+1, '%s%smap[i%d].item.node = PC_get(tree, ".%s<%%d>"%s);' % (c_variable, struct_ref, recursion_depth, position, format_string(indices))))
         else:
-            # We load the value
-            self.load_map_list_item(validator, position+'[%d]', '%s%s%s[i%d]' % (c_variable, struct_ref, item_name, recursion_depth), path_to_enum, enum_names, indent_level+1, indices, recursion_depth=recursion_depth)
+            validator.validators = find_nested_any(validator.validators) # There are no more nested any
+            enum_names, _ = make_union_names(validator.validators)
+
+            if isinstance(validator, Map):
+                # We load the key
+                self.init_code.append((indent_level+1, 'status = PC_string(PC_get(tree, ".%s{%%d}"%s), &(%s%smap[i%d].key));' % (position, format_string(indices), c_variable, struct_ref, recursion_depth)))
+                # We load the value
+                self.load_map_list_item(validator, position+'<%d>', '%s%s%s[i%d]' % (c_variable, struct_ref, item_name, recursion_depth), path_to_enum, enum_names, indent_level+1, indices, recursion_depth=recursion_depth)
+
+            else:
+                # We load the value
+                self.load_map_list_item(validator, position+'[%d]', '%s%s%s[i%d]' % (c_variable, struct_ref, item_name, recursion_depth), path_to_enum, enum_names, indent_level+1, indices, recursion_depth=recursion_depth)
 
         self.init_code.append((indent_level, '}'))
 
@@ -474,6 +511,16 @@ class C_DataLoader():
     def load_map_list_item(self, validator, position, c_variable, path_to_enum, enum_names, indent_level, indices=[], recursion_depth=0):
         """Generate the lines of code to detect a list/map item's type and load the corresponding data"""
 
+        if isinstance(validator, List):
+            item_name = 'tab'
+        else:
+            item_name = 'map'
+
+        if validator.is_optional:
+            struct_ref = '->'
+        else:
+            struct_ref = '.'
+
         # We flatten the nested anys
         validators = find_nested_any(validator.validators)
 
@@ -481,12 +528,12 @@ class C_DataLoader():
         val = validators[0]
         if isinstance(val, Include):
             val.is_required = False # An included type is always a pointer inside lists/maps in order to allow recursive definitions
-            name = val.args[0] + '_value'
-        else:
-            name = enum_names[0].lower() + '_value'
+        name = enum_names[0] + '_value'
 
         path_to_enum.append(enum_names[0])
 
+        if isinstance(val, String) or isinstance(val, Include):
+            self.init_code.append((indent_level, '%s = NULL;' % (c_variable+'.item.'+name)))
         self.load_primitive_data(val, position, c_variable+'.item.'+name, path_to_enum, indent_level, indices, recursion_depth=recursion_depth+1)
         # We check if it succeeded
         self.init_code.append((indent_level, 'if (!status) {'))
@@ -498,27 +545,20 @@ class C_DataLoader():
 
         # If the first try did not work, we reiterate with the others validators
         for i, val in enumerate(validators[1:-1]):
+            # We have to free the memory allocated in the previous try
+            if not isinstance(validators[i], String):
+                self.init_code.extend(c_free_memory(self.schema, validators[i], c_variable+'.item.'+name, path_to_enum, indent_level, indices, recursion_depth+2))
 
-            # If the previous tested field was an Include/List/Map we have to deallocate it
-            # No need to deallocate strings because if PC_string returns an error, then no allocation was completed
-            if isinstance(validators[i-1], Include):
-                self.init_code.append((indent_level+i+1, 'free(%s);' % (c_variable+'.item.'+name)))
-                # raise NotImplementedError('Freeing memory of included node inside list/map')
-            elif isinstance(validators[i-1], List):
-                self.init_code.append((indent_level+i+1, 'free(%s);' % (c_variable+'.item.'+name+'.tab')))
-            elif isinstance(validators[i-1], Map):
-                self.init_code.append((indent_level+i+1, 'free(%s);' % (c_variable+'.item.'+name+'.key')))
-                self.init_code.append((indent_level+i+1, 'free(%s);' % (c_variable+'.item.'+name+'.map')))
+            if isinstance(val, Include):
+                val.is_required = False # An included type is always a pointer inside lists/maps to allow recursive definitions
 
             # We extract the new name
-            if isinstance(val, Include):
-                val.is_optional = True # An included type is always a pointer inside lists/maps to allow recursive definitions
-                name = val.args[0] + '_value'
-            else:
-                name = enum_names[i+1].lower() + '_value'
+            name = enum_names[i+1] + '_value'
 
             path_to_enum.append(enum_names[i+1])
 
+            if isinstance(val, String) or isinstance(val, Include):
+                self.init_code.append((indent_level+i+1, '%s = NULL;' % (c_variable+'.item.'+name)))
             # We load the primitive data at "position" in "c_variable+'item.'+name"
             self.load_primitive_data(val, position, c_variable+'.item.'+name, path_to_enum, indent_level+i+1, indices, recursion_depth=recursion_depth+1)
             # We check if it succeeded
@@ -533,24 +573,15 @@ class C_DataLoader():
         # If it fails we either want to break the loop (recursion depth > 0) or return an error (recursion depth = 0)
         i = len(validators)
         if i > 1:
+            # We have to free the memory allocated in the previous try
+            if not isinstance(validators[-2], String):
+                self.init_code.extend(c_free_memory(self.schema, validators[-2], c_variable+'.item.'+name, path_to_enum, indent_level+i-1, indices, recursion_depth+2))
 
-            # If the previous tested field is an Include/List/Map we have to deallocate it
-            # No need to deallocate strings because if PC_string returns an error, then no allocation was completed
-            if isinstance(validators[-2], Include):
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name)))
-                # raise NotImplementedError('Freeing memory of included node inside list/map')
-            elif isinstance(validators[-2], List):
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.tab')))
-            elif isinstance(validators[-2], Map):
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.key')))
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.map')))
-
-            # We extract the new name
             if isinstance(validators[-1], Include):
                 validators[-1].is_required = False # An included type is always a pointer inside lists/maps to allow recursive definitions
-                name = validators[-1].args[0] + '_value'
-            else:
-                name = enum_names[-1].lower() + '_value'
+
+            # We extract the new name
+            name = enum_names[-1] + '_value'
 
             path_to_enum.append(enum_names[-1])
 
@@ -564,31 +595,12 @@ class C_DataLoader():
 
             path_to_enum.pop()
 
-            ### If the loading fails, no allocation is done and thus commented lines below are useless ###
-
-            # # If the tested field is an Include/List/Map we have to deallocate it
-            # if isinstance(validators[-1], Include):
-            #     pass
-            # elif isinstance(validators[-1], List):
-            #     self.init_code.append((indent_level+i, 'free(%s);' % (c_variable+'.item.'+name+'.tab')))
-            # elif isinstance(validators[-1], Map):
-            #     self.init_code.append((indent_level+i, 'free(%s);' % (c_variable+'.item.'+name+'.key')))
-            #     self.init_code.append((indent_level+i, 'free(%s);' % (c_variable+'.item.'+name+'.map')))
-            if recursion_depth==0:
-                self.init_code.append((indent_level+i, 'return PC_INVALID_NODE_TYPE;'))
-            else:
-                self.init_code.append((indent_level+i, 'break;'))
-
+        # We have to free the memory allocated in the previous try
+        if recursion_depth==0:
+            self.init_code.append((indent_level+i, 'return PC_INVALID_NODE_TYPE;'))
         else:
-            pass
-            #################################
-            # deallocate memory here?
-            #################################
+            self.init_code.append((indent_level+i, 'break;'))
 
-            if recursion_depth==0:
-                self.init_code.append((indent_level+i, 'return PC_INVALID_NODE_TYPE;'))
-            else:
-                self.init_code.append((indent_level+i, 'break;'))
 
         while i>0:
             i -= 1
@@ -606,14 +618,18 @@ class C_DataLoader():
             struct_ref = '.'
 
         validators = find_nested_any(validator.validators) # There are no more nested any
+        for validator in validators:
+            validator.is_required = True
 
         val = validators[0]
-        name = enum_names[0].lower() + '_value'
+        name = enum_names[0] + '_value'
         path_to_enum.append(enum_names[0])
 
         if recursion_depth==0: # We have to declare the status
             self.init_code.append((indent_level, 'PC_status_t status;'))
 
+        if isinstance(val, String) or isinstance(val, Include) and val.is_optional:
+            self.init_code.append((indent_level, '%s = NULL;' % (c_variable+struct_ref+'item.'+name)))
         # We load the primitive data at "position" in "c_variable+struct_ref+'item.'+name"
         self.load_primitive_data(val, position, c_variable+struct_ref+'item.'+name, path_to_enum, indent_level, indices, recursion_depth=recursion_depth+1)
         # We check if it succeeded
@@ -627,16 +643,14 @@ class C_DataLoader():
         # If the first try failed, we reiterate with the other validators
         for i, val in enumerate(validators[1:-1]):
 
-            # If the previous tested field is a List/Map/String we have to deallocate it
-            if isinstance(validators[i], List):
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.tab')))
-            elif isinstance(validators[i], Map):
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.key')))
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.map')))
+            # We have to free the memory allocated in the previous try
+            self.init_code.extend(c_free_memory(self.schema, validators[i], c_variable+struct_ref+'item.'+name, path_to_enum, indent_level, indices, recursion_depth+2))
 
-            name = enum_names[i+1].lower() + '_value'
+            name = enum_names[i+1] + '_value'
             path_to_enum.append(enum_names[i+1])
 
+            if isinstance(val, String) or isinstance(val, Include) and val.is_optional:
+                self.init_code.append((indent_level, '%s = NULL;' % (c_variable+struct_ref+'item.'+name)))
             # We load the primitive data at "position" in "c_variable+struct_ref+'item.'+name"
             self.load_primitive_data(val, position, c_variable+struct_ref+'item.'+name, path_to_enum, indent_level+i+1, indices, recursion_depth=recursion_depth+1)
             # We check if it succeeded
@@ -650,14 +664,10 @@ class C_DataLoader():
         i = len(validators)
         if i > 1:
 
-            # If the tested field is a List/Map/String we have to deallocate it
-            if isinstance(validators[-2], List):
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.tab')))
-            elif isinstance(validators[-2], Map):
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.key')))
-                self.init_code.append((indent_level+i-1, 'free(%s);' % (c_variable+'.item.'+name+'.map')))
+            # We have to free the memory allocated in the previous try
+            self.init_code.extend(c_free_memory(self.schema, validators[-1], c_variable+struct_ref+'item.'+name, path_to_enum, indent_level, indices, recursion_depth+2))
 
-            name = enum_names[-1].lower() + '_value'
+            name = enum_names[-1] + '_value'
             path_to_enum.append(enum_names[-1])
 
             # We load the primitive data at "position" in "c_variable+struct_ref+'item.'+name"

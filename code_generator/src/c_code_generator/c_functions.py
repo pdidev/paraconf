@@ -106,13 +106,14 @@ LOAD_BOOL_DEFINITION = '''PC_status_t load_bool(PC_tree_t tree, int* bool_res) {
 
 # Main function
 
-MAIN_NB_INDENTS = 20
+MAIN_NB_INDENTS = 21
 MAIN_FORMAT = ()
 for i in range(MAIN_NB_INDENTS):
     MAIN_FORMAT += (INDENT_STRING,)
 MAIN_FUNCTION = '''#include <stdio.h>
 #include <paraconf.h>
 #include "pcgen_init.h"
+#include "pcgen_free.h"
 
 
 int main(int argc, char* argv[]) {
@@ -135,36 +136,10 @@ int main(int argc, char* argv[]) {
 
 %s/* INSERT YOUR CODE HERE */
 
-        printf("%%g\\n", *(root->node1));
-        printf("%%ld\\n", root->node2);
-
-        printf("%%d\\n", *(root->node3.n1));
-        printf("%%s\\n", root->node3.n2);
-        printf("%%lf\\n", root->node3.n3.sub_node_1);
-        printf("%%ld\\n", root->node3.n4->item.long_value);
-
-        printf("%%s\\n", root->node4->tab[2].item.str_value);
-        printf("%%s: %%lf\\n", root->node5.map[1].key, root->node5.map[1].item.double_value);
-
-        if (NULL != root->node6) {
-            printf("%%s\\n", root->node6->tab[0].item.str_value);
-            printf("%%lf\\n", root->node6->tab[1].item.list1_value.tab[1].item.double_value);
-        }
-
-        printf("%%s: %%lf\\n", root->node7.item.list0_value.tab[0].item.map0_value.map[1].key, root->node7.item.list0_value.tab[0].item.map0_value.map[1].item.double_value);
-
-        printf("%%s\\n", root->node8->n);
-
-        printf("%%s: {n: %%s}\\n", root->node9.map[0].key, root->node9.map[0].item.XYZ_value->n);
-
-        printf("%%d\\n", root->node10.item.int_value);
-
-        printf("{%%s: %%ld}\\n", root->node11.item.mynode1_value.a.map[0].key, root->node11.item.mynode1_value.a.map[0].item.long_value);
-        printf("{b: %%lf}\\n", root->node11.item.mynode1_value.b.item.double_value);
-
+%sfree_root(root);
 %sfree(root);
 %sPC_tree_destroy(&conf);
 
 %sreturn EXIT_SUCCESS;
 }
-''' % (MAIN_FORMAT)
+''' % MAIN_FORMAT

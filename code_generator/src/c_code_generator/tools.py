@@ -2,7 +2,7 @@ from yamale.validators import *
 
 AUTHORIZED_CHARACTERS = ('_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z')
 
-FORBIDDEN_INCLUDE_NAMES = ('BOOL', 'LONG', 'DOUBLE', 'STR')
+FORBIDDEN_INCLUDE_NAMES = ('any', 'bool', 'double', 'list', 'long', 'map', 'str')
 
 
 
@@ -28,6 +28,7 @@ def convert_enum_to_any(enum):
 
     _val = Any()
     _val.validators = sub_types
+    _val.is_required = enum.is_required
 
     return _val
 
@@ -44,7 +45,10 @@ def find_nested_any(validators):
                 return []
             sub_types.extend([k for k in validator.validators if not k in sub_types])
             nested_count += 1
-        elif not validator in sub_types:
+        elif isinstance(validator, Enum):
+            new_validator = convert_enum_to_any(validator)
+            sub_types.extend([k for k in new_validator.validators if not k in sub_types])
+        else:
             sub_types.append(validator)
 
     if nested_count:
@@ -109,50 +113,59 @@ def make_union_names(validators, path=''):
     validators_to_remove = []
 
     if not path=='':
-        path = replace_chars(path).upper() + '_'
+        path = replace_chars(path) + '_'
 
     for i, validator in enumerate(validators):
         
         if isinstance(validator, Any):
-            enum_names.append(path+'ANY{}'.format(any_counter))
+            enum_names.append(path+'any{}'.format(any_counter))
             any_counter += 1
         elif isinstance(validator, Boolean):
-            if not path+'INT' in enum_names:
-                enum_names.append(path+'INT')
+            if not path+'int' in enum_names:
+                enum_names.append(path+'int')
             else:
                 validators_to_remove.append(i)
+        # elif isinstance(validator, Enum):
+        #     if not path+'int' in enum_names:
+        #         enum_names.append(path+'int')
+        #     else:
+        #         validators_to_remove.append(i)
         elif isinstance(validator, Integer):
-            if not path+'LONG' in enum_names:
-                enum_names.append(path+'LONG')
+            if not path+'long' in enum_names:
+                enum_names.append(path+'long')
             else:
                 validators_to_remove.append(i)
         elif isinstance(validator, List):
-            enum_names.append(path+'LIST{}'.format(list_counter))
+            enum_names.append(path+'list{}'.format(list_counter))
             list_counter += 1
         elif isinstance(validator, Map):
-            enum_names.append(path+'MAP{}'.format(map_counter))
+            enum_names.append(path+'map{}'.format(map_counter))
             map_counter += 1
         elif isinstance(validator, Number):
-            if not path+'DOUBLE' in enum_names:
-                enum_names.append(path+'DOUBLE')
+            if not path+'double' in enum_names:
+                enum_names.append(path+'double')
             else:
                 validators_to_remove.append(i)
         elif isinstance(validator, String):
-            if not path+'STR' in enum_names:
-                enum_names.append(path+'STR')
-        elif isinstance(validator, Include):
-            if validator.args[0].upper() in FORBIDDEN_INCLUDE_NAMES:
-                raise ValueError('Included node ' + validator.args[0] + ' has an invalid name')
-            elif not path+validator.args[0].upper() in enum_names:
-                enum_names.append(path+validator.args[0].upper())
+            if not path+'str' in enum_names:
+                enum_names.append(path+'str')
             else:
                 validators_to_remove.append(i)
+        elif isinstance(validator, Include):
+            if validator.args[0] in FORBIDDEN_INCLUDE_NAMES:
+                raise ValueError('Included node ' + validator.args[0] + ' has an invalid name')
+            elif not path+replace_chars(validator.args[0]) in enum_names:
+                enum_names.append(path+replace_chars(validator.args[0]))
+            else:
+                validators_to_remove.append(i)
+                print('Warning: conflicting name for included node %s, removing it' % (validator.args[0]))
+                print('This warning may be caused by the use of forbidden characters')
         else:
-            print(validator)
+            raise Exception('Validator %s does not exist' % (validator))
 
     for i in validators_to_remove:
         validators.pop(i)
-    
+
     enum_string = 'enum {'
     for name in enum_names[:-1]:
         enum_string += name + ', '

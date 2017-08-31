@@ -36,12 +36,33 @@ node9:
   a:
     n: thisisastring!
 
-node10: True
+node10: 3.14
 
 node11:
   a:
     n: 3
   b: 3.8885
+
+node12:
+  c: 3675.E18
+  generic: [1, 2, 3]
+
+node13:
+  k1:
+    n: foo
+  k2:
+    n: bar
+
+node14: def
+
+node15:
+  - 1
+  - abc
+  - True
+
+node16:
+  - a: 1
+    b: 2
 
 not-existing: 'this node is not in the schema!'
 
