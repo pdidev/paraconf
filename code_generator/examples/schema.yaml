@@ -9,12 +9,12 @@ k7: map(num(), required=True)
 node:
   sub_node: int()
 
-# k5: include('toto', required=False)
-# k6: map(int(), required=False)
+k8: include('toto', required=False)
+k9: map(int(), required=False)
 
 
 ---
 toto:
   a: int()
   b: num()
-  # c: str(required=False)
+  c: str(required=False)

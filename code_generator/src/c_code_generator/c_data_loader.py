@@ -322,9 +322,9 @@ class C_DataLoader():
             self.init_code.append((indent_level+2, '}'))
 
             self.init_code.append((indent_level+2, 'free(node_name);'))
-            self.init_code.append((indent_level+1, 'if (status) {'))
-            self.init_code.append((indent_level+2, 'goto err;'))
-            self.init_code.append((indent_level+1, '}'))
+            self.init_code.append((indent_level+2, 'if (status) {'))
+            self.init_code.append((indent_level+3, 'goto err;'))
+            self.init_code.append((indent_level+2, '}'))
             self.init_code.append((indent_level+1, '}'))
 
             self.init_code.append((indent_level+1, 'return PC_OK;'))
@@ -412,6 +412,8 @@ class C_DataLoader():
             elif isinstance(validator, Map):
                 self.init_code.append((indent_level, '%s = calloc(1, sizeof(*(%s)));' % (c_variable, c_variable)))
                 self.load_map_list(validator, position, c_variable, path_to_enum, indent_level, indices, recursion_depth=recursion_depth)
+                if recursion_depth==0:
+                    self.init_code.append((indent_level, 'return PC_OK;'))
             elif isinstance(validator, Include):
                 self.init_code.append((indent_level, '%s = calloc(1, sizeof(%s_t));' % (c_variable, replace_chars(validator.args[0]))))
                 if recursion_depth==0:
