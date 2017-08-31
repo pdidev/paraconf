@@ -1,0 +1,31 @@
+var:
+  one: include('A')
+  two: include('D')
+
+
+---
+A:
+  aa: include('B', required=True)
+  aaa: include('D', required=True)
+
+B:
+  bb: include('C', required=True)
+
+C:
+  cc: list(include('A', required=True), required=True)
+
+D:
+  dd: map(int(), str(), include('C'))
+
+
+---
+E:
+  ee: list(include('F'))
+
+F:
+  ff: include('E', required=True)
+  fff: include('G')
+
+---
+G:
+  gg: list(include('G', required=True))
