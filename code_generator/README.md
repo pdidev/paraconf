@@ -15,7 +15,7 @@ Three files will be created: types.h, pcgen\_loader.h, pcgen\_loader.c. The firs
 #include "pcgen_loader.h"
 ```
 
-To automatically generate the main function inside a file '<path\_to\_main\_file>.c', the optional argument `-o <path_to_main_file>` can be used.
+To automatically generate the main function inside a file '\<path\_to\_main\_file>.c', the optional argument `-o <path_to_main_file>` can be used.
 
 ## How to use it
 
