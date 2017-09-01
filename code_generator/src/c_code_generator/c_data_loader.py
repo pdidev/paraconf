@@ -218,7 +218,7 @@ class C_DataLoader():
         # -> dependency_tree is a flat tree where:
         #     * the keys correspond to the current node's children dependencies
         #     * the value associated to a child dependency is a list of relative paths
-        #     * to its own leaves:
+        #       to its own leaves:
         #                  / child_dependency_1: [paths to leaves_1]
         #  .{current_node} - child_dependency_2: [paths to leaves_2]
         #                  \ child_dependency_n: [paths to leaves_n]
