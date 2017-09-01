@@ -15,6 +15,7 @@ node4:
 node5:
   a: 3.14
   b: 2.5
+  c: 36.
 
 node6:
   - foobar

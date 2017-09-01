@@ -18,6 +18,9 @@ def c_free_memory(schema, validator, c_variable, path_to_enum, indent_level, ind
     if isinstance(validator, Any):
         validator.validators = find_nested_any(validator.validators)
         sub_validators = [_val for _val in validator.validators if isinstance(_val, (Include, List, Map, String))] # Inside Lists/Maps only Includes/Lists/Maps/Strings are allocated
+        for _val in sub_validators:
+            if isinstance(_val, Include):
+                _val.is_required=False
 
         if len(sub_validators)>0:
             enum_names, _ = make_union_names(sub_validators) # We only consider the enum names of allocatable fields
@@ -34,7 +37,7 @@ def c_free_memory(schema, validator, c_variable, path_to_enum, indent_level, ind
                     indent_level += 1
                     code_lines.append((indent_level+1, 'if (NULL != %s) {' % (c_variable+struct_ref+'item.'+enum_name+'_value')))
 
-                code_lines.extend(c_free_memory(schema, sub_validators[0], c_variable+'.item.'+enum_name+'_value', path_to_enum+[enum_name], indent_level+1, indices, recursion_depth))
+                code_lines.extend(c_free_memory(schema, sub_validators[0], c_variable+struct_ref+'item.'+enum_name+'_value', path_to_enum+[enum_name], indent_level+1, indices, recursion_depth))
 
                 if sub_validators[0].is_optional:
                     code_lines.append((indent_level+2, 'free(%s);' % (c_variable+struct_ref+'item.'+enum_name+'_value')))
@@ -57,7 +60,7 @@ def c_free_memory(schema, validator, c_variable, path_to_enum, indent_level, ind
                         indent_level += 1
                         code_lines.append((indent_level+1, 'if (NULL != %s) {' % (c_variable+struct_ref+'item.'+enum_name+'_value')))
 
-                    code_lines.extend(c_free_memory(schema, sub_validators[i], c_variable+'.item.'+enum_name+'_value', path_to_enum+[enum_name], indent_level+1, indices, recursion_depth))
+                    code_lines.extend(c_free_memory(schema, sub_validators[i], c_variable+struct_ref+'item.'+enum_name+'_value', path_to_enum+[enum_name], indent_level+1, indices, recursion_depth))
 
                     if sub_validators[i].is_optional:
                         code_lines.append((indent_level+2, 'free(%s);' % (c_variable+struct_ref+'item.'+enum_name+'_value')))

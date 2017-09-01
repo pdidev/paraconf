@@ -5,12 +5,12 @@ from c_code_generator.c_types_generator import C_TypesGenerator
 from c_code_generator.c_functions import MAIN_FUNCTION
 
 
-def _run(schema_path, output_path, parser):
-    schema = yamale.make_schema(schema_path, parser)
+def _run(schema_path, output_path):
+    schema = yamale.make_schema(schema_path)
 
     c_types_header = C_TypesGenerator(schema)
     c_types_header.define_types()
-    c_types_header.dump_types_definition(output_path)
+    c_types_header.dump_types_definition('types.h')
 
     c_loader = C_DataLoader(schema, init_name='pcgen_loader', main_name='main', type_name='types')
     c_loader.gen_init_code()
@@ -21,21 +21,20 @@ def _run(schema_path, output_path, parser):
     c_loader.dump_code()
     c_loader.dump_header()
 
-    f = open('main.c', 'w')
-    f.write(MAIN_FUNCTION)
-    f.close()
+    if not output_path==None:
+        f = open(output_path+'.c', 'w')
+        f.write(MAIN_FUNCTION)
+        f.close()
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate C/Fortran code from YAML data and schema', prog='pcgen')
-    parser.add_argument('schema', metavar='SCHEMA', default='schema.yaml', nargs='?',
-                        help='filename of schema, default is ./schema.yaml')
-    parser.add_argument('-o', '--output', default='types.h',
-                        help='output name for the types definition file, default is "types.h"')
-    parser.add_argument('-p', '--parser', default='ruamel',
-                        help='YAML library to load files, choices are "PyYAML" or "ruamel" (default)')
+    parser = argparse.ArgumentParser(description='PCgen --- C code generator for ParaConf', prog='pcgen')
+    parser.add_argument('schema', metavar='SCHEMA', nargs=1,
+                        help='path to the Yamale schema')
+    parser.add_argument('-o', '--output', default=None,
+                        help='output name for the main function file, by default no file is generated')
     args = parser.parse_args()
-    _run(args.schema, args.output, args.parser)
+    _run(args.schema[0], args.output)
 
 
 if __name__ == '__main__':

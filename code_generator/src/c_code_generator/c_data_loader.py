@@ -364,17 +364,17 @@ class C_DataLoader():
                 enum_names, _ = make_union_names(validator.validators)
                 self.load_union_item(validator, position, c_variable, path_to_enum, enum_names, indent_level, indices, recursion_depth=recursion_depth)
                 if recursion_depth==0:
-                    self.init_code.append((indent_level, 'return PC_OK;'))
+                    self.init_code.append((indent_level, 'return status;'))
             elif isinstance(validator, Enum):
                 new_validator = convert_enum_to_any(validator)
                 enum_names, _ = make_union_names(new_validator.validators)
                 self.load_union_item(new_validator, position, c_variable, path_to_enum, enum_names, indent_level, indices, recursion_depth=recursion_depth)
                 if recursion_depth==0:
-                    self.init_code.append((indent_level, 'return PC_OK;'))
+                    self.init_code.append((indent_level, 'return status;'))
             elif isinstance(validator, (List, Map)):
                 self.load_map_list(validator, position, c_variable, path_to_enum, indent_level, indices, recursion_depth=recursion_depth)
                 if recursion_depth==0:
-                    self.init_code.append((indent_level, 'return PC_OK;'))
+                    self.init_code.append((indent_level, 'return status;'))
             elif isinstance(validator, Include):
                 if recursion_depth==0:
                     self.init_code.append((indent_level, 'return load_%s(PC_get(tree, ".%s"%s), &(%s));' % (replace_chars(validator.args[0]), position, format_string(indices), c_variable)))
@@ -395,7 +395,7 @@ class C_DataLoader():
                 self.init_code.append((indent_level, '%s = calloc(1, sizeof(*(%s)));' % (c_variable, c_variable)))
                 self.load_union_item(validator, position, c_variable, path_to_enum, enum_names, indent_level, indices, recursion_depth=recursion_depth)
                 if recursion_depth==0:
-                    self.init_code.append((indent_level, 'return PC_OK;'))
+                    self.init_code.append((indent_level, 'return status;'))
             elif isinstance(validator, Enum):
                 new_validator = convert_enum_to_any(validator)
                 new_validator.is_required = False
@@ -403,17 +403,17 @@ class C_DataLoader():
                 self.init_code.append((indent_level, '%s = calloc(1, sizeof(*(%s)));' % (c_variable, c_variable)))
                 self.load_union_item(new_validator, position, c_variable, path_to_enum, enum_names, indent_level, indices, recursion_depth=recursion_depth)
                 if recursion_depth==0:
-                    self.init_code.append((indent_level, 'return PC_OK;'))
+                    self.init_code.append((indent_level, 'return status;'))
             elif isinstance(validator, List):
                 self.init_code.append((indent_level, '%s = calloc(1, sizeof(*(%s)));' % (c_variable, c_variable)))
                 self.load_map_list(validator, position, c_variable, path_to_enum, indent_level, indices, recursion_depth=recursion_depth)
                 if recursion_depth==0:
-                    self.init_code.append((indent_level, 'return PC_OK;'))
+                    self.init_code.append((indent_level, 'return status;'))
             elif isinstance(validator, Map):
                 self.init_code.append((indent_level, '%s = calloc(1, sizeof(*(%s)));' % (c_variable, c_variable)))
                 self.load_map_list(validator, position, c_variable, path_to_enum, indent_level, indices, recursion_depth=recursion_depth)
                 if recursion_depth==0:
-                    self.init_code.append((indent_level, 'return PC_OK;'))
+                    self.init_code.append((indent_level, 'return status;'))
             elif isinstance(validator, Include):
                 self.init_code.append((indent_level, '%s = calloc(1, sizeof(%s_t));' % (c_variable, replace_chars(validator.args[0]))))
                 if recursion_depth==0:
@@ -575,7 +575,9 @@ class C_DataLoader():
         if i > 1:
             # We have to free the memory allocated in the previous try
             if not isinstance(validators[-2], String):
+                path_to_enum.append(enum_names[-2])
                 self.init_code.extend(c_free_memory(self.schema, validators[-2], c_variable+'.item.'+name, path_to_enum, indent_level+i-1, indices, recursion_depth+2))
+                path_to_enum.pop()
 
             if isinstance(validators[-1], Include):
                 validators[-1].is_required = False # An included type is always a pointer inside lists/maps to allow recursive definitions
@@ -620,11 +622,11 @@ class C_DataLoader():
             struct_ref = '.'
 
         validators = find_nested_any(validator.validators) # There are no more nested any
-        for validator in validators:
-            if not isinstance(validator, Include):
-                validator.is_required = True
+        for _validator in validators:
+            if not isinstance(_validator, Include):
+                _validator.is_required = True
             else:
-                validator.is_required = False
+                _validator.is_required = False
 
         val = validators[0]
         name = enum_names[0] + '_value'
@@ -675,7 +677,10 @@ class C_DataLoader():
         if i > 1:
 
             # We have to free the memory allocated in the previous try
-            self.init_code.extend(c_free_memory(self.schema, validators[-1], c_variable+struct_ref+'item.'+name, path_to_enum, indent_level, indices, recursion_depth+2))
+            if not isinstance(validators[-2], String):
+                path_to_enum.append(enum_names[-2])
+                self.init_code.extend(c_free_memory(self.schema, validators[-2], c_variable+struct_ref+'item.'+name, path_to_enum, indent_level, indices, recursion_depth+2))
+                path_to_enum.pop()
 
             name = enum_names[-1] + '_value'
             path_to_enum.append(enum_names[-1])
