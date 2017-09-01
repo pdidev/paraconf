@@ -40,8 +40,8 @@ class Type_Handler():
             self.__init__(type)
 
     def c_declare(self, name, indent_level, defined_key, path='', included_types=[]):
+        """Declare a variable "name" knowing its type"""
         raise NotImplementedError('c_declare() method not implemented for Type_Handler instances')
-
 
     def c_declare_generic(self, indent_level, defined_key):
         """Define a generic node PC_tree_t inside a struct"""
@@ -52,22 +52,16 @@ class Type_Handler():
         c_code.append((indent_level, '} generic;', defined_key))
         return c_code
 
-
     def c_load(self, position, c_variable, indices=[]):
+        """Load the data corresponding to the type"""
         raise NotImplementedError('c_load() method not implemented for Type_Handler instances')
-
 
     def make_pointer_string(self):
         
-        if self.pointer_order==0 and self.is_optional:
+        if self.pointer_order>0 or self.is_optional:
             return '*'
-            
-        string = ''
-        for i in range(self.pointer_order):
-            string += '*'
-            
-        return string
 
+        return ''
 
 
 class Boolean_Handler(Type_Handler):
@@ -89,7 +83,6 @@ class Boolean_Handler(Type_Handler):
         return 'load_bool(PC_get(tree, ".%s"%s), &(%s))' % (position, format_string(indices), c_variable)
 
 
-
 class Double_Handler(Type_Handler):
 
     def __init__(self, type):
@@ -109,7 +102,6 @@ class Double_Handler(Type_Handler):
         return 'load_double(PC_get(tree, ".%s"%s), &(%s))' % (position, format_string(indices), c_variable)
 
 
-
 class Enum_Handler(Type_Handler):
 
     def __init__(self, type):
@@ -123,7 +115,6 @@ class Enum_Handler(Type_Handler):
 
     def c_declare(self, name, indent_level, defined_key, path=''):
         return self.type.c_declare(name, indent_level, defined_key, path)
-
 
 
 class Include_Handler(Type_Handler):
@@ -140,7 +131,6 @@ class Include_Handler(Type_Handler):
         c_code = []
         c_code.append((indent_level, self.include_name + '_t' + self.make_pointer_string() + ' ' + name + ';', defined_key))
         return c_code
-
 
 
 class Integer_Handler(Type_Handler):
@@ -181,7 +171,6 @@ class List_Handler(Type_Handler):
         return c_code
 
 
-
 class Map_Handler(Type_Handler):
 
     def __init__(self, type):
@@ -201,12 +190,10 @@ class Map_Handler(Type_Handler):
         return c_code
 
 
-
 class String_Handler(Type_Handler):
 
     def __init__(self, type):
-        if self.pointer_order==0:
-            self.pointer_order = 1
+        self.pointer_order = 1
         self.c_tag = 'char'
         self.is_optional = type.is_optional
 
@@ -222,7 +209,6 @@ class String_Handler(Type_Handler):
         if self.is_optional:
             return 'load_string(PC_get(tree, ".%s"%s), &(%s))' % (position, format_string(indices), c_variable)
         return 'load_string(PC_get(tree, ".%s"%s), &(%s))' % (position, format_string(indices), c_variable)
-
 
 
 class Union_Handler(Type_Handler):

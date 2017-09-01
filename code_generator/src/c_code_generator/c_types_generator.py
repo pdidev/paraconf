@@ -19,7 +19,6 @@ class C_TypesGenerator():
         self.schema = schema
 
 
-
     def define_types(self):
         """Generate the code representation beginning from the last line"""
 
@@ -37,7 +36,6 @@ class C_TypesGenerator():
 
         # We geenrate the header
         self._make_header()
-
 
 
     def _make_root_struct(self):
@@ -86,7 +84,6 @@ class C_TypesGenerator():
 
         return typedef_list
 
-    
 
     def _make_nested_struct(self, path_to_current_node, path_list, indent_level):
         """Create code lines for a nested struct"""
@@ -130,7 +127,6 @@ class C_TypesGenerator():
         self.code[-1].extend(generic_node.c_declare_generic(indent_level+1, None))
         
         self.code[-1].append((indent_level, '} ' + replace_chars(path_to_current_node.split('.')[-1]) + ';', 'root'))
-
 
 
     def _make_includes(self, typedef_list, included_types=[], indent_level=0):
@@ -209,7 +205,6 @@ class C_TypesGenerator():
             self._make_includes(typedef_list, included_types)
 
 
-
     def _make_typedef(self, typedef_list=[]):
         """Create the typedef expressions for struct types"""
 
@@ -217,7 +212,6 @@ class C_TypesGenerator():
         for element in typedef_list:
             self.code[-1].append((0, 'typedef struct ' + replace_chars(element) + '_s ' + replace_chars(element) + '_t;', None))
         self._insert_space(None, n=2)
-
 
 
     def _make_header(self):
@@ -231,7 +225,6 @@ class C_TypesGenerator():
         self.code[-1].append((0, "#include <paraconf.h>", None))    
         self._insert_space(None, n=2)
 
-
         
     def _insert_space(self, defined_key, n=1):
         """Insert n space(s) at the last block"""
@@ -239,7 +232,6 @@ class C_TypesGenerator():
         while n > 0:
             self.code[-1].append((0, '', defined_key))
             n += -1
-
 
 
     def dump_types_definition(self, output='types.h'):
@@ -252,4 +244,3 @@ class C_TypesGenerator():
                 for i in range(line[0] * INDENT_SPACE):
                     indent += ' '
                 f.write(indent + line[1] + '\n')
-

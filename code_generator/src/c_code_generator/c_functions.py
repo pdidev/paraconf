@@ -1,3 +1,6 @@
+# Definition of some basic functions
+
+# Indent space
 INDENT_SPACE = 8
 INDENT_STRING = ''
 for i in range(INDENT_SPACE):
@@ -5,7 +8,6 @@ for i in range(INDENT_SPACE):
 
 
 # String loader
-
 LOAD_STRING_NB_INDENTS = 24
 LOAD_STRING_FORMAT = ()
 for i in range(LOAD_STRING_NB_INDENTS):
@@ -44,7 +46,6 @@ not_a_string:
 
 
 # Double loader
-
 LOAD_DOUBLE_NB_INDENTS = 12
 LOAD_DOUBLE_FORMAT = ()
 for i in range(LOAD_DOUBLE_NB_INDENTS):
@@ -71,7 +72,6 @@ not_a_double:
 
 
 # Integer loader
-
 LOAD_INT_NB_INDENTS = 2
 LOAD_INT_FORMAT = ()
 for i in range(LOAD_INT_NB_INDENTS):
@@ -85,7 +85,6 @@ LOAD_INT_DEFINITION = '''PC_status_t load_int(PC_tree_t tree, long* int_res) {
 
 
 # Boolean loader
-
 LOAD_BOOL_NB_INDENTS = 2
 LOAD_BOOL_FORMAT = ()
 for i in range(LOAD_BOOL_NB_INDENTS):
@@ -99,7 +98,6 @@ LOAD_BOOL_DEFINITION = '''PC_status_t load_bool(PC_tree_t tree, int* bool_res) {
 
 
 # Main function
-
 MAIN_NB_INDENTS = 21
 MAIN_FORMAT = ()
 for i in range(MAIN_NB_INDENTS):

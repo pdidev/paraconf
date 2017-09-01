@@ -6,13 +6,18 @@ from c_code_generator.c_functions import MAIN_FUNCTION
 
 
 def _run(schema_path, output_path):
+    """Code generator"""
+
+    init_name = 'pcgen_loader'
+    type_name = 'types'
+
     schema = yamale.make_schema(schema_path)
 
     c_types_header = C_TypesGenerator(schema)
     c_types_header.define_types()
-    c_types_header.dump_types_definition('types.h')
+    c_types_header.dump_types_definition(type_name+'.h')
 
-    c_loader = C_DataLoader(schema, init_name='pcgen_loader', main_name='main', type_name='types')
+    c_loader = C_DataLoader(schema, init_name, type_name)
     c_loader.gen_init_code()
 
     c_free_code, c_free_header = c_free_root(schema)
@@ -28,6 +33,8 @@ def _run(schema_path, output_path):
 
 
 def main():
+    """Parse the arguments given to PCgen and run the code generator"""
+
     parser = argparse.ArgumentParser(description='PCgen --- C code generator for ParaConf', prog='pcgen')
     parser.add_argument('schema', metavar='SCHEMA', nargs=1,
                         help='path to the Yamale schema')

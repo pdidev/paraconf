@@ -1,6 +1,6 @@
 from yamale.validators import *
-from c_code_generator.tools import convert_enum_to_any, make_flat_tree, replace_chars
 from c_code_generator.type_handler import *
+from c_code_generator.tools import convert_enum_to_any, make_flat_tree, replace_chars
 from c_code_generator.c_free_memory import c_free_memory, has_allocated_member
 
 INDENT_SPACE = 8
@@ -9,12 +9,11 @@ INIT_HEADER = 'PARACONF_DATA_LOADER_H__'
 
 class C_DataLoader():
 
-    def __init__(self, schema, init_name='pcgen_loader', main_name='main', type_name='types'):
+    def __init__(self, schema, init_name='pcgen_loader', type_name='types'):
         """Initialize the data loader"""
 
         self.schema = schema
         self.init_name = init_name  # Name of the init functions file
-        self.main_name = main_name  # Name of the main function file
         self.type_name = type_name  # Name of the types' definition file
 
         # Lines of code will be represented as tuples:
@@ -216,16 +215,19 @@ class C_DataLoader():
     def iter_dependencies(self, dependency_tree, previous_path, previous_var, path_to_enum, included_key=None):
         """Go through all the dependencies of a node and create the corresponding init functions"""
 
-        # dependency_tree is a flat tree where:
+        # -> dependency_tree is a flat tree where:
         #     * the keys correspond to the current node's children dependencies
-        #     * the value associated to a child dependency is a list of relative paths to its own leaves:
+        #     * the value associated to a child dependency is a list of relative paths
+        #     * to its own leaves:
         #                  / child_dependency_1: [paths to leaves_1]
         #  .{current_node} - child_dependency_2: [paths to leaves_2]
         #                  \ child_dependency_n: [paths to leaves_n]
-        # previous_path is the path to the current node
-        # previous_var is the C string corresponding to the current variable
-        # path_to_enum is a list allowing to recreate an enum name (for ex.: ['ROOT', 'NODE1', 'SUB_NODE1', ...])
-        # If included_key is None, we iterate over the root's dependencies, else, over the "included_key's" dependencies
+        # -> previous_path is the path to the current node
+        # -> previous_var is the C string corresponding to the current variable
+        # -> path_to_enum is a list allowing to recreate an enum name
+        #    (for ex.: ['ROOT', 'NODE1', 'SUB_NODE1', ...])
+        # If included_key is None, we iterate over the root's dependencies, else, over
+        # the "included_key's" dependencies
 
         # We declare/define the load function corresponding to each current node's child
         for key, path_to_dependencies in dependency_tree.items():
@@ -261,8 +263,9 @@ class C_DataLoader():
 
         # Generate the initialization function for a given node
         # * position gives the path to the current node in the schema
-        # * c_variable gives the current variable's name (root->PATH_TO_VAR or <included_key>->PATH_TO_VAR)
-        # path_to_enum will allow to recreate the enum type names
+        # * c_variable gives the current variable's name (root->PATH_TO_VAR or
+        #   <included_key>->PATH_TO_VAR)
+        # * path_to_enum will allow to recreate the enum type names
 
         indent_level = 0
         self._insert_space_init(n=2)
@@ -349,8 +352,8 @@ class C_DataLoader():
     def load_primitive_data(self, validator, position, c_variable, path_to_enum, indent_level, indices=[], recursion_depth=0):
         """Load data of primitive type (any, bool, include, int, enum, list, map, num, str)"""
 
-        # * indices is a list of current indices allowing to create a format string completing the position
-        #   (for ex.: position="{%s}", indices=["i0"] and format string=', "i0"')
+        # * indices is a list of current indices allowing to create a format string completing
+        #   the position (for ex.: position="{%s}", indices=["i0"] and format string=', "i0"')
         # * recursion_depth will allow us to know:
         #     - if we have to declare the status variable
         #     - if we have to return a result
@@ -490,13 +493,13 @@ class C_DataLoader():
             enum_names, _ = make_union_names(validator.validators)
 
             if isinstance(validator, Map):
-                # We load the key
+                # We load the ith map's key
                 self.init_code.append((indent_level+1, 'status = PC_string(PC_get(tree, ".%s{%%d}"%s), &(%s%smap[i%d].key));' % (position, format_string(indices), c_variable, struct_ref, recursion_depth)))
-                # We load the value
+                # We load the ith map's value
                 self.load_map_list_item(validator, position+'<%d>', '%s%s%s[i%d]' % (c_variable, struct_ref, item_name, recursion_depth), path_to_enum, enum_names, indent_level+1, indices, recursion_depth=recursion_depth)
 
             else:
-                # We load the value
+                # We load the ith list's value
                 self.load_map_list_item(validator, position+'[%d]', '%s%s%s[i%d]' % (c_variable, struct_ref, item_name, recursion_depth), path_to_enum, enum_names, indent_level+1, indices, recursion_depth=recursion_depth)
 
         self.init_code.append((indent_level, '}'))
@@ -604,7 +607,6 @@ class C_DataLoader():
             self.init_code.append((indent_level+i, 'return PC_INVALID_NODE_TYPE;'))
         else:
             self.init_code.append((indent_level+i, 'break;'))
-
 
         while i>0:
             i -= 1

@@ -5,7 +5,6 @@ AUTHORIZED_CHARACTERS = ('_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
 FORBIDDEN_INCLUDE_NAMES = ('any', 'bool', 'double', 'list', 'long', 'map', 'str')
 
 
-
 def convert_enum_to_any(enum):
     """Convert an enum to an any validator"""
 
