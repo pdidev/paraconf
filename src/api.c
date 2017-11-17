@@ -72,6 +72,51 @@ err0:
 	return restree;
 }
 
+PC_tree_t PC_parse_string(const char* document)
+{
+	PC_tree_t restree = { PC_OK, NULL, NULL };
+	
+	yaml_parser_t conf_parser; 
+	if ( !yaml_parser_initialize(&conf_parser) ) {
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to load yaml library"), err0);
+	}
+	
+	yaml_parser_set_input_string(&conf_parser, (const unsigned char*)document, strlen(document));
+	
+	yaml_document_t *conf_doc = malloc(sizeof(yaml_document_t));
+	if ( !conf_doc ) {
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to allocate memory"), err1);
+	}
+	
+	if ( !yaml_parser_load(&conf_parser, conf_doc) ) {
+		if ( conf_parser.context ) {
+			PC_handle_err_tree(PC_make_err(PC_INVALID_FORMAT,
+					"%lu:%lu: Error: %s \n%lu:%lu: Error: %s",
+					(unsigned long) conf_parser.problem_mark.line,
+					(unsigned long) conf_parser.problem_mark.column,
+					conf_parser.problem,
+					(unsigned long) conf_parser.context_mark.line,
+					(unsigned long) conf_parser.context_mark.column,
+					conf_parser.context), err1);
+		} else {
+			PC_handle_err_tree(PC_make_err(PC_INVALID_FORMAT, "%lu:%lu: Error: %s",
+					(unsigned long) conf_parser.problem_mark.line,
+					(unsigned long) conf_parser.problem_mark.column,
+					conf_parser.problem), err1);
+		}
+	}
+	
+	yaml_parser_delete(&conf_parser);
+	
+	PC_handle_tree(PC_root(conf_doc), err0);
+	
+	return restree;
+err1:
+	yaml_parser_delete(&conf_parser);
+err0:
+	return restree;
+}
+
 PC_tree_t PC_parse_file( FILE *conf_file )
 {
 	PC_tree_t restree = { PC_OK, NULL, NULL };

@@ -151,7 +151,7 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
  * \param[in] document the document as a character string to parse
  * \return the tree, valid as long as the containing document is
  */
-PC_tree_t PARACONF_EXPORT PC_parse_string(char *document);
+PC_tree_t PARACONF_EXPORT PC_parse_string(const char *document);
 
 /** Returns the tree at the root of a document
  *
