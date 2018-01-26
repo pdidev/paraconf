@@ -50,7 +50,9 @@ static pthread_once_t context_key_once = PTHREAD_ONCE_INIT;
 
 static void assert_status(PC_status_t status, const char *message, void *context)
 {
-	context = context; // prevent unused warning
+        void *context_local;
+        context_local = context;
+	context = context_local; // prevent unused warning
 	if ( status ) {
 		fprintf(stderr, "Error in paraconf: %s\n", message);
 		abort();

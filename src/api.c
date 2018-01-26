@@ -304,8 +304,9 @@ PC_status_t PC_broadcast( yaml_document_t* document, int count, int root, MPI_Co
 	yaml_emitter_set_width(&emitter, -1);
 	yaml_emitter_set_canonical(&emitter, 1);
 	yaml_emitter_open(&emitter);
-
-	count = count; // prevent unused warning
+	int count_local;
+        count_local = count;
+	count = count_local; // prevent unused warning
 
 	size_t buf_size = PC_BUFFER_SIZE/2;
 	unsigned char *buf = 0;
