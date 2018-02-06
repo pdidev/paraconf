@@ -43,7 +43,7 @@ static const char *nodetype[4] = {
 static PC_tree_t get_seq_idx( const PC_tree_t tree, const char **req_index, const char *full_index )
 {
 	PC_tree_t restree = tree;
-	PC_handle_tree(tree, err0);
+	PC_handle_tree(err0);
 	
 	const char *index = *req_index;
 	
@@ -106,7 +106,7 @@ err0:
 static PC_tree_t get_map_key_val( const PC_tree_t tree, const char **req_index, const char *full_index )
 {
 	PC_tree_t restree = tree;
-	PC_handle_tree(tree, err0);
+	PC_handle_tree(err0);
 	
 	const char *index = *req_index;
 		
@@ -207,7 +207,7 @@ err0:
 static PC_tree_t get_map_idx_key( const PC_tree_t tree, const char **req_index, const char *full_index )
 {
 	PC_tree_t restree = tree;
-	PC_handle_tree(tree, err0);
+	PC_handle_tree(err0);
 	
 	const char *index = *req_index;
 	
@@ -247,7 +247,7 @@ err0:
 static PC_tree_t get_map_idx_val( const PC_tree_t tree, const char **req_index, const char *full_index )
 {
 	PC_tree_t restree = tree;
-	PC_handle_tree(tree, err0);
+	PC_handle_tree(err0);
 	
 	const char *index = *req_index;
 	
@@ -287,7 +287,14 @@ err0:
 PC_tree_t PC_sget( const PC_tree_t tree, const char *index )
 {
 	PC_tree_t restree = tree;
-	PC_handle_tree(tree, err0);
+	PC_handle_tree(err0);
+	
+	// check type
+	if ( *index && !tree.node ) {
+		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE,
+				"Expected node, found empty tree\n"
+		), err0);
+	}
 	
 	const char *full_index = index;
 	
