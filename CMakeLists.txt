@@ -66,6 +66,7 @@ endif()
 # Find dependancies
 
 find_package(MPI REQUIRED)
+find_package(Threads REQUIRED)
 if("${USE_SYSTEM_YAML}")
 	find_package(LibYaml REQUIRED)
 else()
@@ -133,7 +134,7 @@ set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paracon
 target_include_directories(paraconf PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
 )
-target_link_libraries(paraconf mpi yaml)
+target_link_libraries(paraconf Threads::Threads mpi yaml)
 install(TARGETS paraconf EXPORT PC_export
 	LIBRARY DESTINATION lib INCLUDES DESTINATION include
 	ARCHIVE DESTINATION lib INCLUDES DESTINATION include
