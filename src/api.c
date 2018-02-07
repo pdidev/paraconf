@@ -380,7 +380,7 @@ PC_status_t PC_bool( const PC_tree_t tree, int *res )
 	
 err0:
 	return status;
- }
+}
 
 
 // PC_status_t PC_broadcast( yaml_document_t* document, int count, int root, MPI_Comm comm )
