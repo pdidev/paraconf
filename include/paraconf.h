@@ -25,10 +25,11 @@
 #ifndef PARACONF_H__
 #define PARACONF_H__
 
+#include <mpi.h>
+
 #include <string.h>
 #include <stdarg.h>
 #include <yaml.h>
-#include <mpi.h>
 
 #include "paraconf_export.h"
 
