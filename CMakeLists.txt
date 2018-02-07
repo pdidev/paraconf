@@ -66,6 +66,7 @@ endif()
 # Find dependancies
 
 find_package(MPI REQUIRED)
+find_package(Threads REQUIRED)
 if("${USE_SYSTEM_YAML}")
 	find_package(LibYaml REQUIRED)
 else()
@@ -123,7 +124,7 @@ add_library(paraconf
 	src/status.c
 	src/ypath.c
 )
-add_compiler_flags(paraconf PRIVATE -std=c99 -Wall -Wextra -Werror)
+add_compiler_flags(paraconf PRIVATE -std=c99 -Wall -Wextra)
 generate_export_header(paraconf)
 set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
 set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
@@ -133,7 +134,7 @@ set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paracon
 target_include_directories(paraconf PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
 )
-target_link_libraries(paraconf mpi yaml)
+target_link_libraries(paraconf Threads::Threads mpi yaml)
 install(TARGETS paraconf EXPORT PC_export
 	LIBRARY DESTINATION lib INCLUDES DESTINATION include
 	ARCHIVE DESTINATION lib INCLUDES DESTINATION include
@@ -147,8 +148,8 @@ if("${ENABLE_FORTRAN}")
 	add_library(paraconf_f90 src/paraconf.F90)
 	target_link_libraries(paraconf_f90 paraconf)
 	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modinclude")
-	target_include_directories(paraconf_f90 INTERFACE
-		PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modinclude/>"
+	target_include_directories(paraconf_f90 PUBLIC
+		"$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modinclude/>"
 		"$<INSTALL_INTERFACE:lib/paraconf-${paraconf_VERSION}/finclude>")
 	set_property(TARGET paraconf_f90 PROPERTY VERSION ${paraconf_VERSION})
 	set_property(TARGET paraconf_f90 PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})

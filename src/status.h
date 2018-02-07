@@ -33,9 +33,8 @@ do { \
 	if ( status ) goto free_stamp; \
 } while( 0 )
 
-#define PC_handle_tree(calltree, free_stamp)\
+#define PC_handle_tree(free_stamp)\
 do { \
-	restree = calltree; \
 	if ( PC_status(restree) ) goto free_stamp; \
 } while( 0 )
 

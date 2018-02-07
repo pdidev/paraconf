@@ -72,6 +72,53 @@ err0:
 	return restree;
 }
 
+PC_tree_t PC_parse_string(const char* document)
+{
+	PC_tree_t restree = { PC_OK, NULL, NULL };
+	
+	yaml_parser_t conf_parser; 
+	if ( !yaml_parser_initialize(&conf_parser) ) {
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to load yaml library"), err0);
+	}
+	
+	yaml_parser_set_input_string(&conf_parser, (const unsigned char*)document, strlen(document));
+	
+	yaml_document_t *conf_doc = malloc(sizeof(yaml_document_t));
+	if ( !conf_doc ) {
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to allocate memory"), err1);
+	}
+	
+	if ( !yaml_parser_load(&conf_parser, conf_doc) ) {
+		if ( conf_parser.context ) {
+			PC_handle_err_tree(PC_make_err(PC_INVALID_FORMAT,
+					"%lu:%lu: Error: %s \n%lu:%lu: Error: %s",
+					(unsigned long) conf_parser.problem_mark.line,
+					(unsigned long) conf_parser.problem_mark.column,
+					conf_parser.problem,
+					(unsigned long) conf_parser.context_mark.line,
+					(unsigned long) conf_parser.context_mark.column,
+					conf_parser.context), err1);
+		} else {
+			PC_handle_err_tree(PC_make_err(PC_INVALID_FORMAT, "%lu:%lu: Error: %s",
+					(unsigned long) conf_parser.problem_mark.line,
+					(unsigned long) conf_parser.problem_mark.column,
+					conf_parser.problem), err1);
+		}
+	}
+	
+	yaml_parser_delete(&conf_parser);
+	
+	restree = PC_root(conf_doc);
+	
+	PC_handle_tree(err0);
+	
+	return restree;
+err1:
+	yaml_parser_delete(&conf_parser);
+err0:
+	return restree;
+}
+
 PC_tree_t PC_parse_file( FILE *conf_file )
 {
 	PC_tree_t restree = { PC_OK, NULL, NULL };
@@ -108,7 +155,11 @@ PC_tree_t PC_parse_file( FILE *conf_file )
 	
 	yaml_parser_delete(&conf_parser);
 	
-	PC_handle_tree(PC_root(conf_doc), err0);
+	restree = PC_root(conf_doc);
+	
+	PC_handle_tree(err0);
+	
+	
 	
 	return restree;
 err1:
@@ -135,7 +186,7 @@ PC_tree_t PC_get( const PC_tree_t tree, const char *index_fmt, ... )
 PC_tree_t PC_vget( const PC_tree_t tree, const char *index_fmt, va_list va )
 {
 	PC_tree_t restree = tree;
-	PC_handle_tree(tree, err0);
+	PC_handle_tree(err0);
 	
 	int index_size = PC_BUFFER_SIZE;
 	char *index = malloc(index_size);
@@ -145,7 +196,7 @@ PC_tree_t PC_vget( const PC_tree_t tree, const char *index_fmt, va_list va )
 	}
 
 	restree = PC_sget(tree, index);
-	PC_handle_tree(restree, err1);
+	PC_handle_tree(err1);
 
 	free(index);
 	return restree;
@@ -160,6 +211,13 @@ PC_status_t PC_len( const PC_tree_t tree, int *res )
 {
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
+	
+	// check type
+	if ( !tree.node ) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
+				"Expected node, found empty tree\n"
+		), err0);
+	}
 	
 	switch ( tree.node->type ) {
 	case YAML_SEQUENCE_NODE: {
@@ -187,6 +245,13 @@ PC_status_t PC_int( const PC_tree_t tree, long *res )
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
 	
+	// check type
+	if ( !tree.node ) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
+				"Expected node, found empty tree\n"
+		), err0);
+	}
+	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
 		return PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
 	}
@@ -210,6 +275,13 @@ PC_status_t PC_double( const PC_tree_t tree, double* value )
 {
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
+	
+	// check type
+	if ( !tree.node ) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
+				"Expected node, found empty tree\n"
+		), err0);
+	}
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
@@ -235,6 +307,13 @@ PC_status_t PC_string( const PC_tree_t tree, char** value )
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
 	
+	// check type
+	if ( !tree.node ) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
+				"Expected node, found empty tree\n"
+		), err0);
+	}
+	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
 				"Expected a scalar, found %s\n",
@@ -257,6 +336,13 @@ PC_status_t PC_bool( const PC_tree_t tree, int *res )
 {
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
+	
+	// check type
+	if ( !tree.node ) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
+				"Expected node, found empty tree\n"
+		), err0);
+	}
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
@@ -290,49 +376,58 @@ PC_status_t PC_bool( const PC_tree_t tree, int *res )
 		PC_handle_err(status, err0);
 	}
 	
-	return tree.status;
+	return status;
 	
 err0:
-	return tree.status;
- }
-
-
-PC_status_t PC_broadcast( yaml_document_t* document, int count, int root, MPI_Comm comm )
-{
-	yaml_emitter_t emitter;
-	yaml_emitter_initialize(&emitter);
-	yaml_emitter_set_width(&emitter, -1);
-	yaml_emitter_set_canonical(&emitter, 1);
-	yaml_emitter_open(&emitter);
-	int count_local;
-        count_local = count;
-	count = count_local; // prevent unused warning
-
-	size_t buf_size = PC_BUFFER_SIZE/2;
-	unsigned char *buf = 0;
-	int err = YAML_WRITER_ERROR;
-	unsigned long data_size;
-	while ( err == YAML_WRITER_ERROR ) {
-		buf_size *= 2;
-		buf = realloc(buf, buf_size);
-		yaml_emitter_set_output_string(&emitter, buf, buf_size, &data_size);
-		err = yaml_emitter_dump(&emitter, document);
-	}
-	yaml_emitter_close(&emitter);
-	yaml_emitter_delete(&emitter);
-
-	MPI_Bcast(&data_size, 1, MPI_LONG, root, comm);
-	MPI_Bcast(buf, data_size, MPI_LONG, root, comm);
-
-	int rank; MPI_Comm_rank(comm, &rank);
-	if ( rank != root ) {
-		yaml_parser_t parser;
-		yaml_parser_initialize(&parser);
-		yaml_parser_set_input_string(&parser, buf, data_size);
-		yaml_parser_load(&parser, document);
-	}
-	return PC_OK;
+	return status;
 }
+
+
+// PC_status_t PC_broadcast( yaml_document_t* document, int count, int root, MPI_Comm comm )
+// {
+//         PC_status_t status = PC_OK;
+// 	if ( ! (count == 1) ) {
+// 	  status = PC_make_err(PC_INVALID_PARAMETER, 
+// 			       "PC_broadcast supports only 1 document, found %d\n", count);
+// 	  PC_handle_err(status, err0);
+//         }
+// 
+// 	yaml_emitter_t emitter;
+// 	yaml_emitter_initialize(&emitter);
+// 	yaml_emitter_set_width(&emitter, -1);
+// 	yaml_emitter_set_canonical(&emitter, 1);
+// 	yaml_emitter_open(&emitter);
+// 
+// 
+// 	size_t buf_size = PC_BUFFER_SIZE/2;
+// 	unsigned char *buf = 0;
+// 	int err = YAML_WRITER_ERROR;
+// 	unsigned long data_size;
+// 	while ( err == YAML_WRITER_ERROR ) {
+// 		buf_size *= 2;
+// 		buf = realloc(buf, buf_size);
+// 		yaml_emitter_set_output_string(&emitter, buf, buf_size, &data_size);
+// 		err = yaml_emitter_dump(&emitter, document);
+// 	}
+// 	yaml_emitter_close(&emitter);
+// 	yaml_emitter_delete(&emitter);
+// 
+// 	MPI_Bcast(&data_size, 1, MPI_LONG, root, comm);
+// 	MPI_Bcast(buf, data_size, MPI_LONG, root, comm);
+// 
+// 	int rank; MPI_Comm_rank(comm, &rank);
+// 	if ( rank != root ) {
+// 		yaml_parser_t parser;
+// 		yaml_parser_initialize(&parser);
+// 		yaml_parser_set_input_string(&parser, buf, data_size);
+// 		yaml_parser_load(&parser, document);
+// 	}
+// 	return status;
+// 
+// err0:
+// 	return status;
+// 
+// }
 
 PC_status_t PC_tree_destroy( PC_tree_t* tree )
 {
