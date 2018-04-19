@@ -100,6 +100,9 @@ else()
 			IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/LibYaml-build/libyaml.a
 			INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/vendor/yaml-0.1.7/include")
 	add_dependencies(yaml LibYaml)
+	install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/vendor/yaml-0.1.7/include/yaml.h"
+		DESTINATION include
+	)
 endif()
 
 
