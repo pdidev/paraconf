@@ -23,7 +23,8 @@
 ################################################################################
 
 include(CMakeFindDependencyMacro)
-# find_dependency(MPI)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+find_dependency(Threads)
 find_dependency(LibYaml)
 
 include("${CMAKE_CURRENT_LIST_DIR}/paraconf.cmake")
