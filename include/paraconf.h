@@ -25,8 +25,6 @@
 #ifndef PARACONF_H__
 #define PARACONF_H__
 
-#include <mpi.h>
-
 #include <string.h>
 #include <stdarg.h>
 #include <yaml.h>
@@ -243,17 +241,6 @@ PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
  * \return the status of the execution
  */
 PC_status_t PARACONF_EXPORT PC_bool(PC_tree_t tree, int *value);
-
-
-/** Broadcasts yaml documents over MPI
- *
- * \param[in,out] document an array of documents that should already be allocated.
- *                         Their content will be copied from the root node.
- * \param[in] count the number of documents in the array
- * \param[in] root the rank of the root node
- * \param[in] comm the set of precesses over wich to broadcast
- */
-//PC_status_t PARACONF_EXPORT PC_broadcast(yaml_document_t* document, int count, int root, MPI_Comm comm);
 
 /** Destroy the tree.
  * All the trees referring to this tree will become unusable

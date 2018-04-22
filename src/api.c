@@ -382,53 +382,6 @@ err0:
 	return status;
 }
 
-
-// PC_status_t PC_broadcast( yaml_document_t* document, int count, int root, MPI_Comm comm )
-// {
-//         PC_status_t status = PC_OK;
-// 	if ( ! (count == 1) ) {
-// 	  status = PC_make_err(PC_INVALID_PARAMETER, 
-// 			       "PC_broadcast supports only 1 document, found %d\n", count);
-// 	  PC_handle_err(status, err0);
-//         }
-// 
-// 	yaml_emitter_t emitter;
-// 	yaml_emitter_initialize(&emitter);
-// 	yaml_emitter_set_width(&emitter, -1);
-// 	yaml_emitter_set_canonical(&emitter, 1);
-// 	yaml_emitter_open(&emitter);
-// 
-// 
-// 	size_t buf_size = PC_BUFFER_SIZE/2;
-// 	unsigned char *buf = 0;
-// 	int err = YAML_WRITER_ERROR;
-// 	unsigned long data_size;
-// 	while ( err == YAML_WRITER_ERROR ) {
-// 		buf_size *= 2;
-// 		buf = realloc(buf, buf_size);
-// 		yaml_emitter_set_output_string(&emitter, buf, buf_size, &data_size);
-// 		err = yaml_emitter_dump(&emitter, document);
-// 	}
-// 	yaml_emitter_close(&emitter);
-// 	yaml_emitter_delete(&emitter);
-// 
-// 	MPI_Bcast(&data_size, 1, MPI_LONG, root, comm);
-// 	MPI_Bcast(buf, data_size, MPI_LONG, root, comm);
-// 
-// 	int rank; MPI_Comm_rank(comm, &rank);
-// 	if ( rank != root ) {
-// 		yaml_parser_t parser;
-// 		yaml_parser_initialize(&parser);
-// 		yaml_parser_set_input_string(&parser, buf, data_size);
-// 		yaml_parser_load(&parser, document);
-// 	}
-// 	return status;
-// 
-// err0:
-// 	return status;
-// 
-// }
-
 PC_status_t PC_tree_destroy( PC_tree_t* tree )
 {
 	yaml_document_delete(tree->document);

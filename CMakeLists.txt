@@ -65,7 +65,6 @@ endif()
 
 # Find dependancies
 
-find_package(MPI REQUIRED)
 find_package(Threads REQUIRED)
 if("${USE_SYSTEM_YAML}")
 	find_package(LibYaml REQUIRED)
@@ -138,7 +137,7 @@ target_include_directories(paraconf PUBLIC
 	"$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>"
 	"$<INSTALL_INTERFACE:include>"
 )
-target_link_libraries(paraconf Threads::Threads MPI::MPI_C yaml)
+target_link_libraries(paraconf Threads::Threads yaml)
 install(TARGETS paraconf EXPORT PC_export
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
@@ -150,7 +149,7 @@ install(FILES include/paraconf.h "${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
 #Fortran version
 if("${ENABLE_FORTRAN}")
 	add_library(paraconf_f90 src/paraconf.F90)
-	target_link_libraries(paraconf_f90 paraconf MPI::MPI_Fortran)
+	target_link_libraries(paraconf_f90 paraconf)
 	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modinclude")
 	target_include_directories(paraconf_f90 PUBLIC
 		"$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modinclude/>"
@@ -185,11 +184,9 @@ write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/paraconf/paraconfC
 install(EXPORT PC_export DESTINATION "${ConfigPackageLocation}" FILE paraconf.cmake)
 install(FILES
 		cmake/FindLibYaml.cmake
-		cmake/FindMPI.cmake
 		cmake/FindPackageHandleStandardArgs.cmake
 		cmake/FindPackageMessage.cmake
 		cmake/paraconfConfig.cmake
 		"${CMAKE_CURRENT_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
 	DESTINATION "${ConfigPackageLocation}"
 )
-install(DIRECTORY cmake/FindMPI DESTINATION "${ConfigPackageLocation}")
