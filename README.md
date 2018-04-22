@@ -13,7 +13,6 @@ A working and commented example is provided inside the example folder.
 To build the library one needs:
   * cmake, version >= 3.0
   * a C compiler (gcc and icc are tested).
-  * a MPI library
   * paraconf depends on libyaml. By default paraconf uses the system libyaml but it also embedds a copy that can be used by passing the `-DUSE_SYSTEM_YAML=OFF` option to cmake.
 
 Fortran support:
