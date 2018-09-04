@@ -1,3 +1,5 @@
+include 'paraconf.F90'
+
 PROGRAM example
   USE paraconf
 

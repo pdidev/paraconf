@@ -1,3 +1,14 @@
+# - Finds Libyaml
+#
+# === Variables ===
+#
+# This module will set the following variables in your project:
+#   yaml_FOUND           TRUE if Findyaml found yaml
+#
+# === Usage ===
+#
+# To use this module, simply run find_package(yaml) from a CMakeLists.txt.
+
 #=============================================================================
 # Copyright 2015 CEA, Julien Bigot <julien.bigot@cea.fr>
 #
@@ -27,15 +38,27 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
-include(CheckCCompilerFlag)
-function(add_compiler_flags TARGET VISIBILITY FLAGS)
-	foreach(FLAG "${FLAGS}" ${ARGN})
-		set(FLAG_WORKS)
-		check_c_compiler_flag("${FLAG}" FLAG_WORKS)
-		if("${FLAG_WORKS}")
-			target_compile_options("${TARGET}" "${VISIBILITY}" "${FLAG}")
-		endif()
-	endforeach()
-endfunction()
+include(FindPackageHandleStandardArgs)
+
+find_package(yaml ${yaml_FIND_VERSION} QUIET CONFIG)
+
+if(NOT TARGET yaml)
+
+find_package(PkgConfig)
+
+pkg_check_modules(yaml QUIET yaml-0.1)
+
+add_library(yaml UNKNOWN IMPORTED)
+set_property(TARGET yaml PROPERTY INTERFACE_LINK_LIBRARIES "${yaml_LINK_LIBRARIES}")
+if(yaml_INCLUDE_DIRS)
+	set_property(TARGET yaml PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${yaml_INCLUDE_DIRS}")
+endif()
+if(yaml_CFLAGS_OTHER)
+	set_property(TARGET yaml PROPERTY INTERFACE_COMPILE_OPTIONS "${yaml_CFLAGS_OTHER}")
+endif()
+
+find_package_handle_standard_args(yaml DEFAULT_MSG yaml_LINK_LIBRARIES)
+
+endif(NOT TARGET yaml)
