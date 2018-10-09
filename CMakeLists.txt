@@ -28,115 +28,122 @@
 #=============================================================================
 
 cmake_minimum_required(VERSION 3.5)
-# enable C++ to work-around https://gitlab.kitware.com/cmake/cmake/issues/16967
-project(paraconf LANGUAGES C CXX)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-include(GenerateExportHeader)
-include(CMakePackageConfigHelpers)
-include(GNUInstallDirs)
+# The header project
+
+project(PARACONFSUPER LANGUAGES)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 
 # Build options
 
-option(BUILD_SHARED_LIBS "Build paraconf as a shared library instead of a static one" ON)
-option(ENABLE_FORTRAN    "Enable compilation of the Fortran version of the library" ON)
-option(USE_SYSTEM_YAML   "Use an already installed libyaml instead of building the embedded one" ON)
+option(BUILD_SHARED_LIBS             "Build shared libraries rather than static ones" ON)
+option(BUILD_TESTING                 "Build tests" ON)
+option(ENABLE_FORTRAN                "Enable Fortran support" ON)
+set(USE_YAML     SYSTEM CACHE STRING "version of yaml to use, SYSTEM and EMBEDDED can be used")
 
-if("${ENABLE_FORTRAN}")
-	enable_language(Fortran)
+## Options handling
+
+if("${BUILD_TESTING}" AND "${CMAKE_VERSION}" VERSION_LESS "3.10.0") 
+	message(FATAL_ERROR "Minimum CMake version for tests is 3.10. Please update CMake or turn off testing by adding flag -DBUILD_TESTING=OFF")
 endif()
-
-
-# Find dependancies
-
-find_package(Threads REQUIRED)
-if("${USE_SYSTEM_YAML}")
-	find_package(yaml REQUIRED)
+if("${USE_YAML}" STREQUAL EMBEDDED)
+	set(YAML_PATH "${PARACONFSUPER_SOURCE_DIR}/vendor/libyaml-0.2.1.tar")
 else()
-	function(build_yaml)
-		set(INSTALL_CMAKE_DIR share/yaml-0.2.1/cmake)
-		set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-		add_subdirectory(vendor/libyaml-0.2.1)
-	endfunction()
-	build_yaml()
+	set(YAML_PATH "${USE_YAML}")
 endif()
 
 
-# Version
+# Includes
 
-file(READ VERSION paraconf_VERSION)
-string(STRIP "${paraconf_VERSION}" paraconf_VERSION)
-string(REPLACE "." ";" paraconf_VERSION_list ${paraconf_VERSION})
-list(GET paraconf_VERSION_list 0 paraconf_VERSION_MAJOR)
-list(GET paraconf_VERSION_list 1 paraconf_VERSION_MINOR)
-list(GET paraconf_VERSION_list 2 paraconf_VERSION_PATCH)
+include(ExternalProject)
 
 
-# Libraries
+# A list of all cache variables to forward to subprojects
 
-## C version
+list(APPEND CMAKE_PREFIX_PATH "${PARACONFSUPER_BINARY_DIR}/staging" "${PARACONFSUPER_BINARY_DIR}/build-dep")
+list(APPEND CMAKE_BUILD_RPATH "${PARACONFSUPER_BINARY_DIR}/staging/lib")
+get_cmake_property(CACHE_VARIABLES CACHE_VARIABLES)
+set(CMAKE_CACHE_ARGS)
+foreach(CACHE_VARIABLE ${CACHE_VARIABLES})
+	get_property(CACHE_VARIABLE_TYPE CACHE "${CACHE_VARIABLE}" PROPERTY TYPE)
+	if(NOT "${CACHE_VARIABLE_TYPE}" STREQUAL STATIC AND NOT "${CACHE_VARIABLE_TYPE}" STREQUAL INTERNAL)
+		list(APPEND CMAKE_CACHE_ARGS "-D${CACHE_VARIABLE}:${CACHE_VARIABLE_TYPE}=${${CACHE_VARIABLE}}")
+	endif()
+endforeach()
+list(APPEND CMAKE_CACHE_ARGS 
+		"-DCMAKE_BUILD_RPATH:PATH=${CMAKE_BUILD_RPATH}"
+		"-DCMAKE_STAGING_PREFIX:PATH=<INSTALL_DIR>"
+		"-DCMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}")
 
-add_library(paraconf
-	src/api.c
-	src/status.c
-	src/ypath.c
-)
-generate_export_header(paraconf)
-set_property(TARGET paraconf PROPERTY C_STANDARD 99)
-set_property(TARGET paraconf PROPERTY C_STANDARD_REQUIRED TRUE)
-set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
-set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
-set_property(TARGET paraconf PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
-set_property(TARGET paraconf PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
-set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
-target_include_directories(paraconf PUBLIC
-	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>"
-	"$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>"
-	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}>"
-)
-target_link_libraries(paraconf Threads::Threads yaml)
-install(TARGETS paraconf EXPORT PC_export
-		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-)
-install(FILES include/paraconf.h "${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
-	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-)
+set(EP_ENV "$ENV{LD_LIBRARY_PATH}")
+if(NOT "x${EP_ENV}x" STREQUAL "xx")
+	set(EP_ENV ":${EP_ENV}")
+endif()
+set(EP_ENV "LD_LIBRARY_PATH=${PARACONFSUPER_BINARY_DIR}/staging/lib:${PARACONFSUPER_BINARY_DIR}/build-dep/lib${EP_ENV}")
 
 
-## Fortran version
+# Testing
 
-if("${ENABLE_FORTRAN}")
-	add_library(paraconf_f90 INTERFACE)
-	target_link_libraries(paraconf_f90 INTERFACE paraconf)
-	target_include_directories(paraconf_f90 INTERFACE
-		"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-		"$<INSTALL_INTERFACE:include>")
-	install(TARGETS paraconf_f90 EXPORT PC_export)
-	install(FILES include/paraconf.F90
-			DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-	)
+if("${BUILD_TESTING}")
+	enable_testing()
+	set_property(DIRECTORY PROPERTY TEST_INCLUDE_FILE "${PARACONFSUPER_BINARY_DIR}/SubTests.cmake")
+	file(WRITE "${PARACONFSUPER_BINARY_DIR}/SubTests.cmake" 
+#TODO: replace these path by the actual path where stuff is installed
+"set(ADDPATH [=[${PARACONFSUPER_BINARY_DIR}/staging/lib:${PARACONFSUPER_BINARY_DIR}/build-dep/lib]=])\n"
+[===[
+set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
+if("x${LD_LIBRARY_PATH}x" STREQUAL xx)
+	set(ENV{LD_LIBRARY_PATH} "${ADDPATH}")
+else()
+	set(ENV{LD_LIBRARY_PATH} "${ADDPATH}:${LD_LIBRARY_PATH}")
+endif()
+]===])
+endif()
+function(add_testing EP_NAME)
+	ExternalProject_Get_Property("${EP_NAME}" BINARY_DIR)
+	if("${BUILD_TESTING}")
+		file(APPEND "${PARACONFSUPER_BINARY_DIR}/SubTests.cmake" "subdirs([=[${BINARY_DIR}]=])\n")
+	endif()
+endfunction()
+
+
+# Main project
+
+ExternalProject_Add(PARACONF
+		PREFIX "${PARACONFSUPER_BINARY_DIR}/paraconf"
+		SOURCE_DIR "${PARACONFSUPER_SOURCE_DIR}/src" BUILD_ALWAYS TRUE
+		CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS}
+		INSTALL_DIR "${PARACONFSUPER_BINARY_DIR}/staging")
+
+
+## Main project dependancies
+
+
+if(NOT "${USE_YAML}" STREQUAL SYSTEM)
+	file(MD5 "${YAML_PATH}" HASH) #< trick to prevent no-hash warning
+	ExternalProject_Add(YAML
+			PREFIX "${PARACONFSUPER_BINARY_DIR}/yaml"
+			URL "${YAML_PATH}" URL_HASH "MD5=${HASH}" EXCLUDE_FROM_ALL 1
+			CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS} "-DBUILD_TESTING:BOOL=OFF" "-DINSTALL_CMAKE_DIR:STRING=share/yaml/cmake"
+			INSTALL_DIR "${PARACONFSUPER_BINARY_DIR}/staging")
+	add_dependencies(PARACONF YAML)
 endif()
 
 
-# Test examples
+# Examples
 
-enable_testing()
-add_subdirectory(example/)
+if("${BUILD_TESTING}")
+	ExternalProject_Add(PARACONF_EXAMPLE
+			PREFIX "${PARACONFSUPER_BINARY_DIR}/paraconf_example"
+			SOURCE_DIR "${PARACONFSUPER_SOURCE_DIR}/example" BUILD_ALWAYS TRUE
+			CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS}
+			INSTALL_COMMAND ""
+			DEPENDS PARACONF)
+	add_testing(PARACONF_EXAMPLE)
+endif()
 
 
-# Installable config
+# Installation
 
-set(ConfigPackageLocation "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}-${paraconf_VERSION}/cmake")
-write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
-	VERSION ${paraconf_VERSION}
-	COMPATIBILITY AnyNewerVersion
-)
-install(EXPORT PC_export NAMESPACE "paraconf::" DESTINATION "${ConfigPackageLocation}" FILE paraconf.cmake)
-install(FILES
-		cmake/Findyaml.cmake
-		cmake/paraconfConfig.cmake
-		"${CMAKE_CURRENT_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
-	DESTINATION "${ConfigPackageLocation}"
-)
+install(DIRECTORY "${PARACONFSUPER_BINARY_DIR}/staging/" DESTINATION "." USE_SOURCE_PERMISSIONS)
