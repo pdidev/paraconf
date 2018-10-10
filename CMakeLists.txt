@@ -44,9 +44,6 @@ set(USE_YAML     SYSTEM CACHE STRING "version of yaml to use, SYSTEM and EMBEDDE
 
 ## Options handling
 
-if("${BUILD_TESTING}" AND "${CMAKE_VERSION}" VERSION_LESS "3.10.0") 
-	message(FATAL_ERROR "Minimum CMake version for tests is 3.10. Please update CMake or turn off testing by adding flag -DBUILD_TESTING=OFF")
-endif()
 if("${USE_YAML}" STREQUAL EMBEDDED)
 	set(YAML_PATH "${PARACONFSUPER_SOURCE_DIR}/vendor/libyaml-0.2.1.tar")
 else()

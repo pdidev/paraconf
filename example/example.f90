@@ -1,8 +1,36 @@
-include 'paraconf.F90'
+!******************************************************************************
+! Copyright (C) 2015-2018 Commissariat a l'energie atomique et aux energies 
+! alternatives (CEA)
+! All rights reserved.
+!
+! Redistribution and use in source and binary forms, with or without
+! modification, are permitted provided that the following conditions are met:
+! * Redistributions of source code must retain the above copyright
+!   notice, this list of conditions and the following disclaimer.
+! * Redistributions in binary form must reproduce the above copyright
+!   notice, this list of conditions and the following disclaimer in the
+!   documentation and/or other materials provided with the distribution.
+! * Neither the name of CEA nor the names of its contributors may be used to
+!   endorse or promote products derived from this software without specific
+!   prior written permission.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+! AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+! LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+! OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+! THE SOFTWARE.
+!******************************************************************************
 
 PROGRAM example
+  USE ISO_C_binding
   USE paraconf
-
+  
+  IMPLICIT NONE
+  
+!   INCLUDE 'paraconff.h'
+  
   TYPE(PC_tree_t) :: conf, some_key
   INTEGER :: a_int, a_list_len, a_map_len, ii
   REAL(8) :: a_float
@@ -18,7 +46,7 @@ PROGRAM example
   call PC_string(PC_get(conf,".a_string"), a_string)
   call PC_log(PC_get(conf, ".a_yes"), a_log)
   print '("a_int=",I5," a_float=",F10.1," a_string=",A30," a_yes=",L)', &
-      a_int, a_float, a_string, a_yes
+      a_int, a_float, a_string, a_log
 
   print '("a_list=[")'
   call PC_len(PC_get(conf,".a_list"), a_list_len)

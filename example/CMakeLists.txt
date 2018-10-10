@@ -27,18 +27,32 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
-add_executable(PC_example EXCLUDE_FROM_ALL example.c)
-target_link_libraries(PC_example paraconf yaml)
-set_property(TARGET PC_example PROPERTY C_STANDARD 99)
-set_property(TARGET PC_example PROPERTY C_STANDARD_REQUIRED TRUE)
-add_test(NAME PC_example_build COMMAND "${CMAKE_COMMAND}" --build . --target PC_example WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-add_test(NAME PC_example COMMAND PC_example WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-set_tests_properties(PC_example PROPERTIES DEPENDS PC_example_build)
+cmake_minimum_required(VERSION 3.5)
+project(paraconf_examples LANGUAGES C CXX)
 
 if("${ENABLE_FORTRAN}")
-	add_executable(PC_example_f90 EXCLUDE_FROM_ALL example.f90)
-	target_link_libraries(PC_example_f90 paraconf_f90)
-	add_test(NAME PC_example_f90_build COMMAND "${CMAKE_COMMAND}" --build . --target PC_example_f90 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+	enable_language(Fortran)
+endif()
+
+# Includes
+include(CTest)
+
+find_package(paraconf REQUIRED)
+
+# Default standard in the project is C99 & C++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED TRUE)
+
+
+add_executable(PC_example example.c)
+target_link_libraries(PC_example paraconf::paraconf yaml)
+add_test(NAME PC_example COMMAND PC_example WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+
+
+if("${ENABLE_FORTRAN}")
+	add_executable(PC_example_f90 example.f90)
+	target_link_libraries(PC_example_f90 paraconf::paraconf_f90)
 	add_test(NAME PC_example_f90 COMMAND PC_example_f90 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-	set_tests_properties(PC_example_f90 PROPERTIES DEPENDS PC_example_f90_build)
 endif()

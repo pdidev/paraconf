@@ -59,7 +59,7 @@ find_package(yaml REQUIRED)
 
 # Version
 
-file(READ VERSION paraconf_VERSION)
+file(READ ../VERSION paraconf_VERSION)
 string(STRIP "${paraconf_VERSION}" paraconf_VERSION)
 string(REPLACE "." ";" paraconf_VERSION_list ${paraconf_VERSION})
 list(GET paraconf_VERSION_list 0 paraconf_VERSION_MAJOR)
@@ -77,6 +77,11 @@ add_library(paraconf
 	ypath.c
 )
 generate_export_header(paraconf)
+target_link_libraries(paraconf Threads::Threads yaml)
+target_include_directories(paraconf PUBLIC
+	"$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/../include/>"
+	"$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/>"
+)
 set_property(TARGET paraconf PROPERTY C_STANDARD 99)
 set_property(TARGET paraconf PROPERTY C_STANDARD_REQUIRED TRUE)
 set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
@@ -87,17 +92,12 @@ set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
 set_property(TARGET paraconf PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
-target_include_directories(paraconf PUBLIC
-	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/>"
-	"$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>"
-)
-target_link_libraries(paraconf Threads::Threads yaml)
 install(TARGETS paraconf EXPORT PC_export
 		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 		INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-install(FILES include/paraconf.h "${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
+install(FILES ../include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
 		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
@@ -105,14 +105,40 @@ install(FILES include/paraconf.h "${CMAKE_CURRENT_BINARY_DIR}/paraconf_export.h"
 ## Fortran version
 
 if("${ENABLE_FORTRAN}")
-	add_library(paraconf_f90 INTERFACE)
+	add_library(paraconf_f90 fortran/paraconf.f90)
 	target_link_libraries(paraconf_f90 INTERFACE paraconf)
 	target_include_directories(paraconf_f90 INTERFACE
-		"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
+		"$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include>")
+	set_property(TARGET paraconf_f90 PROPERTY VERSION ${paraconf_VERSION})
+	set_property(TARGET paraconf_f90 PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
+	set_property(TARGET paraconf_f90 PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
+	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${paraconf_BINARY_DIR}/fortran_inc/")
+	if(GNU STREQUAL "${CMAKE_Fortran_COMPILER_ID}")
+		set(COMPILER_FID "gcc")
+		string(REGEX REPLACE "\\..*" "" COMPILER_FVER "${CMAKE_Fortran_COMPILER_VERSION}")
+	else()
+		set(COMPILER_FID "${CMAKE_Fortran_COMPILER_ID}")
+		set(COMPILER_FVER "${CMAKE_Fortran_COMPILER_VERSION}")
+	endif()
+	set(INSTALL_FINCLUDEDIR "${CMAKE_INSTALL_LIBDIR}/${COMPILER_FID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude" CACHE PATH "Fortran module files (LIBDIR/${COMPILER_FID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude)")
 	install(TARGETS paraconf_f90 EXPORT PC_export
-			INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-	install(FILES include/paraconf.F90
-			DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+			ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+			LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+			INCLUDES DESTINATION "${INSTALL_FINCLUDEDIR}"
+	)
+	install(DIRECTORY "${paraconf_BINARY_DIR}/fortran_inc/"
+			DESTINATION "${INSTALL_FINCLUDEDIR}"
+	)
+	install(FILES
+			"${paraconf_SOURCE_DIR}/fortran/paraconff_types.h"
+			"${paraconf_SOURCE_DIR}/fortran/paraconff_consts.h"
+			"${paraconf_SOURCE_DIR}/fortran/paraconff.h"
+			DESTINATION "${INSTALL_FINCLUDEDIR}"
+	)
+	install(FILES
+			"${paraconf_SOURCE_DIR}/fortran/invalid_include.F90"
+			DESTINATION "${INSTALL_FINCLUDEDIR}"
+			RENAME "paraconf.F90"
 	)
 endif()
 
@@ -120,13 +146,13 @@ endif()
 # Installable config
 
 set(INSTALL_CMAKEDIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}-${paraconf_VERSION}/cmake")
-write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
+write_basic_package_version_file("${paraconf_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
 	VERSION ${paraconf_VERSION}
 	COMPATIBILITY AnyNewerVersion
 )
 install(EXPORT PC_export NAMESPACE "paraconf::" DESTINATION "${INSTALL_CMAKEDIR}" FILE paraconf.cmake)
 install(FILES
-		cmake/paraconfConfig.cmake
-		"${CMAKE_CURRENT_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
-	DESTINATION "${INSTALL_CMAKEDIR}"
+		../cmake/paraconfConfig.cmake
+		"${paraconf_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
+		DESTINATION "${INSTALL_CMAKEDIR}"
 )
