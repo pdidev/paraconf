@@ -29,7 +29,6 @@
 
 cmake_minimum_required(VERSION 3.5)
 project(paraconf LANGUAGES C CXX)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../cmake")
 
 
 # Build options
@@ -59,7 +58,7 @@ find_package(yaml REQUIRED)
 
 # Version
 
-file(READ ../VERSION paraconf_VERSION)
+file(READ VERSION paraconf_VERSION)
 string(STRIP "${paraconf_VERSION}" paraconf_VERSION)
 string(REPLACE "." ";" paraconf_VERSION_list ${paraconf_VERSION})
 list(GET paraconf_VERSION_list 0 paraconf_VERSION_MAJOR)
@@ -72,14 +71,14 @@ list(GET paraconf_VERSION_list 2 paraconf_VERSION_PATCH)
 ## C version
 
 add_library(paraconf
-	api.c
-	status.c
-	ypath.c
+	src/api.c
+	src/status.c
+	src/ypath.c
 )
 generate_export_header(paraconf)
 target_link_libraries(paraconf Threads::Threads yaml)
 target_include_directories(paraconf PUBLIC
-	"$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/../include/>"
+	"$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include/>"
 	"$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/>"
 )
 set_property(TARGET paraconf PROPERTY C_STANDARD 99)
@@ -97,7 +96,7 @@ install(TARGETS paraconf EXPORT PC_export
 		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 		INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-install(FILES ../include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
+install(FILES include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
 		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
@@ -105,7 +104,7 @@ install(FILES ../include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
 ## Fortran version
 
 if("${ENABLE_FORTRAN}")
-	add_library(paraconf_f90 fortran/paraconf.f90)
+	add_library(paraconf_f90 src/fortran/paraconf.f90)
 	target_link_libraries(paraconf_f90 INTERFACE paraconf)
 	target_include_directories(paraconf_f90 INTERFACE
 		"$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include>")
@@ -130,13 +129,13 @@ if("${ENABLE_FORTRAN}")
 			DESTINATION "${INSTALL_FINCLUDEDIR}"
 	)
 	install(FILES
-			"${paraconf_SOURCE_DIR}/fortran/paraconff_types.h"
-			"${paraconf_SOURCE_DIR}/fortran/paraconff_consts.h"
-			"${paraconf_SOURCE_DIR}/fortran/paraconff.h"
+			"${paraconf_SOURCE_DIR}/src/fortran/paraconff_types.h"
+			"${paraconf_SOURCE_DIR}/src/fortran/paraconff_consts.h"
+			"${paraconf_SOURCE_DIR}/src/fortran/paraconff.h"
 			DESTINATION "${INSTALL_FINCLUDEDIR}"
 	)
 	install(FILES
-			"${paraconf_SOURCE_DIR}/fortran/invalid_include.F90"
+			"${paraconf_SOURCE_DIR}/src/fortran/invalid_include.F90"
 			DESTINATION "${INSTALL_FINCLUDEDIR}"
 			RENAME "paraconf.F90"
 	)
@@ -152,7 +151,7 @@ write_basic_package_version_file("${paraconf_BINARY_DIR}/paraconf/paraconfConfig
 )
 install(EXPORT PC_export NAMESPACE "paraconf::" DESTINATION "${INSTALL_CMAKEDIR}" FILE paraconf.cmake)
 install(FILES
-		../cmake/paraconfConfig.cmake
+		cmake/paraconfConfig.cmake
 		"${paraconf_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
 		DESTINATION "${INSTALL_CMAKEDIR}"
 )

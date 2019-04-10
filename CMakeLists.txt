@@ -31,8 +31,7 @@ cmake_minimum_required(VERSION 3.5)
 
 # The header project
 
-project(PARACONFSUPER LANGUAGES)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+project(PARACONF_DISTRIB LANGUAGES)
 
 
 # Build options
@@ -45,7 +44,7 @@ set(USE_YAML     SYSTEM CACHE STRING "version of yaml to use, SYSTEM and EMBEDDE
 ## Options handling
 
 if("${USE_YAML}" STREQUAL EMBEDDED)
-	set(YAML_PATH "${PARACONFSUPER_SOURCE_DIR}/vendor/libyaml-0.2.1.tar")
+	set(YAML_PATH "${PARACONF_DISTRIB_SOURCE_DIR}/vendor/libyaml-0.2.1.tar")
 else()
 	set(YAML_PATH "${USE_YAML}")
 endif()
@@ -58,8 +57,8 @@ include(ExternalProject)
 
 # A list of all cache variables to forward to subprojects
 
-list(APPEND CMAKE_PREFIX_PATH "${PARACONFSUPER_BINARY_DIR}/staging" "${PARACONFSUPER_BINARY_DIR}/build-dep")
-list(APPEND CMAKE_BUILD_RPATH "${PARACONFSUPER_BINARY_DIR}/staging/lib")
+list(APPEND CMAKE_PREFIX_PATH "${PARACONF_DISTRIB_BINARY_DIR}/staging" "${PARACONF_DISTRIB_BINARY_DIR}/build-dep")
+list(APPEND CMAKE_BUILD_RPATH "${PARACONF_DISTRIB_BINARY_DIR}/staging/lib")
 get_cmake_property(CACHE_VARIABLES CACHE_VARIABLES)
 set(CMAKE_CACHE_ARGS)
 foreach(CACHE_VARIABLE ${CACHE_VARIABLES})
@@ -77,17 +76,17 @@ set(EP_ENV "$ENV{LD_LIBRARY_PATH}")
 if(NOT "x${EP_ENV}x" STREQUAL "xx")
 	set(EP_ENV ":${EP_ENV}")
 endif()
-set(EP_ENV "LD_LIBRARY_PATH=${PARACONFSUPER_BINARY_DIR}/staging/lib:${PARACONFSUPER_BINARY_DIR}/build-dep/lib${EP_ENV}")
+set(EP_ENV "LD_LIBRARY_PATH=${PARACONF_DISTRIB_BINARY_DIR}/staging/lib:${PARACONF_DISTRIB_BINARY_DIR}/build-dep/lib${EP_ENV}")
 
 
 # Testing
 
 if("${BUILD_TESTING}")
 	enable_testing()
-	set_property(DIRECTORY PROPERTY TEST_INCLUDE_FILE "${PARACONFSUPER_BINARY_DIR}/SubTests.cmake")
-	file(WRITE "${PARACONFSUPER_BINARY_DIR}/SubTests.cmake" 
+	set_property(DIRECTORY PROPERTY TEST_INCLUDE_FILE "${PARACONF_DISTRIB_BINARY_DIR}/SubTests.cmake")
+	file(WRITE "${PARACONF_DISTRIB_BINARY_DIR}/SubTests.cmake" 
 #TODO: replace these path by the actual path where stuff is installed
-"set(ADDPATH [=[${PARACONFSUPER_BINARY_DIR}/staging/lib:${PARACONFSUPER_BINARY_DIR}/build-dep/lib]=])\n"
+"set(ADDPATH [=[${PARACONF_DISTRIB_BINARY_DIR}/staging/lib:${PARACONF_DISTRIB_BINARY_DIR}/build-dep/lib]=])\n"
 [===[
 set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
 if("x${LD_LIBRARY_PATH}x" STREQUAL xx)
@@ -100,7 +99,7 @@ endif()
 function(add_testing EP_NAME)
 	ExternalProject_Get_Property("${EP_NAME}" BINARY_DIR)
 	if("${BUILD_TESTING}")
-		file(APPEND "${PARACONFSUPER_BINARY_DIR}/SubTests.cmake" "subdirs([=[${BINARY_DIR}]=])\n")
+		file(APPEND "${PARACONF_DISTRIB_BINARY_DIR}/SubTests.cmake" "subdirs([=[${BINARY_DIR}]=])\n")
 	endif()
 endfunction()
 
@@ -108,10 +107,10 @@ endfunction()
 # Main project
 
 ExternalProject_Add(PARACONF
-		PREFIX "${PARACONFSUPER_BINARY_DIR}/paraconf"
-		SOURCE_DIR "${PARACONFSUPER_SOURCE_DIR}/src" BUILD_ALWAYS TRUE
+		PREFIX "${PARACONF_DISTRIB_BINARY_DIR}/paraconf"
+		SOURCE_DIR "${PARACONF_DISTRIB_SOURCE_DIR}/paraconf" BUILD_ALWAYS TRUE
 		CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS}
-		INSTALL_DIR "${PARACONFSUPER_BINARY_DIR}/staging")
+		INSTALL_DIR "${PARACONF_DISTRIB_BINARY_DIR}/staging")
 
 
 ## Main project dependancies
@@ -120,10 +119,10 @@ ExternalProject_Add(PARACONF
 if(NOT "${USE_YAML}" STREQUAL SYSTEM)
 	file(MD5 "${YAML_PATH}" HASH) #< trick to prevent no-hash warning
 	ExternalProject_Add(YAML
-			PREFIX "${PARACONFSUPER_BINARY_DIR}/yaml"
+			PREFIX "${PARACONF_DISTRIB_BINARY_DIR}/yaml"
 			URL "${YAML_PATH}" URL_HASH "MD5=${HASH}" EXCLUDE_FROM_ALL 1
 			CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS} "-DBUILD_TESTING:BOOL=OFF" "-DINSTALL_CMAKE_DIR:STRING=share/yaml/cmake"
-			INSTALL_DIR "${PARACONFSUPER_BINARY_DIR}/staging")
+			INSTALL_DIR "${PARACONF_DISTRIB_BINARY_DIR}/staging")
 	add_dependencies(PARACONF YAML)
 endif()
 
@@ -132,8 +131,8 @@ endif()
 
 if("${BUILD_TESTING}")
 	ExternalProject_Add(PARACONF_EXAMPLE
-			PREFIX "${PARACONFSUPER_BINARY_DIR}/paraconf_example"
-			SOURCE_DIR "${PARACONFSUPER_SOURCE_DIR}/example" BUILD_ALWAYS TRUE
+			PREFIX "${PARACONF_DISTRIB_BINARY_DIR}/paraconf_example"
+			SOURCE_DIR "${PARACONF_DISTRIB_SOURCE_DIR}/example" BUILD_ALWAYS TRUE
 			CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS}
 			INSTALL_COMMAND ""
 			DEPENDS PARACONF)
@@ -143,4 +142,4 @@ endif()
 
 # Installation
 
-install(DIRECTORY "${PARACONFSUPER_BINARY_DIR}/staging/" DESTINATION "." USE_SOURCE_PERMISSIONS)
+install(DIRECTORY "${PARACONF_DISTRIB_BINARY_DIR}/staging/" DESTINATION "." USE_SOURCE_PERMISSIONS)

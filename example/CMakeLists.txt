@@ -47,7 +47,7 @@ set(CMAKE_C_STANDARD_REQUIRED TRUE)
 
 
 add_executable(PC_example example.c)
-target_link_libraries(PC_example paraconf::paraconf yaml)
+target_link_libraries(PC_example paraconf::paraconf)
 add_test(NAME PC_example COMMAND PC_example WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 
