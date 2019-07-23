@@ -44,7 +44,7 @@ set(USE_YAML     SYSTEM CACHE STRING "version of yaml to use, SYSTEM and EMBEDDE
 ## Options handling
 
 if("${USE_YAML}" STREQUAL EMBEDDED)
-	set(YAML_PATH "${PARACONF_DISTRIB_SOURCE_DIR}/vendor/libyaml-0.2.1.tar")
+	set(YAML_PATH "${PARACONF_DISTRIB_SOURCE_DIR}/vendor/libyaml-0.2.2.tar")
 else()
 	set(YAML_PATH "${USE_YAML}")
 endif()
