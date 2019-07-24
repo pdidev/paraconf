@@ -322,7 +322,11 @@ endfunction()
 
 if("${BUILD_TESTING}")
 	enable_testing()
-	set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" APPEND PROPERTY TEST_INCLUDE_FILES "${CMAKE_BINARY_DIR}/SubTests.cmake")
+	if("${CMAKE_VERSION}" VERSION_LESS 3.10)
+		file(APPEND "${CMAKE_BINARY_DIR}/CTestTestfile.cmake" "include(\"${CMAKE_BINARY_DIR}/SubTests.cmake\")")
+	else()
+		set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" APPEND PROPERTY TEST_INCLUDE_FILES "${CMAKE_BINARY_DIR}/SubTests.cmake")
+	endif()
 	file(WRITE "${CMAKE_BINARY_DIR}/SubTests.cmake"
 	"set(ADDPATH [=[${CMAKE_BINARY_DIR}/staging/${CMAKE_INSTALL_LIBDIR}:${CMAKE_BINARY_DIR}/staging/lib]=])\n"
 	[===[
