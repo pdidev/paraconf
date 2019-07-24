@@ -41,7 +41,7 @@ project(PARACONF_DISTRIB LANGUAGES C CXX)
 ## Global options
 
 set(DIST_PROFILE "User" CACHE STRING "Profile to use for PDI distribution build. Options are: User, Devel")
-set_property(CACHE DIST_PROFILE PROPERTY STRINGS User Admin Devel)
+set_property(CACHE DIST_PROFILE PROPERTY STRINGS User Devel)
 
 if("Devel" STREQUAL "${DIST_PROFILE}")
 	set(DEFAULT_BUILD_TYPE "Debug")

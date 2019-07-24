@@ -31,7 +31,7 @@ cmake_minimum_required(VERSION 3.5)
 
 add_executable(test1 test1.c)
 target_link_libraries(test1 paraconf::paraconf)
-target_compile_features(test1 PUBLIC c_std_99)
+set_target_properties(test1 PROPERTIES C_STANDARD 99 C_STANDARD_REQUIRED TRUE)
 add_test(NAME test1 COMMAND test1 "${CMAKE_CURRENT_SOURCE_DIR}/test_data.yml")
 
 if("${BUILD_FORTRAN}")
