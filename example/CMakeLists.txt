@@ -30,7 +30,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(paraconf_examples LANGUAGES C CXX)
 
-if("${ENABLE_FORTRAN}")
+if("${BUILD_FORTRAN}")
 	enable_language(Fortran)
 endif()
 
@@ -40,19 +40,17 @@ include(CTest)
 find_package(paraconf REQUIRED)
 
 # Default standard in the project is C99 & C++14
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED TRUE)
 
 
-add_executable(PC_example example.c)
-target_link_libraries(PC_example paraconf::paraconf)
-add_test(NAME PC_example COMMAND PC_example WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+add_executable(example example.c)
+target_link_libraries(example paraconf::paraconf)
+add_test(NAME example COMMAND example "${CMAKE_CURRENT_SOURCE_DIR}/example.yml")
 
 
-if("${ENABLE_FORTRAN}")
-	add_executable(PC_example_f90 example.f90)
-	target_link_libraries(PC_example_f90 paraconf::paraconf_f90)
-	add_test(NAME PC_example_f90 COMMAND PC_example_f90 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+if("${BUILD_FORTRAN}")
+	add_executable(example_f90 example.f90)
+	target_link_libraries(example_f90 paraconf::paraconf_f90)
+	add_test(NAME example_f90 COMMAND example_f90 "${CMAKE_CURRENT_SOURCE_DIR}/example.yml")
 endif()

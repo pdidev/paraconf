@@ -13,8 +13,12 @@
 
 int main(int argc, char *argv[])
 {
-	/// Creates a tree that contains all the parsed data of the file './example.yml'
-	PC_tree_t conf = PC_parse_path("example.yml");
+	/// Creates a tree that contains all the parsed data of the parameter file
+	if (argc != 2 ) {
+		fprintf(stderr, "Error: expected 1 argument!\n");
+		exit(1);
+	}
+	PC_tree_t conf = PC_parse_path(argv[1]);
 
 	/*For the sake of the illustration a tree is 
 	 *           .                // origin of the tree

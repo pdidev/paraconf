@@ -30,27 +30,28 @@ find_dependency(yaml)
 # by default, if no component is specified, look for all
 if("xx" STREQUAL "x${paraconf_FIND_COMPONENTS}x")
 	set(paraconf_FIND_COMPONENTS C f90)
+	set(paraconf_FIND_REQUIRED_C TRUE)
+	set(paraconf_FIND_REQUIRED_f90 FALSE)
 endif()
 
-# we always look for C
-list(REMOVE_ITEM paraconf_FIND_COMPONENTS C) 
 include("${CMAKE_CURRENT_LIST_DIR}/paraconf.cmake")
+
 if(NOT TARGET paraconf::paraconf)
 	set(paraconf_FOUND "FALSE")
 	if(NOT "${paraconf_FIND_QUIETLY}")
-		message("paraconf: component \"C\" not found")
+		message(WARNING "paraconf: component \"C\" not found")
 	endif()
 endif()
 
 # currently, only f90 is supported
+list(REMOVE_ITEM paraconf_FIND_COMPONENTS "C")
 foreach(_paraconf_ONE_COMPONENT ${paraconf_FIND_COMPONENTS})
-	include("${CMAKE_CURRENT_LIST_DIR}/paraconf_${_paraconf_ONE_COMPONENT}.cmake" OPTIONAL)
 	if(NOT TARGET "paraconf::paraconf_${_paraconf_ONE_COMPONENT}")
 		if("${paraconf_FIND_REQUIRED_${_paraconf_ONE_COMPONENT}}")
 			set(paraconf_FOUND "FALSE")
 		endif()
 		if(NOT "${paraconf_FIND_QUIETLY}")
-			message("paraconf: component \"${_paraconf_ONE_COMPONENT}\" not found")
+			message(WARNING "paraconf: component \"${_paraconf_ONE_COMPONENT}\" not found")
 		endif()
 	endif()
 endforeach()

@@ -38,8 +38,16 @@ PROGRAM example
   LOGICAL :: a_log
   CHARACTER(LEN=PC_ERRMSG_MAXLENGTH) :: errmsg
   TYPE(PC_errhandler_t) :: errh
+  CHARACTER(LEN=4096) :: infile
+
+  if (command_argument_count() /= 1) then
+    print *, "Error: expected 1 argument!"
+    error stop
+  endif
+
+  call get_command_argument(1,infile)   !first, read in the two values
   
-  call PC_parse_path("example.yml",conf)
+  call PC_parse_path(infile,conf)
 
   call PC_int(PC_get(conf,".a_int"), a_int)
   call PC_double(PC_get(conf,".a_float"), a_float)

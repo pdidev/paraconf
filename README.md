@@ -11,11 +11,11 @@ dependancies and examples.
 You can find a list of release at 
 https://gitlab.maisondelasimulation.fr/jbigot/libparaconf/tags
 
-For example, you can get release 0.3.2:
+For example, you can get release 0.4.0:
 ```
-wget https://gitlab.maisondelasimulation.fr/jbigot/libparaconf/-/archive/0.3.2/libparaconf-0.3.2.tar.bz2
-tar -xjf libparaconf-0.3.2.tar.bz2
-mv libparaconf-0.3.2 libparaconf
+wget https://gitlab.maisondelasimulation.fr/jbigot/libparaconf/-/archive/0.4.0/libparaconf-0.4.0.tar.bz2
+tar -xjf libparaconf-0.4.0.tar.bz2
+mv libparaconf-0.4.0 libparaconf
 ```
 
 

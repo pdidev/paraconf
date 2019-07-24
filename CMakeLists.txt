@@ -27,119 +27,112 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
+
+
+### Project header
+
 cmake_minimum_required(VERSION 3.5)
-
-# The header project
-
-project(PARACONF_DISTRIB LANGUAGES)
+project(PARACONF_DISTRIB LANGUAGES C CXX)
 
 
-# Build options
 
-option(BUILD_SHARED_LIBS             "Build shared libraries rather than static ones" ON)
-option(BUILD_TESTING                 "Build tests" ON)
-option(ENABLE_FORTRAN                "Enable Fortran support" ON)
-set(USE_YAML     SYSTEM CACHE STRING "version of yaml to use, SYSTEM and EMBEDDED can be used")
+### Build options
 
-## Options handling
+## Global options
 
-if("${USE_YAML}" STREQUAL EMBEDDED)
-	set(YAML_PATH "${PARACONF_DISTRIB_SOURCE_DIR}/vendor/libyaml-0.2.2.tar")
+set(DIST_PROFILE "User" CACHE STRING "Profile to use for PDI distribution build. Options are: User, Devel")
+set_property(CACHE DIST_PROFILE PROPERTY STRINGS User Admin Devel)
+
+if("Devel" STREQUAL "${DIST_PROFILE}")
+	set(DEFAULT_BUILD_TYPE "Debug")
+	option(BUILD_TESTING   "Build tests" ON)
+elseif("User" STREQUAL "${DIST_PROFILE}")
+	set(DEFAULT_BUILD_TYPE "Release")
+	option(BUILD_TESTING   "Build tests" OFF)
 else()
-	set(YAML_PATH "${USE_YAML}")
+	message(FATAL_ERROR "DIST_PROFILE should be set to one of: User, Devel")
+endif()
+
+set(USE_DEFAULT AUTO CACHE STRING "Default version of libraries to use; this can be 1) EMBEDDED to use the provided version, 2) SYSTEM to use an already installed version (you can use CMAKE_PREFIX_PATH to specify where to look, or 3) AUTO to use SYSTEM if available and EMBEDDED otherwise")
+
+
+# Modules to build
+
+option(BUILD_SHARED_LIBS "Build shared libraries rather than static ones" ON)
+option(BUILD_FORTRAN     "Enable Fortran support" ON)
+
+
+
+### Default build type
+
+if(NOT "${CMAKE_BUILD_TYPE}")
+	set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: None Debug Release(default) RelWithDebInfo MinSizeRel ..." FORCE)
+endif()
+message(STATUS " **Profile**: Distribution profile is: `${DIST_PROFILE}' (-DDIST_PROFILE=${DIST_PROFILE})")
+message(STATUS " **Profile**: Build type is: `${CMAKE_BUILD_TYPE}' (-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})")
+message(STATUS " **Profile**: Prefix path is: `${CMAKE_PREFIX_PATH}' (-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH})")
+message(STATUS " **Profile**: Default use is: `${USE_DEFAULT}' (-DUSE_DEFAULT=${USE_DEFAULT})")
+set(FEATURE_ENABLED "DISABLED")
+if(${BUILD_FORTRAN})
+	set(FEATURE_ENABLED "ENABLED ")
+endif()
+message(STATUS " **Feature**: ${FEATURE_ENABLED} FORTRAN (-DBUILD_FORTRAN=${BUILD_FORTRAN})")
+set(FEATURE_ENABLED "DISABLED")
+if(${BUILD_TESTING})
+	set(FEATURE_ENABLED "ENABLED ")
+endif()
+message(STATUS " **Feature**: ${FEATURE_ENABLED} TESTING (-DBUILD_TESTING=${BUILD_TESTING})")
+
+
+
+### Include sub-projects find modules
+
+list(APPEND CMAKE_MODULE_PATH
+	"${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+	"${CMAKE_CURRENT_SOURCE_DIR}/paraconf/cmake")
+
+
+
+### Dependencies
+
+include(GNUInstallDirs)
+include(SuperBuild)
+
+
+## Fortran
+
+if("${ENABLE_FORTRAN}") # and (BPP or paraconf or PDI or ...)
+	enable_language(Fortran)
 endif()
 
 
-# Includes
+## Yaml
 
-include(ExternalProject)
-
-
-# A list of all cache variables to forward to subprojects
-
-list(APPEND CMAKE_PREFIX_PATH "${PARACONF_DISTRIB_BINARY_DIR}/staging" "${PARACONF_DISTRIB_BINARY_DIR}/build-dep")
-list(APPEND CMAKE_BUILD_RPATH "${PARACONF_DISTRIB_BINARY_DIR}/staging/lib")
-get_cmake_property(CACHE_VARIABLES CACHE_VARIABLES)
-set(CMAKE_CACHE_ARGS)
-foreach(CACHE_VARIABLE ${CACHE_VARIABLES})
-	get_property(CACHE_VARIABLE_TYPE CACHE "${CACHE_VARIABLE}" PROPERTY TYPE)
-	if(NOT "${CACHE_VARIABLE_TYPE}" STREQUAL STATIC AND NOT "${CACHE_VARIABLE_TYPE}" STREQUAL INTERNAL)
-		list(APPEND CMAKE_CACHE_ARGS "-D${CACHE_VARIABLE}:${CACHE_VARIABLE_TYPE}=${${CACHE_VARIABLE}}")
-	endif()
-endforeach()
-list(APPEND CMAKE_CACHE_ARGS 
-		"-DCMAKE_BUILD_RPATH:PATH=${CMAKE_BUILD_RPATH}"
-		"-DCMAKE_STAGING_PREFIX:PATH=<INSTALL_DIR>"
-		"-DCMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}")
-
-set(EP_ENV "$ENV{LD_LIBRARY_PATH}")
-if(NOT "x${EP_ENV}x" STREQUAL "xx")
-	set(EP_ENV ":${EP_ENV}")
-endif()
-set(EP_ENV "LD_LIBRARY_PATH=${PARACONF_DISTRIB_BINARY_DIR}/staging/lib:${PARACONF_DISTRIB_BINARY_DIR}/build-dep/lib${EP_ENV}")
+sbuild_add_dependency(yaml "${USE_DEFAULT}"
+	EMBEDDED_PATH "vendor/libyaml-0.2.2.tar"
+	CMAKE_CACHE_ARGS
+		"-DBUILD_TESTING:BOOL=OFF"
+		"-DINSTALL_LIB_DIR:STRING=${CMAKE_INSTALL_LIBDIR}"
+		"-DINSTALL_BIN_DIR:STRING=${CMAKE_INSTALL_BINDIR}"
+		"-DINSTALL_INCLUDE_DIR:STRING=${CMAKE_INSTALL_INCLUDEDIR}"
+		"-DINSTALL_CMAKE_DIR:STRING=share/yaml/cmake"
+)
 
 
-# Testing
 
-if("${BUILD_TESTING}")
-	enable_testing()
-	set_property(DIRECTORY PROPERTY TEST_INCLUDE_FILE "${PARACONF_DISTRIB_BINARY_DIR}/SubTests.cmake")
-	file(WRITE "${PARACONF_DISTRIB_BINARY_DIR}/SubTests.cmake" 
-#TODO: replace these path by the actual path where stuff is installed
-"set(ADDPATH [=[${PARACONF_DISTRIB_BINARY_DIR}/staging/lib:${PARACONF_DISTRIB_BINARY_DIR}/build-dep/lib]=])\n"
-[===[
-set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
-if("x${LD_LIBRARY_PATH}x" STREQUAL xx)
-	set(ENV{LD_LIBRARY_PATH} "${ADDPATH}")
-else()
-	set(ENV{LD_LIBRARY_PATH} "${ADDPATH}:${LD_LIBRARY_PATH}")
-endif()
-]===])
-endif()
-function(add_testing EP_NAME)
-	ExternalProject_Get_Property("${EP_NAME}" BINARY_DIR)
-	if("${BUILD_TESTING}")
-		file(APPEND "${PARACONF_DISTRIB_BINARY_DIR}/SubTests.cmake" "subdirs([=[${BINARY_DIR}]=])\n")
-	endif()
-endfunction()
+### Own modules
+
+sbuild_add_module(PARACONF
+	SOURCE_DIR "${PARACONF_DISTRIB_SOURCE_DIR}/paraconf"
+	DEPENDS yaml
+	SUBSTEPS test
+)
 
 
-# Main project
-
-ExternalProject_Add(PARACONF
-		PREFIX "${PARACONF_DISTRIB_BINARY_DIR}/paraconf"
-		SOURCE_DIR "${PARACONF_DISTRIB_SOURCE_DIR}/paraconf" BUILD_ALWAYS TRUE
-		CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS}
-		INSTALL_DIR "${PARACONF_DISTRIB_BINARY_DIR}/staging")
-
-
-## Main project dependancies
-
-
-if(NOT "${USE_YAML}" STREQUAL SYSTEM)
-	file(MD5 "${YAML_PATH}" HASH) #< trick to prevent no-hash warning
-	ExternalProject_Add(YAML
-			PREFIX "${PARACONF_DISTRIB_BINARY_DIR}/yaml"
-			URL "${YAML_PATH}" URL_HASH "MD5=${HASH}" EXCLUDE_FROM_ALL 1
-			CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS} "-DBUILD_TESTING:BOOL=OFF" "-DINSTALL_CMAKE_DIR:STRING=share/yaml/cmake"
-			INSTALL_DIR "${PARACONF_DISTRIB_BINARY_DIR}/staging")
-	add_dependencies(PARACONF YAML)
-endif()
-
-
-# Examples
-
-if("${BUILD_TESTING}")
-	ExternalProject_Add(PARACONF_EXAMPLE
-			PREFIX "${PARACONF_DISTRIB_BINARY_DIR}/paraconf_example"
-			SOURCE_DIR "${PARACONF_DISTRIB_SOURCE_DIR}/example" BUILD_ALWAYS TRUE
-			CMAKE_CACHE_ARGS ${CMAKE_CACHE_ARGS}
-			INSTALL_COMMAND ""
-			DEPENDS PARACONF)
-	add_testing(PARACONF_EXAMPLE)
-endif()
-
-
-# Installation
-
-install(DIRECTORY "${PARACONF_DISTRIB_BINARY_DIR}/staging/" DESTINATION "." USE_SOURCE_PERMISSIONS)
+sbuild_add_module(EXAMPLE
+	ENABLE_BUILD "${BUILD_TESTING}"
+	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/example"
+	DEPENDS PARACONF
+	INSTALL_COMMAND ""
+	SUBSTEPS test
+)

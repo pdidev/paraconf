@@ -27,19 +27,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
-include(AddCCompilerFlags)
+cmake_minimum_required(VERSION 3.5)
 
-add_executable(PC_example EXCLUDE_FROM_ALL test1.c)
-target_link_libraries(PC_test1 paraconf)
-add_compiler_flags(PC_test1 PRIVATE -std=c99)
-add_test(NAME PC_test1_build COMMAND "${CMAKE_COMMAND}" --build . --target PC_test1 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-add_test(NAME PC_test1_run COMMAND PC_example WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-set_tests_properties(PC_test1_run PROPERTIES DEPENDS PC_test1_build)
+add_executable(test1 test1.c)
+target_link_libraries(test1 paraconf::paraconf)
+target_compile_features(test1 PUBLIC c_std_99)
+add_test(NAME test1 COMMAND test1 "${CMAKE_CURRENT_SOURCE_DIR}/test_data.yml")
 
-if("${ENABLE_FORTRAN}")
-	add_executable(PC_test2 EXCLUDE_FROM_ALL test2.f90)
-	target_link_libraries(PC_test2 paraconf_f90)
-	add_test(NAME PC_test2_build COMMAND "${CMAKE_COMMAND}" --build . --target PC_test2 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
-	add_test(NAME PC_test2_run COMMAND PC_test2 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-	set_tests_properties(PC_test2_run PROPERTIES DEPENDS PC_test2_build)
+if("${BUILD_FORTRAN}")
+	add_executable(test2 test2.f90)
+	target_link_libraries(test2 paraconf::paraconf_f90)
+	add_test(NAME test2 COMMAND test2 "${CMAKE_CURRENT_SOURCE_DIR}/test_data.yml")
 endif()
