@@ -91,14 +91,19 @@ set_property(TARGET paraconf PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
 add_library(paraconf::paraconf ALIAS paraconf)
+if("${CMAKE_VERSION}" VERSION_LESS "3.12")
+	set(LIBRARY_COMPONENT "COMPONENT" "Runtime")
+else()
+	set(LIBRARY_COMPONENT "COMPONENT" "Runtime" "NAMELINK_COMPONENT" "Development")
+endif()
 install(TARGETS paraconf EXPORT PC_export
-	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT development
-	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT runtime NAMELINK_COMPONENT development
+	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Development
+	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" ${LIBRARY_COMPONENT}
 	INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 install(FILES include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
 	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-	COMPONENT development
+	COMPONENT Development
 )
 
 
@@ -124,26 +129,31 @@ if("${BUILD_FORTRAN}")
 			CACHE PATH
 			"Fortran module files (LIBDIR/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${CMAKE_Fortran_COMPILER_VERSION}/finclude)")
 	endif()
+	if("${CMAKE_VERSION}" VERSION_LESS "3.12")
+		set(LIBRARY_COMPONENT "COMPONENT" "Runtime")
+	else()
+		set(LIBRARY_COMPONENT "COMPONENT" "Runtime" "NAMELINK_COMPONENT" "Development")
+	endif()
 	install(TARGETS paraconf_f90 EXPORT PC_export
-		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT development
-		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT runtime NAMELINK_COMPONENT development
+		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Development
+		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" ${LIBRARY_COMPONENT}
 		INCLUDES DESTINATION "${INSTALL_FINCLUDEDIR}"
 	)
 	install(DIRECTORY "${paraconf_BINARY_DIR}/fortran_inc/"
 		DESTINATION "${INSTALL_FINCLUDEDIR}"
-		COMPONENT development
+		COMPONENT Development
 	)
 	install(FILES
 		"${paraconf_SOURCE_DIR}/src/fortran/paraconff_types.h"
 		"${paraconf_SOURCE_DIR}/src/fortran/paraconff_consts.h"
 		"${paraconf_SOURCE_DIR}/src/fortran/paraconff.h"
 		DESTINATION "${INSTALL_FINCLUDEDIR}"
-		COMPONENT development
+		COMPONENT Development
 	)
 	install(FILES
 		"${paraconf_SOURCE_DIR}/src/fortran/invalid_include.F90"
 		DESTINATION "${INSTALL_FINCLUDEDIR}"
-		COMPONENT development
+		COMPONENT Development
 		RENAME "paraconf.F90"
 	)
 endif()
@@ -166,11 +176,11 @@ install(EXPORT PC_export
 	NAMESPACE "paraconf::"
 	DESTINATION "${INSTALL_CMAKEDIR}"
 	FILE paraconf.cmake
-	COMPONENT development
+	COMPONENT Development
 )
 install(FILES
 	cmake/paraconfConfig.cmake
 	"${paraconf_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
 	DESTINATION "${INSTALL_CMAKEDIR}"
-	COMPONENT development
+	COMPONENT Development
 )
