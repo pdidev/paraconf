@@ -182,6 +182,7 @@ install(EXPORT PC_export
 )
 install(FILES
 	cmake/paraconfConfig.cmake
+	cmake/Findyaml.cmake
 	"${paraconf_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
 	DESTINATION "${INSTALL_CMAKEDIR}"
 	COMPONENT Development
