@@ -24,6 +24,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #--------------------------------------------------------------------------------
 
+cmake_minimum_required(VERSION 3.5)
+
 # - Check for the presence of libyaml
 #
 # The following variables are set when YAML is found:
@@ -61,8 +63,8 @@ function(_yaml_Find_Pkgconfig)
 		if ( EXISTS "${yaml_LIBRARIES}" )
 			add_library(yaml SHARED IMPORTED GLOBAL)
 			set_target_properties(yaml PROPERTIES
-					IMPORTED_LOCATION ${yaml_LIBRARIES})
-			target_include_directories(yaml INTERFACE ${yaml_INCLUDE_DIRS})
+					IMPORTED_LOCATION ${yaml_LIBRARIES}
+					INTERFACE_INCLUDE_DIRECTORIES ${yaml_INCLUDE_DIRS})
 		endif()
 	endif()
 endfunction(_yaml_Find_Pkgconfig)
