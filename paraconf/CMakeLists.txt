@@ -28,7 +28,7 @@
 #=============================================================================
 
 cmake_minimum_required(VERSION 3.5)
-project(paraconf LANGUAGES C CXX)
+project(paraconf LANGUAGES C)
 
 
 # Build options
