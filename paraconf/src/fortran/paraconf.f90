@@ -29,7 +29,7 @@ module paraconf
 
   implicit none
 
-  include 'paraconff.h'
+  include 'paraconf_f90.h'
 
 end module paraconf
 
@@ -40,8 +40,8 @@ integer function PC_status(tree)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree
 
@@ -56,8 +56,8 @@ subroutine PC_errmsg(errmsg)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   character(*), intent(OUT) :: errmsg
   character(kind = C_char), pointer, dimension(:) :: errmsg_array
@@ -89,8 +89,8 @@ subroutine PC_errhandler(new_handler, old_handler)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_errhandler_t), intent(IN) :: new_handler
   type(PC_errhandler_t), intent(OUT), optional :: old_handler
@@ -112,8 +112,8 @@ subroutine PC_parse_path(path, tree)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   character(len = *), intent(IN) :: path
   type(PC_tree_t), intent(OUT) :: tree
@@ -137,8 +137,8 @@ subroutine PC_len(tree_in, value, status)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
   integer, intent(OUT), target :: value
@@ -162,8 +162,8 @@ type(PC_tree_t) function PC_get(tree, index_fmt)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree
   character(len = *), intent(IN) :: index_fmt
@@ -188,8 +188,8 @@ subroutine PC_int(tree_in, value, status)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
   integer, intent(OUT) :: value
@@ -215,8 +215,8 @@ subroutine PC_double(tree_in, value, status)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
   real(8), intent(OUT) :: value
@@ -242,9 +242,9 @@ subroutine PC_string(tree_in, value, status)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_consts.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_consts.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
   character(len = *), intent(OUT) :: value
@@ -283,8 +283,8 @@ subroutine PC_log(tree_in, value, status)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
   logical, intent(OUT) :: value
@@ -315,8 +315,8 @@ subroutine PC_tree_destroy(tree_in, status)
 
   implicit none
 
-  include 'paraconff_types.h'
-  include 'paraconff_c.h'
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(INOUT), target :: tree_in
   integer, intent(OUT), optional :: status

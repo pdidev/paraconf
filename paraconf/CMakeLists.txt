@@ -114,9 +114,9 @@ install(FILES include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
 if("${BUILD_FORTRAN}")
 	add_library(paraconf_f90 src/fortran/paraconf.f90)
 	target_link_libraries(paraconf_f90 INTERFACE paraconf)
-	target_include_directories(paraconf_f90 INTERFACE
-		"$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include>"
-		"$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/fortran_inc/>")
+	target_include_directories(paraconf_f90
+		PUBLIC "$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include>"
+		INTERFACE "$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/fortran_inc/>")
 	set_property(TARGET paraconf_f90 PROPERTY VERSION ${paraconf_VERSION})
 	set_property(TARGET paraconf_f90 PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
 	set_property(TARGET paraconf_f90 PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
@@ -124,9 +124,9 @@ if("${BUILD_FORTRAN}")
 	add_library(paraconf::paraconf_f90 ALIAS paraconf_f90)
 	if(GNU STREQUAL "${CMAKE_Fortran_COMPILER_ID}")
 		string(REGEX REPLACE "\\..*" "" COMPILER_FVER "${CMAKE_Fortran_COMPILER_VERSION}")
-		set(INSTALL_FINCLUDEDIR "${CMAKE_INSTALL_LIBDIR}/gcc/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude" CACHE PATH "Fortran module files (LIBDIR/gcc/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude)")
+		set(INSTALL_FMODDIR "${CMAKE_INSTALL_LIBDIR}/gcc/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude" CACHE PATH "Fortran module files (LIBDIR/gcc/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude)")
 	else()
-		set(INSTALL_FINCLUDEDIR
+		set(INSTALL_FMODDIR
 			"${CMAKE_INSTALL_LIBDIR}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${CMAKE_Fortran_COMPILER_VERSION}/finclude"
 			CACHE PATH
 			"Fortran module files (LIBDIR/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${CMAKE_Fortran_COMPILER_VERSION}/finclude)")
@@ -139,24 +139,20 @@ if("${BUILD_FORTRAN}")
 	install(TARGETS paraconf_f90 EXPORT PC_export
 		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Development
 		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" ${LIBRARY_COMPONENT}
-		INCLUDES DESTINATION "${INSTALL_FINCLUDEDIR}"
+		INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" "${INSTALL_FMODDIR}"
 	)
 	install(DIRECTORY "${paraconf_BINARY_DIR}/fortran_inc/"
-		DESTINATION "${INSTALL_FINCLUDEDIR}"
+		DESTINATION "${INSTALL_FMODDIR}"
 		COMPONENT Development
 	)
 	install(FILES
-		"${paraconf_SOURCE_DIR}/src/fortran/paraconff_types.h"
-		"${paraconf_SOURCE_DIR}/src/fortran/paraconff_consts.h"
-		"${paraconf_SOURCE_DIR}/src/fortran/paraconff.h"
-		DESTINATION "${INSTALL_FINCLUDEDIR}"
+		include/paraconf.F90
+		include/paraconff.h
+		include/paraconf_f90_types.h
+		include/paraconf_f90_consts.h
+		include/paraconf_f90.h
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 		COMPONENT Development
-	)
-	install(FILES
-		"${paraconf_SOURCE_DIR}/src/fortran/invalid_include.F90"
-		DESTINATION "${INSTALL_FINCLUDEDIR}"
-		COMPONENT Development
-		RENAME "paraconf.F90"
 	)
 endif()
 

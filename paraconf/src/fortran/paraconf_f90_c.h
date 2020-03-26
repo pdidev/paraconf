@@ -36,7 +36,7 @@ interface
     bind(C, name="PC_errhandler")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(PC_errhandler_t), value :: handler
     type(PC_errhandler_t) :: PC_errhandler_C
   end function PC_errhandler_C
@@ -45,7 +45,7 @@ interface
     bind(C, name="PC_parse_path")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(C_ptr), value :: path
     type(PC_tree_t) :: PC_parse_path_C
   end function PC_parse_path_C
@@ -54,7 +54,7 @@ interface
     bind(C, name="PC_sget")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(PC_tree_t), value :: tree
     type(C_ptr), value :: index_fmt
     type(PC_tree_t) :: PC_get_C
@@ -64,7 +64,7 @@ interface
     bind(C, name="PC_len")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(PC_tree_t), value :: tree
     type(C_ptr), value :: value
     integer(C_int) :: PC_len_C
@@ -74,7 +74,7 @@ interface
     bind(C, name="PC_int")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(PC_tree_t), value :: tree
     type(C_ptr), value :: value
     integer(C_int) :: PC_int_C
@@ -84,7 +84,7 @@ interface
     bind(C, name="PC_double")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(PC_tree_t), value :: tree
     type(C_ptr), value :: value
     integer(C_int) :: PC_double_C
@@ -94,7 +94,7 @@ interface
     bind(C, name="PC_string")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(PC_tree_t), value :: tree
     type(C_ptr), value :: value
     integer(C_int) :: PC_string_C
@@ -104,7 +104,7 @@ interface
     bind(C, name="PC_bool")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(PC_tree_t), value :: tree
     type(C_ptr), value :: value
     integer(C_int) :: PC_bool_C
@@ -114,7 +114,7 @@ interface
     bind(C, name="PC_tree_destroy")
     use ISO_C_binding
     implicit none
-    include 'paraconff_types.h'
+    include 'paraconf_f90_types.h'
     type(PC_tree_t), intent(IN) :: tree
     integer(C_int) :: PC_tree_destroy_C
   end function PC_tree_destroy_C

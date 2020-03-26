@@ -29,7 +29,7 @@ PROGRAM example
   
   IMPLICIT NONE
   
-!   INCLUDE 'paraconff.h'
+!   INCLUDE 'paraconf_f90.h'
   
   TYPE(PC_tree_t) :: conf, some_key
   INTEGER :: a_int, a_list_len, a_map_len, ii
