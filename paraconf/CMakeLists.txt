@@ -127,7 +127,7 @@ if("${BUILD_FORTRAN}")
 		set(INSTALL_FMODDIR "${CMAKE_INSTALL_LIBDIR}/gcc/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude" CACHE PATH "Fortran module files (LIBDIR/gcc/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude)")
 	else()
 		set(INSTALL_FMODDIR
-			"${CMAKE_INSTALL_LIBDIR}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${CMAKE_Fortran_COMPILER_VERSION}/finclude"
+			"${CMAKE_INSTALL_LIBDIR}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${CMAKE_Fortran_COMPILER_VERSION}/finclude["
 			CACHE PATH
 			"Fortran module files (LIBDIR/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${CMAKE_Fortran_COMPILER_VERSION}/finclude)")
 	endif()
@@ -149,7 +149,6 @@ if("${BUILD_FORTRAN}")
 		include/paraconf.F90
 		include/paraconff.h
 		include/paraconf_f90_types.h
-		include/paraconf_f90_consts.h
 		include/paraconf_f90.h
 		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 		COMPONENT Development
