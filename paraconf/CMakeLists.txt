@@ -29,6 +29,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 project(paraconf LANGUAGES C)
+list(APPEND CMAKE_MODULE_PATH "${PDI_SOURCE_DIR}/cmake")
 
 
 # Build options
@@ -36,10 +37,17 @@ project(paraconf LANGUAGES C)
 option(BUILD_SHARED_LIBS "Build shared libraries rather than static ones" ON)
 option(BUILD_FORTRAN     "Enable Fortran support" ON)
 
-## Options handling
-
 if("${BUILD_FORTRAN}")
 	enable_language(Fortran)
+endif()
+
+
+# A little compatibility macro
+
+if("${CMAKE_VERSION}" VERSION_LESS "3.12")
+	set(LIBRARY_COMPONENT "COMPONENT" "Runtime")
+else()
+	set(LIBRARY_COMPONENT "COMPONENT" "Runtime" "NAMELINK_COMPONENT" "Development")
 endif()
 
 
@@ -93,11 +101,6 @@ set_property(TARGET paraconf PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
 add_library(paraconf::paraconf ALIAS paraconf)
-if("${CMAKE_VERSION}" VERSION_LESS "3.12")
-	set(LIBRARY_COMPONENT "COMPONENT" "Runtime")
-else()
-	set(LIBRARY_COMPONENT "COMPONENT" "Runtime" "NAMELINK_COMPONENT" "Development")
-endif()
 install(TARGETS paraconf EXPORT PC_export
 	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Development
 	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" ${LIBRARY_COMPONENT}
@@ -116,21 +119,19 @@ if("${BUILD_FORTRAN}")
 	target_link_libraries(paraconf_f90 INTERFACE paraconf)
 	target_include_directories(paraconf_f90
 		PUBLIC "$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include>"
-		INTERFACE "$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/fortran_inc/>")
+		INTERFACE "$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/fmoddir/>")
 	set_property(TARGET paraconf_f90 PROPERTY VERSION ${paraconf_VERSION})
 	set_property(TARGET paraconf_f90 PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
 	set_property(TARGET paraconf_f90 PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
-	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${paraconf_BINARY_DIR}/fortran_inc/")
+	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${paraconf_BINARY_DIR}/fmoddir/")
 	add_library(paraconf::paraconf_f90 ALIAS paraconf_f90)
-	if(GNU STREQUAL "${CMAKE_Fortran_COMPILER_ID}")
-		string(REGEX REPLACE "\\..*" "" COMPILER_FVER "${CMAKE_Fortran_COMPILER_VERSION}")
-		set(INSTALL_FMODDIR "${CMAKE_INSTALL_LIBDIR}/gcc/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude" CACHE PATH "Fortran module files (LIBDIR/gcc/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${COMPILER_FVER}/finclude)")
-	else()
-		set(INSTALL_FMODDIR
-			"${CMAKE_INSTALL_LIBDIR}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${CMAKE_Fortran_COMPILER_VERSION}/finclude["
-			CACHE PATH
-			"Fortran module files (LIBDIR/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_LIBRARY_ARCHITECTURE}/${CMAKE_Fortran_COMPILER_VERSION}/finclude)")
-	endif()
+	
+	# Expect compilers to provide compatible modules at the minor release level at least
+	string(REGEX REPLACE "^([0-9]*\\.[0-9]*)\\..*$" "\\1" Fortran_COMPILER_MINOR_VERSION "${CMAKE_Fortran_COMPILER_VERSION}")
+	set(INSTALL_FMODDIR
+		"${CMAKE_INSTALL_LIBDIR}/paraconf/fmoddir/${CMAKE_Fortran_COMPILER_ID}-${Fortran_COMPILER_MINOR_VERSION}"
+		CACHE PATH
+		"Fortran module directory (LIBDIR/paraconf/${CMAKE_Fortran_COMPILER_ID}-${Fortran_COMPILER_MINOR_VERSION})")
 	if("${CMAKE_VERSION}" VERSION_LESS "3.12")
 		set(LIBRARY_COMPONENT "COMPONENT" "Runtime")
 	else()
@@ -141,7 +142,7 @@ if("${BUILD_FORTRAN}")
 		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" ${LIBRARY_COMPONENT}
 		INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" "${INSTALL_FMODDIR}"
 	)
-	install(DIRECTORY "${paraconf_BINARY_DIR}/fortran_inc/"
+	install(DIRECTORY "${paraconf_BINARY_DIR}/fmoddir/"
 		DESTINATION "${INSTALL_FMODDIR}"
 		COMPONENT Development
 	)
@@ -165,8 +166,8 @@ endif()
 
 # Installable config
 
-write_basic_package_version_file("${paraconf_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
-	VERSION ${paraconf_VERSION}
+write_basic_package_version_file("${paraconf_BINARY_DIR}/paraconfConfigVersion.cmake"
+	VERSION "${paraconf_VERSION}"
 	COMPATIBILITY AnyNewerVersion
 )
 install(EXPORT PC_export
@@ -178,7 +179,7 @@ install(EXPORT PC_export
 install(FILES
 	cmake/paraconfConfig.cmake
 	cmake/Findyaml.cmake
-	"${paraconf_BINARY_DIR}/paraconf/paraconfConfigVersion.cmake"
+	"${paraconf_BINARY_DIR}/paraconfConfigVersion.cmake"
 	DESTINATION "${INSTALL_CMAKEDIR}"
 	COMPONENT Development
 )

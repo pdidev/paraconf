@@ -23,20 +23,34 @@
 ################################################################################
 
 cmake_minimum_required(VERSION 3.5)
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}")
 
 include(CMakeFindDependencyMacro)
-list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}")
-find_dependency(Threads)
-find_dependency(yaml)
 
-# by default, if no component is specified, look for all
+
+# by default, if no component is specified, look for all but only require C
+
+set(_paraconf_FIND_QUIETLY_OPTIONAL "${paraconf_FIND_QUIETLY}")
 if("xx" STREQUAL "x${paraconf_FIND_COMPONENTS}x")
 	set(paraconf_FIND_COMPONENTS C f90)
 	set(paraconf_FIND_REQUIRED_C TRUE)
 	set(paraconf_FIND_REQUIRED_f90 FALSE)
+	set(_paraconf_FIND_QUIETLY_OPTIONAL TRUE)
 endif()
 
+
+# Import our dependencies
+
+find_dependency(Threads)
+find_dependency(yaml)
+
+
+# The other targets that were exported from paraconf CMakeLists.txt
+
 include("${CMAKE_CURRENT_LIST_DIR}/paraconf.cmake")
+
+
+# check the C component
 
 if(NOT TARGET paraconf::paraconf)
 	set(paraconf_FOUND "FALSE")
@@ -45,7 +59,9 @@ if(NOT TARGET paraconf::paraconf)
 	endif()
 endif()
 
-# currently, only f90 is supported
+
+# Check the other components (f90)
+
 list(REMOVE_ITEM paraconf_FIND_COMPONENTS "C")
 foreach(_paraconf_ONE_COMPONENT ${paraconf_FIND_COMPONENTS})
 	if(NOT TARGET "paraconf::paraconf_${_paraconf_ONE_COMPONENT}")
@@ -57,3 +73,9 @@ foreach(_paraconf_ONE_COMPONENT ${paraconf_FIND_COMPONENTS})
 		endif()
 	endif()
 endforeach()
+
+
+# Cleanup
+
+unset(_paraconf_FIND_QUIETLY_OPTIONAL)
+unset(_paraconf_ONE_COMPONENT)
