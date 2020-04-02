@@ -9,21 +9,21 @@ dependancies and examples.
 ## Getting the source
 
 You can find a list of release at 
-https://gitlab.maisondelasimulation.fr/jbigot/libparaconf/tags
+https://github.com/pdidev/paraconf/releases
 
-For example, you can get release 0.4.2:
+For example, you can get release 0.4.9:
 ```
-wget https://gitlab.maisondelasimulation.fr/jbigot/libparaconf/-/archive/0.4.2/libparaconf-0.4.2.tar.bz2
-tar -xjf libparaconf-0.4.2.tar.bz2
-mv libparaconf-0.4.2 libparaconf
+wget https://github.com/pdidev/paraconf/archive/0.4.9.tar.gz
+tar -xzf 0.4.9.tar.gz
+mv paraconf-0.4.9 paraconf
 ```
 
 
 ## Compilation
 
-if the sources are stored in the folder `libparaconf`:
+if the sources are stored in the folder `paraconf`:
 ```
-cd libparaconf
+cd paraconf
 cmake \
         -DCMAKE_INSTALL_PREFIX=/usr/ \
         .
