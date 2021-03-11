@@ -49,7 +49,8 @@ static PC_tree_t get_seq_idx( const PC_tree_t tree, const char **req_index, cons
 	
 	// read '['
 	if ( *index != '[' ) {
-		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "Expected opening square bracket at char #%ld of `%.*s'\n",
+		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "In line %zu: Expected opening square bracket at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -60,7 +61,8 @@ static PC_tree_t get_seq_idx( const PC_tree_t tree, const char **req_index, cons
 	long seq_idx = strtol(index, &post_index, 0);
 	if ( post_index == index ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER,
-				"Expected integer at char #%ld of `%.*s'\n",
+				"In line %zu: Expected integer at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -69,7 +71,8 @@ static PC_tree_t get_seq_idx( const PC_tree_t tree, const char **req_index, cons
 	// read ']'
 	if ( *index != ']' ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER,
-				"Expected closing square bracket at char #%ld of `%.*s'\n",
+				"In line %zu: Expected closing square bracket at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -78,7 +81,8 @@ static PC_tree_t get_seq_idx( const PC_tree_t tree, const char **req_index, cons
 	// check type
 	if ( tree.node->type != YAML_SEQUENCE_NODE ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected sequence, found %s (ROOT)%.*s\n",
+				"In line %zu: Expected sequence, found %s (ROOT)%.*s\n",
+				tree.node->start_mark.line + 1,
 				nodetype[tree.node->type],
 				(int)(*req_index-full_index),
 				full_index), err0);
@@ -87,7 +91,8 @@ static PC_tree_t get_seq_idx( const PC_tree_t tree, const char **req_index, cons
 	// handle index
 	if ( seq_idx < 0 || seq_idx >= (tree.node->data.sequence.items.top - tree.node->data.sequence.items.start) ) {
 		PC_handle_err_tree(PC_make_err(PC_NODE_NOT_FOUND,
-				"Index %ld out of range [0...%ld[ in (ROOT)%.*s\n",
+				"In line %zu: Index %ld out of range [0...%ld] in (ROOT)%.*s\n",
+				tree.node->start_mark.line + 1,
 				seq_idx,
 				(long)(tree.node->data.sequence.items.top - tree.node->data.sequence.items.start),
 				(int)(*req_index-full_index),
@@ -112,7 +117,8 @@ static PC_tree_t get_map_key_val( const PC_tree_t tree, const char **req_index, 
 		
 	// read '.'
 	if ( *index != '.' ) {
-		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "Expected dot at char #%ld of `%.*s'\n",
+		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "In line %zu: Expected dot at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -126,7 +132,8 @@ static PC_tree_t get_map_key_val( const PC_tree_t tree, const char **req_index, 
 	
 	// check type
 	if ( tree.node->type != YAML_MAPPING_NODE ) {
-		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE, "Expected mapping, found %s (ROOT)%.*s\n",
+		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE, "In line %zu: Expected mapping, found %s (ROOT)%.*s\n",
+				tree.node->start_mark.line + 1,
 				nodetype[tree.node->type],
 				(int)(*req_index-full_index),
 				full_index), err0);
@@ -145,7 +152,8 @@ static PC_tree_t get_map_key_val( const PC_tree_t tree, const char **req_index, 
 		if ( !cmp ) break;
 	}
 	if ( pair == tree.node->data.mapping.pairs.top ) {
-		PC_handle_err_tree(PC_make_err(PC_NODE_NOT_FOUND, "Key `%.*s' not found in (ROOT)%.*s\n",
+		PC_handle_err_tree(PC_make_err(PC_NODE_NOT_FOUND, "In line %zu: Key `%.*s' not found in (ROOT)%.*s\n",
+				tree.node->start_mark.line + 1,
 				key_len,
 				key,
 				(int)(*req_index-full_index),
@@ -172,7 +180,8 @@ static PC_status_t get_map_idx_pair( const PC_tree_t tree, const char **req_inde
 	char *post_index;
 	long map_idx = strtol(index, &post_index, 0);
 	if ( post_index == index ) {
-		PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "Expected integer at char #%ld of `%.*s'\n",
+		PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "In line %zu: Expected integer at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -180,7 +189,8 @@ static PC_status_t get_map_idx_pair( const PC_tree_t tree, const char **req_inde
 	
 	// check type
 	if ( tree.node->type != YAML_MAPPING_NODE ) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected mapping, found %s (ROOT)%.*s\n",
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "In line %zu: Expected mapping, found %s (ROOT)%.*s\n",
+				tree.node->start_mark.line + 1,
 				nodetype[tree.node->type],
 				(int)(*req_index-full_index),
 				full_index), err0);
@@ -188,7 +198,8 @@ static PC_status_t get_map_idx_pair( const PC_tree_t tree, const char **req_inde
 	
 	// handle index
 	if ( map_idx < 0 || map_idx >= (tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start) ) {
-		PC_handle_err(PC_make_err(PC_NODE_NOT_FOUND, "Index %ld out of range [0...%ld] in (ROOT)%.*s\n",
+		PC_handle_err(PC_make_err(PC_NODE_NOT_FOUND, "In line %zu: Index %ld out of range [0...%ld] in (ROOT)%.*s\n",
+				tree.node->start_mark.line + 1,
 				map_idx,
 				(long)(tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start),
 				(int)(*req_index-full_index-1),
@@ -214,7 +225,8 @@ static PC_tree_t get_map_idx_key( const PC_tree_t tree, const char **req_index, 
 	// read '{'
 	if ( *index != '{' ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER,
-				"Expected opening curly bracket at char #%ld of `%.*s'\n",
+				"In line %zu: Expected opening curly bracket at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -227,7 +239,8 @@ static PC_tree_t get_map_idx_key( const PC_tree_t tree, const char **req_index, 
 	// read '}'
 	if ( *index != '}' ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER,
-				"Expected closing curly bracket at char #%ld of `%.*s'\n",
+				"In line %zu: Expected closing curly bracket at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -254,7 +267,8 @@ static PC_tree_t get_map_idx_val( const PC_tree_t tree, const char **req_index, 
 	// read '<'
 	if ( *index != '<' ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER,
-				"Expected opening angle bracket at char #%ld of `%.*s'\n",
+				"In line %zu: Expected opening angle bracket at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -267,7 +281,8 @@ static PC_tree_t get_map_idx_val( const PC_tree_t tree, const char **req_index, 
 	// read '>'
 	if ( *index != '>' ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER,
-				"Expected closing angle bracket at char #%ld of `%.*s'\n",
+				"In line %zu: Expected closing angle bracket at char #%ld of `%.*s'\n",
+				tree.node->start_mark.line + 1,
 				(long int)(index-full_index),
 				full_index), err0);
 	}
@@ -292,7 +307,8 @@ PC_tree_t PC_sget( const PC_tree_t tree, const char *index )
 	// check type
 	if ( *index && !tree.node ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected node, found empty tree\n"
+				"In line %zu: Expected node, found empty tree\n",
+				tree.node->start_mark.line + 1
 		), err0);
 	}
 	
@@ -316,7 +332,8 @@ PC_tree_t PC_sget( const PC_tree_t tree, const char *index )
 			assert(restree.node);
 			goto err0;
 		default:
-			PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "Invalid character at char #%ld of `%.*s'\n",
+			PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "In line %zu: Invalid character at char #%ld of `%.*s'\n",
+					tree.node->start_mark.line + 1,
 					(long int)(index-full_index),
 					full_index), err0);
 		}

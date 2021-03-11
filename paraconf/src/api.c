@@ -215,7 +215,8 @@ PC_status_t PC_len( const PC_tree_t tree, int *res )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected node, found empty tree\n"
+				"In line %zu: Expected node, found empty tree\n",
+				tree.node->start_mark.line + 1
 		), err0);
 	}
 	
@@ -230,7 +231,9 @@ PC_status_t PC_len( const PC_tree_t tree, int *res )
 		*res = tree.node->data.scalar.length;
 	} break;
 	default: {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Unknown yaml node type: #%d", tree.node->type), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "In line %zu: Unknown yaml node type: #%d",
+				tree.node->start_mark.line + 1,
+				tree.node->type), err0);
 	} break;
 	}
 	
@@ -248,18 +251,22 @@ PC_status_t PC_int( const PC_tree_t tree, long *res )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected node, found empty tree\n"
+				"In line %zu: Expected node, found empty tree\n"
 		), err0);
 	}
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
-		return PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		return PC_make_err(PC_INVALID_NODE_TYPE, "In line %zu: Expected a scalar, found %s\n",
+				tree.node->start_mark.line + 1,
+				nodetype[tree.node->type]);
 	}
 	
 	char *endptr; long result = strtol((char*)tree.node->data.scalar.value, &endptr, 0);
 	if ( *endptr ) {
 		char *content; PC_handle_err(PC_string(tree, &content), err0);
-		status = PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
+		status = PC_make_err(PC_INVALID_NODE_TYPE, "In line %zu: Expected integer, found `%s'\n",
+			tree.node->start_mark.line + 1,
+			content);
 		free(content);
 		PC_handle_err(status, err0);
 	}
@@ -279,19 +286,20 @@ PC_status_t PC_double( const PC_tree_t tree, double* value )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected node, found empty tree\n"
-		), err0);
+				"In line %zu: Expected node, found empty tree\n",
+				tree.node->start_mark.line + 1), err0);
 	}
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected a scalar, found %s\n",
+				"In line %zu: Expected a scalar, found %s\n",
+				tree.node->start_mark.line + 1,
 				nodetype[tree.node->type]), err0);
 	}
 	char *endptr; *value = strtod((char*)tree.node->data.scalar.value, &endptr);
 	if ( *endptr ) {
 		char *content = NULL; PC_handle_err(PC_string(tree, &content), err0);
-		status = PC_make_err(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
+		status = PC_make_err(PC_INVALID_PARAMETER, "In line %zu: Expected floating point, found `%s'\n", content);
 		free(content);
 		PC_handle_err(status, err0);
 	}
@@ -310,13 +318,14 @@ PC_status_t PC_string( const PC_tree_t tree, char** value )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected node, found empty tree\n"
+				"In line %zu: Expected node, found empty tree\n"
 		), err0);
 	}
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected a scalar, found %s\n",
+				"In line %zu: Expected a scalar, found %s\n",
+				tree.node->start_mark.line + 1,
 				nodetype[tree.node->type]), err0);
 	}
 
@@ -340,13 +349,15 @@ PC_status_t PC_bool( const PC_tree_t tree, int *res )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected node, found empty tree\n"
-		), err0);
+				"In line %zu: Expected node, found empty tree\n",
+				tree.node->start_mark.line + 1), err0);
 	}
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
+				"In line %zu: Expected a scalar, found %s\n", 
+				tree.node->start_mark.line + 1,
+				nodetype[tree.node->type]), err0);
 	}
 
 	char *value = (char*)tree.node->data.scalar.value;
@@ -371,7 +382,9 @@ PC_status_t PC_bool( const PC_tree_t tree, int *res )
 		*res = 0;
 	} else {
 		char *content = NULL; PC_handle_err(PC_string(tree, &content), err0);
-		status = PC_make_err(PC_INVALID_PARAMETER, "Expected logical expression, found `%s'\n", content);
+		status = PC_make_err(PC_INVALID_PARAMETER, "In line %zu: Expected logical expression, found `%s'\n", 
+				tree.node->start_mark.line + 1,
+				content);
 		free(content);
 		PC_handle_err(status, err0);
 	}
