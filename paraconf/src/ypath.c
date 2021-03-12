@@ -307,8 +307,7 @@ PC_tree_t PC_sget( const PC_tree_t tree, const char *index )
 	// check type
 	if ( *index && !tree.node ) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE,
-				"In line %zu: Expected node, found empty tree\n",
-				tree.node->start_mark.line + 1
+				"Expected node, found empty tree\n"
 		), err0);
 	}
 	

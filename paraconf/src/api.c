@@ -215,8 +215,7 @@ PC_status_t PC_len( const PC_tree_t tree, int *res )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"In line %zu: Expected node, found empty tree\n",
-				tree.node->start_mark.line + 1
+				"Expected node, found empty tree\n"
 		), err0);
 	}
 	
@@ -251,7 +250,7 @@ PC_status_t PC_int( const PC_tree_t tree, long *res )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"In line %zu: Expected node, found empty tree\n"
+				"Expected node, found empty tree\n"
 		), err0);
 	}
 	
@@ -286,8 +285,8 @@ PC_status_t PC_double( const PC_tree_t tree, double* value )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"In line %zu: Expected node, found empty tree\n",
-				tree.node->start_mark.line + 1), err0);
+				"Expected node, found empty tree\n"
+		), err0);
 	}
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
@@ -318,7 +317,7 @@ PC_status_t PC_string( const PC_tree_t tree, char** value )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"In line %zu: Expected node, found empty tree\n"
+				"Expected node, found empty tree\n"
 		), err0);
 	}
 	
@@ -349,8 +348,8 @@ PC_status_t PC_bool( const PC_tree_t tree, int *res )
 	// check type
 	if ( !tree.node ) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE,
-				"In line %zu: Expected node, found empty tree\n",
-				tree.node->start_mark.line + 1), err0);
+				"Expected node, found empty tree\n"
+		), err0);
 	}
 	
 	if ( tree.node->type != YAML_SCALAR_NODE ) {
