@@ -1,6 +1,7 @@
 !******************************************************************************
 ! Copyright (C) 2015-2018 Commissariat a l'energie atomique et aux energies
 ! alternatives (CEA)
+! Copyright (C) 2021 Institute of Bioorganic Chemistry Polish Academy of Science (PSNC)
 ! All rights reserved.
 !
 ! Redistribution and use in source and binary forms, with or without
@@ -26,8 +27,9 @@
 program example
   use paraconf
 
-  type(pc_tree_t) :: tree1
+  type(pc_tree_t) :: tree1, tree_tmp
   integer :: a_int
+  integer :: tree_type
   character(20) :: a_string
   real(8) :: a_float
   logical :: a_log
@@ -35,7 +37,7 @@ program example
   character(len=pc_errmsg_maxlength) :: errmsg
   character(len=4096) :: infile
 
-  if (command_argument_count() /= 1) then
+  if (command_argument_count() /= 2) then
     print *, "Error: expected 1 argument!"
     error stop
   endif
@@ -44,138 +46,335 @@ program example
   
   call PC_parse_path(infile, tree1)
 
-  call PC_int(PC_get(tree1,".a_int"), a_int)
+  ! null tree
+  if (PC_status(tree_tmp) /= PC_NODE_NOT_FOUND) then
+    print *, "error with null tree, ", PC_status(tree_tmp)
+    error stop
+  endif
+  if (PC_type(tree_tmp) /= PC_EMPTY) then
+    print *, "error with a_int type, ", PC_type(tree_tmp)
+    error stop
+  endif
+
+  ! empty tree
+  call get_command_argument(2,infile)   !first, read in the two values
+  call PC_parse_path(infile, tree_tmp);
+  if (PC_status(tree_tmp) /= PC_OK) then
+    print *, "error with null tree, ", PC_status(tree_tmp)
+    error stop
+  endif
+  if (PC_type(tree_tmp) /= PC_EMPTY) then
+    print *, "error with a_int type, ", PC_type(tree_tmp)
+    error stop
+  endif
+
+  tree_tmp = PC_get(tree1,".a_int")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_int type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 2) then
+    print *, "error with a_int line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_int(tree_tmp, a_int)
   if ( a_int /= 100 ) then
     print *, "error with a_int, ", a_int
     error stop
   endif
 
-  call PC_double(PC_get(tree1,".a_float"), a_float)
+  tree_tmp = PC_get(tree1,".a_float")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_float type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 4) then
+    print *, "error with a_float line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_double(tree_tmp, a_float)
   if ( abs(a_float-100.1d0) > 1.0e-10 ) then
     print *, "error with a_float, ", a_float
     error stop
   endif
 
-  call PC_string(PC_get(tree1,".a_string"), a_string)
+  tree_tmp = PC_get(tree1,".a_string")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_string type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 6) then
+    print *, "error with a_string line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_string(tree_tmp, a_string)
   if ( a_string /= "this is a string" ) then
     print *, "error with a_string, ", a_string
     error stop
   endif
 
-  call PC_len(PC_get(tree1, ".a_list"), a_int)
+  tree_tmp = PC_get(tree1,".a_list")
+  if (PC_type(tree_tmp) /= PC_SEQUENCE) then
+    print *, "error with a_list type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 8) then
+    print *, "error with a_list line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_len(tree_tmp, a_int)
   if ( a_int /= 2 ) then
     print *, "error with a_list len, ", a_int
     error stop
   endif
 
-  call PC_int(PC_get(tree1, ".a_list[0]"), a_int)
+  tree_tmp = PC_get(tree1,".a_list[0]")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_list[0] type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 8) then
+    print *, "error with a_list[0] line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_int(tree_tmp, a_int)
   if ( a_int /= 10 ) then
     print *, "error with a_list[0], ", a_int
     error stop
   endif
 
-  call PC_len(PC_get(tree1, ".a_map"), a_int)
+  tree_tmp = PC_get(tree1,".a_map")
+  if (PC_type(tree_tmp) /= PC_MAP) then
+    print *, "error with a_map type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 10) then
+    print *, "error with a_map line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_len(tree_tmp, a_int)
   if ( a_int /= 2 ) then
     print *, "error with a_map len, ", a_int
     error stop
   endif
 
-  call PC_string(PC_get(tree1,".a_map{0}"), a_string)
+  tree_tmp = PC_get(tree1,".a_map{0}")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_map{0} type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 10) then
+    print *, "error with a_map{0} line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_string(tree_tmp, a_string)
   if ( a_string /= "first" ) then
     print *, "error with a_map{0}, ", a_string
     error stop
   endif
 
-  call PC_int(PC_get(tree1, ".a_map<0>"), a_int)
+  tree_tmp = PC_get(tree1,".a_map<0>")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_map<0> type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 10) then
+    print *, "error with a_map<0> line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_int(tree_tmp, a_int)
   if ( a_int /= 20 ) then
     print *, "error with a_map<0>, ", a_int
     error stop
   endif
 
-  call PC_int(PC_get(tree1, ".another_list[1]"), a_int)
+  tree_tmp = PC_get(tree1,".another_list[1]")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with another_list[1] type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 14) then
+    print *, "error with another_list[1] line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_int(tree_tmp, a_int)
   if ( a_int /= 31 ) then
     print *, "error with another_list[1], ", a_int
     error stop
   endif
 
-  call PC_int(PC_get(tree1, ".another_map.second"), a_int)
+  tree_tmp = PC_get(tree1,".another_map.second")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with another_map.second type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 18) then
+    print *, "error with another_map.second line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_int(tree_tmp, a_int)
   if ( a_int /= 41 ) then
     print *, "error with another_map.second, ", a_int
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_true"), a_log)
+  tree_tmp = PC_get(tree1,".a_true")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_true type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 21) then
+    print *, "error with a_true line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
     print *, "error with a_true, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_True"), a_log)
+  tree_tmp = PC_get(tree1,".a_True")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_True type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 22) then
+    print *, "error with a_True line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
     print *, "error with a_True, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_TRUE"), a_log)
+  tree_tmp = PC_get(tree1,".a_TRUE")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_TRUE type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 23) then
+    print *, "error with a_TRUE line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
     print *, "error with a_TRUE, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_yes"), a_log)
+  tree_tmp = PC_get(tree1,".a_yes")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_yes type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 24) then
+    print *, "error with a_yes line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
     print *, "error with a_yes, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_Yes"), a_log)
+  tree_tmp = PC_get(tree1,".a_Yes")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_Yes type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 25) then
+    print *, "error with a_Yes line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
     print *, "error with a_Yes, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_YES"), a_log)
+  tree_tmp = PC_get(tree1,".a_YES")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_YES type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 26) then
+    print *, "error with a_YES line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
     print *, "error with a_YES, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_false"), a_log)
+  tree_tmp = PC_get(tree1,".a_false")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_false type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 27) then
+    print *, "error with a_false line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( a_log ) then
     print *, "error with a_false, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_False"), a_log)
+  tree_tmp = PC_get(tree1,".a_False")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_False type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 28) then
+    print *, "error with a_False line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( a_log ) then
     print *, "error with a_False, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_FALSE"), a_log)
+  tree_tmp = PC_get(tree1,".a_FALSE")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_FALSE type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 29) then
+    print *, "error with a_FALSE line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( a_log ) then
     print *, "error with a_FALSE, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_no"), a_log)
+  tree_tmp = PC_get(tree1,".a_no")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_no type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 30) then
+    print *, "error with a_no line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( a_log ) then
     print *, "error with a_no, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_No"), a_log)
+  tree_tmp = PC_get(tree1,".a_No")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_No type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 31) then
+    print *, "error with a_No line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( a_log ) then
     print *, "error with a_No, ", a_log
     error stop
   endif
 
-  call PC_log(PC_get(tree1, ".a_NO"), a_log)
+  tree_tmp = PC_get(tree1,".a_NO")
+  if (PC_type(tree_tmp) /= PC_SCALAR) then
+    print *, "error with a_NO type, ", PC_type(tree_tmp)
+    error stop
+  endif
+  if (PC_document_line(tree_tmp) /= 32) then
+    print *, "error with a_NO line, ", PC_document_line(tree_tmp)
+  endif
+  call PC_log(tree_tmp, a_log)
   if ( a_log ) then
     print *, "error with a_NO, ", a_log
     error stop
   endif
-
 
   ! Test status values
   
@@ -207,7 +406,7 @@ program example
     error stop
   endif
   call PC_errmsg(errmsg)
-  if (trim(errmsg) /= ("Key `invalid_node' not found in (ROOT)")) then
+  if (trim(errmsg) /= ("In line 6: Cannot interpret `this is a string' as integer")) then
     print *, "error with error message, got `", trim(errmsg),"'"
     error stop
   endif
@@ -218,7 +417,7 @@ program example
     error stop
   endif
   call PC_errmsg(errmsg)
-  if (trim(errmsg) /= ("Key `invalid_node' not found in (ROOT)")) then
+  if (trim(errmsg) /= ("Cannot interpret empty tree as string")) then
     print *, "error with error message, got `", trim(errmsg),"'"
     error stop
   endif

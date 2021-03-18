@@ -27,7 +27,7 @@
 
 #include <string.h>
 #include <stdarg.h>
-#include <yaml.h>
+#include <stdio.h>
 
 #include "paraconf_export.h"
 
@@ -37,6 +37,18 @@ extern "C" {
 
 /** \file paraconf.h
  */
+
+/// An opaque type describing a yaml tree (possibly a leaf node)
+typedef struct PC_node* PC_tree_t;
+
+/// Type of the tree
+typedef enum PC_tree_type_e {
+	PC_EMPTY=0,
+	PC_SCALAR,
+	PC_SEQUENCE,
+	PC_MAP,
+	PC_UNDEFINED
+} PC_tree_type_t;
 
 /** Status of function execution
  */
@@ -74,21 +86,6 @@ typedef struct PC_errhandler_s
 	
 } PC_errhandler_t;
 
-/** An opaque type describing a yaml tree (possibly a leaf node)
- */
-typedef struct PC_tree_s
-{
-	/// The tree status
-	PC_status_t status;
-	
-	/// The document containing the tree
-	yaml_document_t* document;
-	
-	/// the node inside the tree
-	yaml_node_t* node;
-
-} PC_tree_t;
-
 /** Prints the error message and aborts
  */
 extern const PARACONF_EXPORT PC_errhandler_t PC_ASSERT_HANDLER;
@@ -101,11 +98,11 @@ extern const PARACONF_EXPORT PC_errhandler_t PC_NULL_HANDLER;
  * \param tree the tree to check
  * \return the status
  */
-static inline PC_status_t PC_status(PC_tree_t tree) { return tree.status; }
+PC_status_t PARACONF_EXPORT PC_status(PC_tree_t tree);
 
 /** Return a human-readabe message describing the last error that occured in paraconf
  */
-char PARACONF_EXPORT *PC_errmsg();
+const char PARACONF_EXPORT *PC_errmsg();
 
 /** Sets the error handler to use
  *
@@ -152,13 +149,6 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
  */
 PC_tree_t PARACONF_EXPORT PC_parse_string(const char *document);
 
-/** Returns the tree at the root of a document
- *
- * \param[in] document the yaml document
- * \return the tree, valid as long as the containing document is
- */
-PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
-
 /** Looks for a node in a yaml document given a ypath index
  *
  * Does nothing if the provided tree is in error and returns the input tree.
@@ -191,6 +181,34 @@ PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char *index_fmt, ...);
  * \return the subtree corresponding to the ypath index
  */
 PC_tree_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char *index_fmt, va_list va);
+
+/** Looks for a node in a yaml document given a ypath index
+ *
+ * Does nothing if the provided tree is in error
+ *
+ * \param[in] tree a yaml tree
+ * \param[in] index_fmt the ypath index
+ * \return the subtree corresponding to the ypath index
+ */
+PC_tree_t PARACONF_EXPORT PC_sget(PC_tree_t tree, const char* index);
+
+/** Inquires a node type
+ *
+ * Does nothing if the provided tree is in error
+ *
+ * \param[in] tree a yaml tree
+ * \return the type of given tree
+ */
+PC_tree_type_t PARACONF_EXPORT PC_type(PC_tree_t tree);
+
+/** Inquires a node line in document
+ *
+ * Does nothing if the provided tree is in error
+ *
+ * \param[in] tree a yaml tree
+ * \return the line in document of given tree
+ */
+int PARACONF_EXPORT PC_document_line(PC_tree_t tree);
 
 /** Returns the length of a node, for a sequence, the number of nodes, for a mapping, the number of pairs, for a scalar, the string length
  *

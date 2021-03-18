@@ -76,6 +76,19 @@ interface
 !     type(*), optional, intent(IN) :: arguments(:)
   end function PC_get
   
+  function PC_type(tree_in)
+    use ISO_C_binding
+    include 'paraconf_f90_types.h'
+    type(PC_tree_t), intent(IN) :: tree_in
+    integer :: PC_type
+  end function PC_type
+
+  function PC_document_line(tree_in)
+    use ISO_C_binding
+    include 'paraconf_f90_types.h'
+    type(PC_tree_t), intent(IN) :: tree_in
+    integer :: PC_document_line
+  end function PC_document_line
   
   subroutine PC_int(tree_in, value, status)
     use ISO_C_binding

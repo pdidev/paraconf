@@ -1,6 +1,8 @@
 !******************************************************************************
 ! Copyright (C) 2015-2018 Commissariat a l'energie atomique et aux energies
 ! alternatives (CEA)
+! Copyright (C) 2021 Institute of Bioorganic Chemistry Polish Academy of
+! Science (PSNC)
 ! All rights reserved.
 !
 ! Redistribution and use in source and binary forms, with or without
@@ -45,7 +47,7 @@ integer function PC_status(tree)
 
   type(PC_tree_t), intent(IN) :: tree
 
-  PC_status = int(tree%status)
+  PC_status = PC_status_C(tree)
 
 end function PC_status
 
@@ -180,6 +182,37 @@ type(PC_tree_t) function PC_get(tree, index_fmt)
   PC_get = PC_get_C(tree, c_loc(C_index_fmt))
 
 end function PC_get
+
+
+integer function PC_type(tree_in)
+
+  use ISO_C_binding
+
+  implicit none
+
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
+
+  type(PC_tree_t), intent(IN) :: tree_in
+
+  PC_type = PC_type_C(tree_in)
+
+end function PC_type
+
+integer function PC_document_line(tree_in)
+
+  use ISO_C_binding
+
+  implicit none
+
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
+
+  type(PC_tree_t), intent(IN) :: tree_in
+
+  PC_document_line = PC_document_line_C(tree_in)
+
+end function PC_document_line
 
 
 subroutine PC_int(tree_in, value, status)
