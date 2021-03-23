@@ -28,8 +28,7 @@ program example
   use paraconf
 
   type(pc_tree_t) :: tree1, tree_tmp
-  integer :: a_int
-  integer :: tree_type
+  integer :: a_int, tree_type, line
   character(20) :: a_string
   real(8) :: a_float
   logical :: a_log
@@ -73,8 +72,9 @@ program example
     print *, "error with a_int type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 2) then
-    print *, "error with a_int line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 2) then
+    print *, "error with a_int line, ", line
   endif
   call PC_int(tree_tmp, a_int)
   if ( a_int /= 100 ) then
@@ -87,8 +87,9 @@ program example
     print *, "error with a_float type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 4) then
-    print *, "error with a_float line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 4) then
+    print *, "error with a_float line, ", line
   endif
   call PC_double(tree_tmp, a_float)
   if ( abs(a_float-100.1d0) > 1.0e-10 ) then
@@ -101,8 +102,9 @@ program example
     print *, "error with a_string type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 6) then
-    print *, "error with a_string line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 6) then
+    print *, "error with a_string line, ", line
   endif
   call PC_string(tree_tmp, a_string)
   if ( a_string /= "this is a string" ) then
@@ -115,8 +117,9 @@ program example
     print *, "error with a_list type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 8) then
-    print *, "error with a_list line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 8) then
+    print *, "error with a_list line, ", line
   endif
   call PC_len(tree_tmp, a_int)
   if ( a_int /= 2 ) then
@@ -129,8 +132,9 @@ program example
     print *, "error with a_list[0] type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 8) then
-    print *, "error with a_list[0] line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 8) then
+    print *, "error with a_list[0] line, ", line
   endif
   call PC_int(tree_tmp, a_int)
   if ( a_int /= 10 ) then
@@ -143,8 +147,9 @@ program example
     print *, "error with a_map type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 10) then
-    print *, "error with a_map line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 10) then
+    print *, "error with a_map line, ", line
   endif
   call PC_len(tree_tmp, a_int)
   if ( a_int /= 2 ) then
@@ -157,8 +162,9 @@ program example
     print *, "error with a_map{0} type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 10) then
-    print *, "error with a_map{0} line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 10) then
+    print *, "error with a_map{0} line, ", line
   endif
   call PC_string(tree_tmp, a_string)
   if ( a_string /= "first" ) then
@@ -171,8 +177,9 @@ program example
     print *, "error with a_map<0> type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 10) then
-    print *, "error with a_map<0> line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 10) then
+    print *, "error with a_map<0> line, ", line
   endif
   call PC_int(tree_tmp, a_int)
   if ( a_int /= 20 ) then
@@ -185,8 +192,9 @@ program example
     print *, "error with another_list[1] type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 14) then
-    print *, "error with another_list[1] line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 14) then
+    print *, "error with another_list[1] line, ", line
   endif
   call PC_int(tree_tmp, a_int)
   if ( a_int /= 31 ) then
@@ -199,8 +207,9 @@ program example
     print *, "error with another_map.second type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 18) then
-    print *, "error with another_map.second line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 18) then
+    print *, "error with another_map.second line, ", line
   endif
   call PC_int(tree_tmp, a_int)
   if ( a_int /= 41 ) then
@@ -213,8 +222,9 @@ program example
     print *, "error with a_true type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 21) then
-    print *, "error with a_true line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 21) then
+    print *, "error with a_true line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
@@ -227,8 +237,9 @@ program example
     print *, "error with a_True type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 22) then
-    print *, "error with a_True line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 22) then
+    print *, "error with a_True line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
@@ -241,8 +252,9 @@ program example
     print *, "error with a_TRUE type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 23) then
-    print *, "error with a_TRUE line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 23) then
+    print *, "error with a_TRUE line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
@@ -255,8 +267,9 @@ program example
     print *, "error with a_yes type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 24) then
-    print *, "error with a_yes line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 24) then
+    print *, "error with a_yes line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
@@ -269,8 +282,9 @@ program example
     print *, "error with a_Yes type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 25) then
-    print *, "error with a_Yes line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 25) then
+    print *, "error with a_Yes line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
@@ -283,8 +297,9 @@ program example
     print *, "error with a_YES type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 26) then
-    print *, "error with a_YES line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 26) then
+    print *, "error with a_YES line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( .not. a_log ) then
@@ -297,8 +312,9 @@ program example
     print *, "error with a_false type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 27) then
-    print *, "error with a_false line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 27) then
+    print *, "error with a_false line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( a_log ) then
@@ -311,8 +327,9 @@ program example
     print *, "error with a_False type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 28) then
-    print *, "error with a_False line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 28) then
+    print *, "error with a_False line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( a_log ) then
@@ -325,8 +342,9 @@ program example
     print *, "error with a_FALSE type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 29) then
-    print *, "error with a_FALSE line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 29) then
+    print *, "error with a_FALSE line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( a_log ) then
@@ -339,8 +357,9 @@ program example
     print *, "error with a_no type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 30) then
-    print *, "error with a_no line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 30) then
+    print *, "error with a_no line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( a_log ) then
@@ -353,8 +372,9 @@ program example
     print *, "error with a_No type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 31) then
-    print *, "error with a_No line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 31) then
+    print *, "error with a_No line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( a_log ) then
@@ -367,8 +387,9 @@ program example
     print *, "error with a_NO type, ", PC_type(tree_tmp)
     error stop
   endif
-  if (PC_document_line(tree_tmp) /= 32) then
-    print *, "error with a_NO line, ", PC_document_line(tree_tmp)
+  call PC_line(tree_tmp, line)
+  if (line /= 32) then
+    print *, "error with a_NO line, ", line
   endif
   call PC_log(tree_tmp, a_log)
   if ( a_log ) then
@@ -399,18 +420,7 @@ program example
     print *, "error with ierr==PC_NODE_NOT_FOUND, got ", ierr
     error stop
   endif
-
-  ierr = PC_status(PC_get(tree1,".invalid_node"))
-  if (ierr /= PC_NODE_NOT_FOUND) then
-    print *, "error with ierr==PC_NODE_NOT_FOUND, got ", ierr
-    error stop
-  endif
-  call PC_errmsg(errmsg)
-  if (trim(errmsg) /= ("In line 6: Cannot interpret `this is a string' as integer")) then
-    print *, "error with error message, got `", trim(errmsg),"'"
-    error stop
-  endif
-
+  
   call PC_string(PC_get(tree1,".invalid_node"), a_string, ierr)
   if (ierr /= PC_NODE_NOT_FOUND) then
     print *, "error with ierr==PC_NODE_NOT_FOUND, got ", ierr
@@ -421,9 +431,6 @@ program example
     print *, "error with error message, got `", trim(errmsg),"'"
     error stop
   endif
-
-
-
   
   call PC_tree_destroy(tree1)
 

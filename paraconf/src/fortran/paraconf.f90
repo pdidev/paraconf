@@ -199,7 +199,7 @@ integer function PC_type(tree_in)
 
 end function PC_type
 
-integer function PC_document_line(tree_in)
+subroutine PC_line(tree_in, line, status)
 
   use ISO_C_binding
 
@@ -209,10 +209,69 @@ integer function PC_document_line(tree_in)
   include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
+  integer, intent(OUT) :: line
+  integer, intent(OUT), optional :: status
 
-  PC_document_line = PC_document_line_C(tree_in)
+  integer :: tmp
+  integer(C_long), target :: longvalue
+  
+  if(present(status)) then
+    status = int(PC_line_C(tree_in, c_loc(longvalue)))
+  else
+    tmp = int(PC_line_C(tree_in, c_loc(longvalue)))
+  end if
 
-end function PC_document_line
+  line = int(longvalue)
+
+end subroutine PC_line
+
+subroutine C_string_ptr_to_F_string(C_string, F_string)
+  use ISO_C_BINDING
+  type(C_PTR), intent(in) :: C_string
+  character(len=*), intent(out) :: F_string
+  character(len=1, kind=C_CHAR), dimension(:), pointer :: p_chars
+  integer :: i
+  if (.not. C_associated(C_string)) then
+    F_string = ' '
+  else
+    call C_F_pointer(C_string, p_chars, [huge(0)])
+    do i = 1, len(F_string)
+      if (p_chars(i) == C_NULL_CHAR) exit
+      F_string(i:i) = p_chars(i)
+    end do
+    if (i <= len(F_string)) F_string(i:) = ' '
+  end if
+end subroutine
+
+subroutine PC_location(tree_in, location, status)
+
+  use ISO_C_binding
+
+  implicit none
+
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_consts.h'
+  include 'paraconf_f90_c.h'
+
+  type(PC_tree_t), intent(IN) :: tree_in
+  character(len = *), intent(OUT) :: location
+  integer, intent(OUT), optional :: status
+
+  integer :: i, tmp
+  integer, dimension(1), target :: tab_lengh
+  type(C_ptr), target :: C_pointer
+  CHARACTER, dimension(:), pointer :: F_pointer
+
+  location = ""
+  tmp = int(PC_location_C(tree_in, c_loc(C_pointer)))
+  if (present(status)) status = tmp
+
+  if (tmp ==  PC_OK) then
+    call C_string_ptr_to_F_string(C_pointer, location)
+
+    call free_C(C_pointer)
+  endif
+end subroutine PC_location
 
 
 subroutine PC_int(tree_in, value, status)

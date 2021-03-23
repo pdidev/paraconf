@@ -26,7 +26,7 @@
 #include <string>
 
 #include "paraconf/error.h"
-#include "PC_node.h"
+#include "paraconf/PC_node.h"
 
 using PC::Error;
 using std::exception;
@@ -54,11 +54,7 @@ PC_tree_t get_seq_idx(PC_tree_t tree, string& index)
 	index = index.substr(1);
 
 	// get and return new tree
-	try {
-		return tree->acquire(tree->get(seq_idx));
-	} catch (const exception& e) {
-		throw Error{PC_NODE_NOT_FOUND, "In line %d: Cannot get %d sequence element", tree->line(), seq_idx};
-	}
+	return tree->acquire(tree->get(seq_idx));
 }
 
 PC_tree_t get_map_key_val(PC_tree_t tree, string& index)
@@ -77,11 +73,7 @@ PC_tree_t get_map_key_val(PC_tree_t tree, string& index)
 	index = index.substr(found);
 
 	// get and return new tree
-	try {
-		return tree->acquire(tree->get(key));
-	} catch (const exception& e) {
-		throw Error{PC_NODE_NOT_FOUND, "In line %d: Cannot get %s key", tree->line(), key.c_str()};
-	}
+	return tree->acquire(tree->get(key));
 }
 
 PC_tree_t get_map_idx_key(PC_tree_t tree, string& index)
@@ -104,11 +96,7 @@ PC_tree_t get_map_idx_key(PC_tree_t tree, string& index)
 	index = index.substr(1);
 
 	// get and return new tree
-	try {
-		return tree->acquire(tree->key(map_key_idx));
-	} catch (const exception& e) {
-		throw Error{PC_NODE_NOT_FOUND, "In line %d: Cannot get %ld. key", tree->line(), map_key_idx};
-	}
+	return tree->acquire(tree->key(map_key_idx));
 }
 
 PC_tree_t get_map_idx_val(PC_tree_t tree, string& index)
@@ -131,11 +119,7 @@ PC_tree_t get_map_idx_val(PC_tree_t tree, string& index)
 	index = index.substr(1);
 
 	// get and return new tree
-	try {
-		return tree->acquire(tree->value(map_value_idx));
-	} catch (const exception& e) {
-		throw Error{PC_NODE_NOT_FOUND, "In line %d: Cannot get %ld. value", tree->line(), map_value_idx};
-	}
+	return tree->acquire(tree->value(map_value_idx));
 }
 
 } // namespace PC

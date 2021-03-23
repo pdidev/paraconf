@@ -23,11 +23,11 @@
  ******************************************************************************/
 
 #include <iostream>
+#include <string>
 
 #include <yaml-cpp/yaml.h>
 
-#include <paraconf.h>
-#include <PC_node.h>
+#include <paraconf/PC_node.h>
 
 int main(int argc, char *argv[])
 {
@@ -35,17 +35,25 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Error: expected 1 argument!\n");
 		exit(1);
 	}
-	PC_tree_t conf = PC_parse_path(argv[1]);
+	PC_node conf = PC_load_file(argv[1]);
 
-	YAML::Node node = conf->node();
+	YAML::Node node = conf.node();
 
-	int a_int = node["a_int"].as<int>();
+	int a_int = conf["a_int"].as<int>();
 	if (a_int != 100) {
 		std::cerr << "Error, expected: a_int = 100, is: "<< a_int << std::endl;
 		exit(1);
 	}
 
-	PC_tree_destroy(&conf);
+	if (conf["a_map"].type() != PC_tree_type_t::PC_MAP) {
+		std::cerr << "Error, expected: conf[\"a_map\"].type() = PC_MAP, is: "<< conf["a_map"].type() << std::endl;
+		exit(1);
+	}
+
+	if (node["a_int"].as<int>() !=  conf["a_int"].as<int>()) {
+		std::cerr << "Error, expected: node.as<int>() = conf.as<int>(), is: "<< node["a_int"].as<int>() << std::endl;
+		exit(1);
+	}
 	
 	return 0;
 }

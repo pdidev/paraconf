@@ -39,15 +39,20 @@ include(CTest)
 
 find_package(paraconf REQUIRED)
 
-# Default standard in the project is C99 & C++14
+# Default standard in the project is C99 & C++11
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 
 add_executable(example example.c)
 target_link_libraries(example paraconf::paraconf)
 add_test(NAME example COMMAND example "${CMAKE_CURRENT_SOURCE_DIR}/example.yml")
 
+add_executable(example_cpp example.cxx)
+target_link_libraries(example_cpp paraconf::paraconf)
+add_test(NAME example_cpp COMMAND example_cpp "${CMAKE_CURRENT_SOURCE_DIR}/example.yml")
 
 if("${BUILD_FORTRAN}")
 	add_executable(example_f90 example.f90)

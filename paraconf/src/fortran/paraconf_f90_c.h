@@ -80,14 +80,25 @@ interface
     type(integer) :: PC_type_C
   end function PC_type_C
 
-  function PC_document_line_C(tree) &
-    bind(C, name="PC_document_line")
+  function PC_line_C(tree, line) &
+    bind(C, name="PC_line")
     use ISO_C_binding
     implicit none
     include 'paraconf_f90_types.h'
     type(PC_tree_t), value :: tree
-    type(integer) :: PC_document_line_C
-  end function PC_document_line_C
+    type(C_ptr), value :: line
+    integer(C_int) :: PC_line_C
+  end function PC_line_C
+
+  function PC_location_C(tree, location) &
+    bind(C, name="PC_location")
+    use ISO_C_binding
+    implicit none
+    include 'paraconf_f90_types.h'
+    type(PC_tree_t), value :: tree
+    type(C_ptr), value :: location
+    integer(C_int) :: PC_location_C
+  end function PC_location_C
 
   function PC_len_C(tree, value) &
     bind(C, name="PC_len")

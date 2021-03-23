@@ -28,7 +28,7 @@
 #include <memory>
 
 #include "paraconf/error.h"
-#include "PC_node.h"
+#include "paraconf/PC_node.h"
 #include "ypath_tools.h"
 
 #include "paraconf.h"
@@ -284,23 +284,46 @@ PC_tree_type_t PC_type(PC_tree_t tree)
 	if (tree == nullptr) {
 		return PC_tree_type_t::PC_EMPTY;
 	}
-	switch (tree->type()) {
-		case NodeType::Null:
-			return PC_tree_type_t::PC_EMPTY;
-		case NodeType::Scalar:
-			return PC_tree_type_t::PC_SCALAR;
-		case NodeType::Sequence:
-			return PC_tree_type_t::PC_SEQUENCE;
-		case NodeType::Map:
-			return PC_tree_type_t::PC_MAP;
-		default:
-			return PC_tree_type_t::PC_UNDEFINED;
-	}
+	return tree->type();
 }
 
-int PARACONF_EXPORT PC_document_line(PC_tree_t tree)
+PC_status_t PC_line(PC_tree_t tree, int* line)
+try {
+	if (tree == nullptr || !tree->status()) {
+		throw Error{PC_NODE_NOT_FOUND, "Cannot get tree line for empty tree"};
+	}
+	*line = tree->line();
+	return PC_OK;
+} catch (const Error& e)
 {
-	return tree->line();
+	return g_error_context.return_err(e);
+} catch (const exception& e)
+{
+	return g_error_context.return_err(e);
+} catch (...)
+{
+	return g_error_context.return_err();
+}
+
+PC_status_t PC_location(PC_tree_t tree, char** location)
+try {
+	if (tree == nullptr || !tree->status()) {
+		throw Error{PC_NODE_NOT_FOUND, "Cannot get tree location for empty tree"};
+	}
+	string location_string = tree->location();
+	*location = (char*)malloc(location_string.size() * sizeof(char) + 1);
+	strcpy(*location, location_string.c_str());
+	(*location)[location_string.size()] = '\0';
+	return PC_OK;
+} catch (const Error& e)
+{
+	return g_error_context.return_err(e);
+} catch (const exception& e)
+{
+	return g_error_context.return_err(e);
+} catch (...)
+{
+	return g_error_context.return_err();
 }
 
 PC_status_t PC_len(const PC_tree_t tree, int* res)
@@ -332,7 +355,7 @@ try
 		*value = tree->as<long>();
 		return PC_OK;
 	} catch (const exception& e) {
-		throw Error{PC_INVALID_NODE_TYPE, "In line %d: Cannot interpret `%s' as integer", tree->line(), tree->as<string>().c_str()};
+		throw Error{PC_INVALID_NODE_TYPE, "In %s: Cannot interpret `%s' as integer", tree->location().c_str(), tree->as<string>().c_str()};
 	} 
 } catch (const Error& e)
 {
@@ -354,7 +377,7 @@ try
 	try{
 		*value = tree->as<double>();
 	} catch (const exception& e) {
-		throw Error{PC_INVALID_NODE_TYPE, "In line %d: Cannot interpret `%s; as double", tree->line(), tree->as<string>().c_str()};
+		throw Error{PC_INVALID_NODE_TYPE, "In %s: Cannot interpret `%s; as double", tree->location().c_str(), tree->as<string>().c_str()};
 	} 
 	return PC_OK;
 } catch (const Error& e)
@@ -399,7 +422,7 @@ try
 	try {
 		*value = tree->as<bool>();
 	} catch (const exception& e) {
-		throw Error{PC_INVALID_NODE_TYPE, "In line %d: Cannot interpret `%s' as bool", tree->line(), tree->as<string>().c_str()};
+		throw Error{PC_INVALID_NODE_TYPE, "In %s: Cannot interpret `%s' as bool", tree->location().c_str(), tree->as<string>().c_str()};
 	} 
 	return PC_OK;
 } catch (const Error& e)

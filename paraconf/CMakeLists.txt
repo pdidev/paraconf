@@ -107,8 +107,13 @@ install(TARGETS paraconf EXPORT PC_export
 	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" ${LIBRARY_COMPONENT}
 	INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-install(FILES include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
+install(FILES include/paraconf.h include/paraconf/error.h include/paraconf/PC_node.h "${paraconf_BINARY_DIR}/paraconf_export.h"
 	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+	COMPONENT Development
+)
+
+install(FILES include/paraconf/error.h include/paraconf/PC_node.h
+	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/paraconf"
 	COMPONENT Development
 )
 

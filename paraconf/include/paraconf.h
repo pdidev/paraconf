@@ -206,9 +206,23 @@ PC_tree_type_t PARACONF_EXPORT PC_type(PC_tree_t tree);
  * Does nothing if the provided tree is in error
  *
  * \param[in] tree a yaml tree
- * \return the line in document of given tree
+ * \param[out] line the line in document of given tree
+ * 
+ * \return the status of the execution
  */
-int PARACONF_EXPORT PC_document_line(PC_tree_t tree);
+PC_status_t PARACONF_EXPORT PC_line(PC_tree_t tree, int *line);
+
+/** Inquires a node location
+ *
+ * If yaml was loaded from file the message is: "`<filename>' file, line <line>"
+ * If yaml wasn't loaded from file the message is: "line <line>"
+ *
+ * \param[in] tree a yaml tree
+ * \param[out] location node location as a newly allocated string that must be deallocated using free
+ * 
+ * \return the status of the execution
+ */
+PC_status_t PARACONF_EXPORT PC_location(PC_tree_t tree, char** location);
 
 /** Returns the length of a node, for a sequence, the number of nodes, for a mapping, the number of pairs, for a scalar, the string length
  *
