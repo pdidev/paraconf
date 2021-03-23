@@ -33,6 +33,14 @@ enum, bind(C)
   enumerator :: PC_SYSTEM_ERROR      ! An error occured with the system
 end enum
 
+!> Types of PC_tree_t
+enum, bind(C)
+  enumerator :: PC_EMPTY = 0         ! Empty tree
+  enumerator :: PC_SCALAR            ! Scalar tree
+  enumerator :: PC_SEQUENCE          ! Sequence tree
+  enumerator :: PC_MAP               ! Map tree
+  enumerator :: PC_UNDEFINED         ! Undefined tree
+end enum
 
 integer, parameter :: PC_ERRMSG_MAXLENGTH = 1024
 

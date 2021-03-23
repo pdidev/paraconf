@@ -24,8 +24,6 @@
 !******************************************************************************
 
 type, bind(C) :: PC_tree_t
-  integer(C_int) :: status
-  type(C_ptr) :: document
   type(C_ptr) :: node
 end type PC_tree_t
 

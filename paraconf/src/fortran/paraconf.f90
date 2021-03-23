@@ -1,6 +1,8 @@
 !******************************************************************************
 ! Copyright (C) 2015-2018 Commissariat a l'energie atomique et aux energies
 ! alternatives (CEA)
+! Copyright (C) 2021 Institute of Bioorganic Chemistry Polish Academy of
+! Science (PSNC)
 ! All rights reserved.
 !
 ! Redistribution and use in source and binary forms, with or without
@@ -45,7 +47,7 @@ integer function PC_status(tree)
 
   type(PC_tree_t), intent(IN) :: tree
 
-  PC_status = int(tree%status)
+  PC_status = PC_status_C(tree)
 
 end function PC_status
 
@@ -180,6 +182,96 @@ type(PC_tree_t) function PC_get(tree, index_fmt)
   PC_get = PC_get_C(tree, c_loc(C_index_fmt))
 
 end function PC_get
+
+
+integer function PC_type(tree_in)
+
+  use ISO_C_binding
+
+  implicit none
+
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
+
+  type(PC_tree_t), intent(IN) :: tree_in
+
+  PC_type = PC_type_C(tree_in)
+
+end function PC_type
+
+subroutine PC_line(tree_in, line, status)
+
+  use ISO_C_binding
+
+  implicit none
+
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_c.h'
+
+  type(PC_tree_t), intent(IN) :: tree_in
+  integer, intent(OUT) :: line
+  integer, intent(OUT), optional :: status
+
+  integer :: tmp
+  integer(C_long), target :: longvalue
+  
+  if(present(status)) then
+    status = int(PC_line_C(tree_in, c_loc(longvalue)))
+  else
+    tmp = int(PC_line_C(tree_in, c_loc(longvalue)))
+  end if
+
+  line = int(longvalue)
+
+end subroutine PC_line
+
+subroutine C_string_ptr_to_F_string(C_string, F_string)
+  use ISO_C_BINDING
+  type(C_PTR), intent(in) :: C_string
+  character(len=*), intent(out) :: F_string
+  character(len=1, kind=C_CHAR), dimension(:), pointer :: p_chars
+  integer :: i
+  if (.not. C_associated(C_string)) then
+    F_string = ' '
+  else
+    call C_F_pointer(C_string, p_chars, [huge(0)])
+    do i = 1, len(F_string)
+      if (p_chars(i) == C_NULL_CHAR) exit
+      F_string(i:i) = p_chars(i)
+    end do
+    if (i <= len(F_string)) F_string(i:) = ' '
+  end if
+end subroutine
+
+subroutine PC_location(tree_in, location, status)
+
+  use ISO_C_binding
+
+  implicit none
+
+  include 'paraconf_f90_types.h'
+  include 'paraconf_f90_consts.h'
+  include 'paraconf_f90_c.h'
+
+  type(PC_tree_t), intent(IN) :: tree_in
+  character(len = *), intent(OUT) :: location
+  integer, intent(OUT), optional :: status
+
+  integer :: i, tmp
+  integer, dimension(1), target :: tab_lengh
+  type(C_ptr), target :: C_pointer
+  CHARACTER, dimension(:), pointer :: F_pointer
+
+  location = ""
+  tmp = int(PC_location_C(tree_in, c_loc(C_pointer)))
+  if (present(status)) status = tmp
+
+  if (tmp ==  PC_OK) then
+    call C_string_ptr_to_F_string(C_pointer, location)
+
+    call free_C(C_pointer)
+  endif
+end subroutine PC_location
 
 
 subroutine PC_int(tree_in, value, status)

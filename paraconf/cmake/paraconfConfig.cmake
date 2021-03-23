@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 3.5)
 include(CMakeFindDependencyMacro)
 list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}")
 find_dependency(Threads)
-find_dependency(yaml)
+find_dependency(yaml-cpp)
 
 # by default, if no component is specified, look for all
 if("xx" STREQUAL "x${paraconf_FIND_COMPONENTS}x")

@@ -28,7 +28,7 @@
 #=============================================================================
 
 cmake_minimum_required(VERSION 3.5)
-project(paraconf LANGUAGES C)
+project(paraconf LANGUAGES C CXX)
 
 
 # Build options
@@ -57,7 +57,7 @@ set(INSTALL_CMAKEDIR "${CMAKE_INSTALL_DATADIR}/paraconf/cmake") # not provided b
 # Dependencies
 
 find_package(Threads REQUIRED)
-find_package(yaml REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 
 # Version
@@ -75,12 +75,13 @@ list(GET paraconf_VERSION_list 2 paraconf_VERSION_PATCH)
 ## C version
 
 add_library(paraconf
-	src/api.c
-	src/status.c
-	src/ypath.c
+	src/error.cxx
+	src/paraconf.cxx
+	src/PC_node.cxx
+	src/ypath_tools.cxx
 )
 generate_export_header(paraconf)
-target_link_libraries(paraconf Threads::Threads yaml)
+target_link_libraries(paraconf Threads::Threads yaml-cpp)
 target_include_directories(paraconf PUBLIC
 	"$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include/>"
 	"$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/>"
@@ -88,6 +89,9 @@ target_include_directories(paraconf PUBLIC
 set_property(TARGET paraconf PROPERTY C_STANDARD 99)
 set_property(TARGET paraconf PROPERTY C_STANDARD_REQUIRED TRUE)
 set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
+set_property(TARGET paraconf PROPERTY CXX_STANDARD 11)
+set_property(TARGET paraconf PROPERTY CXX_STANDARD_REQUIRED TRUE)
+set_property(TARGET paraconf PROPERTY CXX_VISIBILITY_PRESET hidden)
 set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
 set_property(TARGET paraconf PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
 set_property(TARGET paraconf PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
@@ -103,8 +107,13 @@ install(TARGETS paraconf EXPORT PC_export
 	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" ${LIBRARY_COMPONENT}
 	INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-install(FILES include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
+install(FILES include/paraconf.h include/paraconf/error.h include/paraconf/PC_node.h "${paraconf_BINARY_DIR}/paraconf_export.h"
 	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+	COMPONENT Development
+)
+
+install(FILES include/paraconf/error.h include/paraconf/PC_node.h
+	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/paraconf"
 	COMPONENT Development
 )
 
