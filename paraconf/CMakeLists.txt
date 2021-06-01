@@ -129,9 +129,9 @@ if("${BUILD_FORTRAN}")
 	# Expect compilers to provide compatible modules at the minor release level at least
 	string(REGEX REPLACE "^([0-9]*\\.[0-9]*)\\..*$" "\\1" Fortran_COMPILER_MINOR_VERSION "${CMAKE_Fortran_COMPILER_VERSION}")
 	set(INSTALL_FMODDIR
-		"${CMAKE_INSTALL_LIBDIR}/paraconf/fmoddir/${CMAKE_Fortran_COMPILER_ID}-${Fortran_COMPILER_MINOR_VERSION}"
+		"${CMAKE_INSTALL_LIBDIR}/paraconf/finclude/${CMAKE_Fortran_COMPILER_ID}-${Fortran_COMPILER_MINOR_VERSION}"
 		CACHE PATH
-		"Fortran module directory (LIBDIR/paraconf/${CMAKE_Fortran_COMPILER_ID}-${Fortran_COMPILER_MINOR_VERSION})")
+		"Fortran module directory (LIBDIR/paraconf/finclude/${CMAKE_Fortran_COMPILER_ID}-${Fortran_COMPILER_MINOR_VERSION})")
 	if("${CMAKE_VERSION}" VERSION_LESS "3.12")
 		set(LIBRARY_COMPONENT "COMPONENT" "Runtime")
 	else()
