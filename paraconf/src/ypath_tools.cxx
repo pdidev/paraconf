@@ -26,7 +26,7 @@
 #include <string>
 
 #include "paraconf/error.h"
-#include "paraconf/PC_node.h"
+#include "paraconf/node.h"
 
 using PC::Error;
 using std::exception;

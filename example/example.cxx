@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <paraconf/PC_node.h>
+#include <paraconf/node.h>
 
 
 /* This file contains an example on how to use Paraconf 
@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Error: expected 1 argument!\n");
 		exit(1);
 	}
-	PC_node conf = PC_load_file(argv[1]);
+	PC::Node conf = PC::Load_file(argv[1]);
 
 	/*For the sake of the illustration a tree is 
 	 *           .                // origin of the tree
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	/// Element of a list are accessed using the iterator
 	std::cout << "a_list=[ ";
 	for (auto it = conf["a_list"].begin(); it != conf["a_list"].end(); ++it) {
-		std::cout << it->as<std::string>() << " ";
+		std::cout << it.as<std::string>() << " ";
 	}
 	std::cout << "]" << std::endl;
 	

@@ -86,6 +86,11 @@ int main(int argc, char *argv[])
 	TST_EXPECT(!strcmp("`test_data.yml' file, line 6", last_slash));
 	free(a_string);
 
+	PC_filename(a_string_tree, &a_string);
+	last_slash = strrchr(a_string, '/');
+	TST_EXPECT(!strcmp("test_data.yml", last_slash+1));
+	free(a_string);
+
 	PC_tree_t a_list_tree = PC_get(conf, ".a_list");
 	TST_EXPECT(PC_type(a_list_tree) == PC_SEQUENCE);
 	PC_line(a_list_tree, &line);

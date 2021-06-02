@@ -83,13 +83,13 @@ call PC_tree_destroy(root)
 
 C++:
 ```cpp
-#include <paraconf/PC_node.h>
+#include <paraconf/node.h>
 
 // parse yaml document from file
-PC_node root_from_file = PC_load_file("example.yml"); 
+PC::Node root_from_file = PC::Load_file("example.yml"); 
 
 // parse yaml document from string (only in C/C++)
-PC_node root_from_string = PC_load("{first: 1, second: two}");
+PC::Node root_from_string = PC::Load("{first: 1, second: two}");
 
 // no need to destroy: destroyed when out of scope
 ```
@@ -153,9 +153,9 @@ PC_tree_destroy(root)
 
 C++:
 ```cpp
-#include <paraconf/PC_node.h>
+#include <paraconf/node.h>
 
-PC_node root = PC_load("{first: 1, second: two}");
+PC::Node root = PC::Load("{first: 1, second: two}");
 
 // write value of first node (`1') to first_value variable
 int first_value = root["first"].as<int>();
@@ -212,14 +212,14 @@ PC_tree_destroy(root)
 
 C++:
 ```cpp
-#include <paraconf/PC_node.h>
+#include <paraconf/node.h>
 
-PC_node root = PC_load("{first: 1, second: two}");
+PC::Node root = PC::Load("{first: 1, second: two}");
 
 // get first node from root
 try {
   int correct_value = root["wrong_name"];
-} catch (const PC::Error& e) {
+} catch (const std::exception& e) {
   std::cerr << e.what() << std::endl;
 }
 ```
@@ -286,9 +286,9 @@ call PC_tree_destroy(root)
 C++:
 ```cpp
 #include <paraconf.h>
-#include <paraconf/PC_node.h>
+#include <paraconf/node.h>
 
-PC_node root = PC_load_file("example.yml");
+PC::Node root = PC::Load_file("example.yml");
 
 switch (root.Type()))
 ​{
@@ -341,10 +341,10 @@ call PC_tree_destroy(root)
 
 C++:
 ```cpp
-#include <paraconf/PC_node.h>
+#include <paraconf/node.h>
 
 // parse yaml document from file
-PC_node root = PC_load_file("example.yml");
+PC::Node root = PC::Load_file("example.yml");
 
 // Get root line in document
 int root_line = root.line(); 
@@ -353,13 +353,13 @@ int root_line = root.line();
 ### Get yaml-cpp node from PC_tree_t
 ```cpp
 #include <paraconf.h>
-#include <PC_node.h>
+#include <paraconf/node.h>
 #include <yaml-cpp/yaml.h>
 
 PC_tree_t root = PC_parse_path("example.yml");
 
-//Get PC_node from PC_tree_t
-PC_node& pc_node = *root;
+//Get Node from PC_tree_t
+PC::Node& node = *root;
 
 //Get yaml-cpp node from PC_tree_t
 YAML::Node root_node = root->node();

@@ -77,7 +77,7 @@ list(GET paraconf_VERSION_list 2 paraconf_VERSION_PATCH)
 add_library(paraconf
 	src/error.cxx
 	src/paraconf.cxx
-	src/PC_node.cxx
+	src/node.cxx
 	src/ypath_tools.cxx
 )
 generate_export_header(paraconf)
@@ -107,12 +107,12 @@ install(TARGETS paraconf EXPORT PC_export
 	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" ${LIBRARY_COMPONENT}
 	INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-install(FILES include/paraconf.h include/paraconf/error.h include/paraconf/PC_node.h "${paraconf_BINARY_DIR}/paraconf_export.h"
+install(FILES include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
 	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 	COMPONENT Development
 )
 
-install(FILES include/paraconf/error.h include/paraconf/PC_node.h
+install(FILES include/paraconf/error.h include/paraconf/node.h
 	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/paraconf"
 	COMPONENT Development
 )

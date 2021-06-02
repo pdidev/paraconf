@@ -39,7 +39,14 @@ extern "C" {
  */
 
 /// An opaque type describing a yaml tree (possibly a leaf node)
-typedef struct PC_node* PC_tree_t;
+#ifdef __cplusplus
+namespace PC {
+	struct Node;
+}
+typedef PC::Node* PC_tree_t;
+#else
+typedef void* PC_tree_t;
+#endif
 
 /// Type of the tree
 typedef enum PC_tree_type_e {
@@ -211,6 +218,18 @@ PC_tree_type_t PARACONF_EXPORT PC_type(PC_tree_t tree);
  * \return the status of the execution
  */
 PC_status_t PARACONF_EXPORT PC_line(PC_tree_t tree, int *line);
+
+/** Inquires a node filename
+ *
+ * Returns filename if yaml was loaded from file
+ * Returns empty string if yaml wasn't loaded from file
+ *
+ * \param[in] tree a yaml tree
+ * \param[out] filename node filename as a newly allocated string that must be deallocated using free
+ * 
+ * \return the status of the execution
+ */
+PC_status_t PARACONF_EXPORT PC_filename(PC_tree_t tree, char** filename);
 
 /** Inquires a node location
  *

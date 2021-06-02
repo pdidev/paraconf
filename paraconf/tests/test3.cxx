@@ -27,7 +27,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <paraconf/PC_node.h>
+#include <paraconf/node.h>
 
 int main(int argc, char *argv[])
 {
@@ -35,9 +35,9 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Error: expected 1 argument!\n");
 		exit(1);
 	}
-	PC_node conf = PC_load_file(argv[1]);
+	PC::Node conf = PC::Load_file(argv[1]);
 
-	YAML::Node node = conf.node();
+	YAML::Node node = conf.yaml_node();
 
 	int a_int = conf["a_int"].as<int>();
 	if (a_int != 100) {

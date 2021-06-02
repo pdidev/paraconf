@@ -27,7 +27,7 @@
 
 #include "paraconf/error.h"
 
-#include "paraconf/PC_node.h"
+#include "paraconf/node.h"
 
 using PC::Error;
 using std::exception;
@@ -35,140 +35,108 @@ using std::move;
 using std::string;
 using std::to_string;
 using std::unique_ptr;
-using YAML::Clone;
-using YAML::LoadFile;
-using YAML::Load;
-using YAML::Node;
 
-PC_node::PC_node() = default;
+namespace PC {
 
-PC_node::PC_node(Node node, const string& filename):
+Node::Node() = default;
+
+Node::Node(YAML::Node node, const string& filename):
 	m_node{node},
 	m_filename{filename}
 {}
 
-PC_node::PC_node(PC_node&& other):
-	m_node{move(other.m_node)},
-	m_filename{move(other.m_filename)}
-{}
+Node::Node(Node&& other) = default;
 
-PC_node& PC_node::operator =(PC_node&& other)
+Node& Node::operator =(Node&& other)
 {
 	m_node = move(other.m_node);
 	m_filename = move(other.m_filename);
 	return *this;
 }
 
-PC_node PC_node::operator [](size_t index) const
+Node Node::operator [](size_t index) const
 {
 	return get(index);
 }
 
-PC_node PC_node::operator [](const std::string& key) const
+Node Node::operator [](const std::string& key) const
 {
 	return get(key);
 }
 
-PC_node::Iterator::Iterator(const PC_node* node):
+Node::Iterator::Iterator(const Node* node):
 	m_node{node},
-	m_index{0}
+	m_real_iterator{m_node->yaml_node().begin()}
 {}
 
-PC_node::Iterator::Iterator(size_t index):
-	m_node{nullptr},
-	m_index{index}
+Node::Iterator::Iterator(const Node* node, YAML::const_iterator real_iterator):
+	m_node{node},
+	m_real_iterator{real_iterator}
 {}
 
-PC_node PC_node::Iterator::operator *()
+string Node::Iterator::key() const
 {
-	auto it = m_node->node().begin();
-	for (int i = 0; i < m_index; i++) {
-		++it;
-	}
-	return *it;
+	return m_real_iterator->first.as<string>();
 }
 
-unique_ptr<PC_node> PC_node::Iterator::operator ->()
+Node Node::Iterator::value() const
 {
-	return unique_ptr<PC_node>{new PC_node{this->operator *()}};
+	return m_node->postprocess_result(Node{m_real_iterator->second});
 }
 
-string PC_node::Iterator::key() const
+
+Node Node::Iterator::operator *()
 {
-	if (m_node->type() != PC_tree_type_t::PC_MAP) {
-		throw Error{PC_INVALID_NODE_TYPE, "Cannot get key from iterator of non map node"};
-	}
-	auto it = m_node->node().begin();
-	for (int i = 0; i < m_index; i++) {
-		++it;
-	}
-	return it->first.as<string>();
+	return {*m_real_iterator};
 }
 
-PC_node PC_node::Iterator::value() const
+Node::Iterator& Node::Iterator::operator ++()
 {
-	if (m_node->type() != PC_tree_type_t::PC_MAP) {
-		throw Error{PC_INVALID_NODE_TYPE, "Cannot get value from iterator of non map node"};
-	}
-	auto it = m_node->node().begin();
-	for (int i = 0; i < m_index; i++) {
-		++it;
-	}
-	return it->second;
-}
-
-PC_node::Iterator& PC_node::Iterator::operator ++()
-{
-	m_index++;
+	m_real_iterator++;
 	return *this;
 }
 
-bool PC_node::Iterator::operator !=(const Iterator& it) const
+bool Node::Iterator::operator !=(const Iterator& it) const
 {
-	return m_index != it.m_index;
+	return m_real_iterator != it.m_real_iterator;
 }
 
-PC_node::Iterator PC_node::begin() const
+Node::Iterator Node::begin() const
 {
-	return PC_node::Iterator{this};
+	return Node::Iterator{this};
 }
 	
-PC_node::Iterator PC_node::end() const
+Node::Iterator Node::end() const
 {
-	auto it = m_node.begin();
-	size_t i = 0; 
-	for (; it != m_node.end(); i++) {
-		it++;
-	}
-	return PC_node::Iterator{i};
+	return Node::Iterator{this, yaml_node().end()};
 }
 
-PC_node* PC_node::acquire(PC_node&& node)
+Node* Node::acquire(Node&& node)
 {
-	m_acquired.emplace_back(move(node));
-	return &m_acquired.back();
+	m_sub_nodes.emplace_front(move(node));
+	return &m_sub_nodes.front();
 }
 
-Node PC_node::node() const
+YAML::Node Node::yaml_node() const
 {
 	return m_node;
 }
 
-bool PC_node::status() const
+bool Node::status() const
 {
 	return m_node.IsDefined();
 }
 
-PC_node PC_node::postprocess_result(PC_node node) const
+Node Node::postprocess_result(Node new_node) const
 {
-	if (node.node().Tag() == "!include") {
-		return PC_load_file(node.as<string>());
+	if (new_node.yaml_node().Tag() == "!include") {
+		return Load_file(new_node.as<string>());
 	}
-	node.m_filename = m_filename;
-	return node;
+	new_node.m_filename = m_filename;
+	return new_node;
 }
 
-PC_node PC_node::get(size_t index) const
+Node Node::get(size_t index) const
 {
 	if (m_node.Type() != YAML::NodeType::Sequence) {
 		throw Error{PC_INVALID_NODE_TYPE, "In %s: Cannot access index `%zu' of not sequence tree", location().c_str(), index};
@@ -176,7 +144,7 @@ PC_node PC_node::get(size_t index) const
 	if (index >= m_node.size()) {
 		throw Error{PC_NODE_NOT_FOUND, "In %s: Index out of range: %zu (sequence size: %zu)", location().c_str(), index, m_node.size()};
 	}
-	PC_node result;
+	Node result;
 	try {
 		result = m_node[index];
 	} catch (const exception& e) {
@@ -185,12 +153,12 @@ PC_node PC_node::get(size_t index) const
 	return postprocess_result(m_node[index]);
 }
 
-PC_node PC_node::get(const string& key) const
+Node Node::get(const string& key) const
 {
 	if (m_node.Type() != YAML::NodeType::Map) {
 		throw Error{PC_INVALID_NODE_TYPE, "In %s: Cannot access key `%s' of not map tree", location().c_str(), key.c_str()};
 	}
-	PC_node result;
+	Node result;
 	try {
 		result = m_node[key];
 	} catch (const exception& e) {
@@ -199,7 +167,7 @@ PC_node PC_node::get(const string& key) const
 	return postprocess_result(m_node[key]);
 }
 
-PC_node PC_node::key(size_t index) const
+Node Node::key(size_t index) const
 {
 	if (m_node.Type() != YAML::NodeType::Map) {
 		throw Error{PC_INVALID_NODE_TYPE, "In %s: Cannot access key map index `%zu' of not map tree", location().c_str(), index};
@@ -214,7 +182,7 @@ PC_node PC_node::key(size_t index) const
 	return postprocess_result(it->first);
 }
 
-PC_node PC_node::value(size_t index) const
+Node Node::value(size_t index) const
 {
 	if (m_node.Type() != YAML::NodeType::Map) {
 		throw Error{PC_INVALID_NODE_TYPE, "In %s: Cannot access value map index `%zu' of not map tree", location().c_str(), index};
@@ -229,7 +197,7 @@ PC_node PC_node::value(size_t index) const
 	return postprocess_result(it->second);
 }
 
-size_t PC_node::size() const
+size_t Node::size() const
 {
 	if (!m_node.IsDefined()) {
 		throw Error{PC_NODE_NOT_FOUND, "Cannot get size of not defined tree"};
@@ -240,7 +208,7 @@ size_t PC_node::size() const
 	return m_node.size();
 }
 
-PC_tree_type_t PC_node::type() const
+PC_tree_type_t Node::type() const
 {
 	if (!m_node.IsDefined()) {
 		return PC_tree_type_t::PC_EMPTY;
@@ -259,7 +227,7 @@ PC_tree_type_t PC_node::type() const
 	}
 }
 
-int PC_node::line() const
+int Node::line() const
 {
 	if (!m_node.IsDefined()) {
 		throw Error{PC_NODE_NOT_FOUND, "Cannot get line of not defined tree"};
@@ -267,7 +235,15 @@ int PC_node::line() const
 	return m_node.Mark().line + 1;
 }
 
-string PC_node::location() const
+string Node::filename() const
+{
+	if (!m_node.IsDefined()) {
+		throw Error{PC_NODE_NOT_FOUND, "Cannot get location of not defined tree"};
+	}
+	return m_filename;
+}
+
+string Node::location() const
 {
 	if (!m_node.IsDefined()) {
 		throw Error{PC_NODE_NOT_FOUND, "Cannot get location of not defined tree"};
@@ -278,16 +254,18 @@ string PC_node::location() const
 	return "`" + m_filename + "' file, line " + to_string(line());
 }
 
-PC_node PC_load_file(const string& path)
+Node Load_file(const string& path)
 {
 	struct stat buffer;
 	if (stat(path.c_str(), &buffer) != 0) {
 		throw Error{PC_SYSTEM_ERROR, "File `%s' doesn't exist", path.c_str()};
 	}
-	return {LoadFile(path), path};
+	return {YAML::LoadFile(path), path};
 }
 
-PC_node PC_load(const string& document)
+Node Load(const string& document)
 {
-	return Load(document);
+	return YAML::Load(document);
 }
+
+} // namespace PC

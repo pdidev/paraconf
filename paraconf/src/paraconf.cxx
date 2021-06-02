@@ -28,7 +28,7 @@
 #include <memory>
 
 #include "paraconf/error.h"
-#include "paraconf/PC_node.h"
+#include "paraconf/node.h"
 #include "ypath_tools.h"
 
 #include "paraconf.h"
@@ -125,7 +125,7 @@ try
 PC_tree_t PC_parse_path(const char* path)
 try
 {
-	return new PC_node{PC_load_file(path)};
+	return new Node{Load_file(path)};
 } catch (const Error& e)
 {
 	g_error_context.return_err(e);
@@ -143,7 +143,7 @@ try
 PC_tree_t PC_parse_string(const char* document)
 try
 {
-	return new PC_node{PC_load(document)};
+	return new Node{Load(document)};
 } catch (const Error& e)
 {
 	g_error_context.return_err(e);
@@ -293,6 +293,27 @@ try {
 		throw Error{PC_NODE_NOT_FOUND, "Cannot get tree line for empty tree"};
 	}
 	*line = tree->line();
+	return PC_OK;
+} catch (const Error& e)
+{
+	return g_error_context.return_err(e);
+} catch (const exception& e)
+{
+	return g_error_context.return_err(e);
+} catch (...)
+{
+	return g_error_context.return_err();
+}
+
+PC_status_t PC_filename(PC_tree_t tree, char** filename)
+try {
+	if (tree == nullptr || !tree->status()) {
+		throw Error{PC_NODE_NOT_FOUND, "Cannot get tree filename for empty tree"};
+	}
+	string filename_string = tree->filename();
+	*filename = (char*)malloc(filename_string.size() * sizeof(char) + 1);
+	strcpy(*filename, filename_string.c_str());
+	(*filename)[filename_string.size()] = '\0';
 	return PC_OK;
 } catch (const Error& e)
 {
