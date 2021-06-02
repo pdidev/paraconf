@@ -47,15 +47,6 @@ private:
 	/// Acquired referenced to this node
 	std::forward_list<Node> m_sub_nodes;
 
-	/** Checks if returned node is tagged as include
-	 *  and sets the same filename
-	 * 
-	 * \param[in] node node to postprocess
-	 * 
-	 * \return postprocessed node
-	 */
-	Node postprocess_result(Node node) const;
-
 public:
 	/// Node iterator
 	class Iterator {

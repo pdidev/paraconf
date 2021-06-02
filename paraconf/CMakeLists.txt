@@ -76,6 +76,7 @@ list(GET paraconf_VERSION_list 2 paraconf_VERSION_PATCH)
 
 add_library(paraconf
 	src/error.cxx
+	src/include_mechanism.cxx
 	src/paraconf.cxx
 	src/node.cxx
 	src/ypath_tools.cxx

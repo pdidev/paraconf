@@ -26,6 +26,7 @@
 #include <yaml-cpp/node/node.h>
 
 #include "paraconf/error.h"
+#include "paraconf/include_mechanism.h"
 
 #include "paraconf/node.h"
 
@@ -81,7 +82,7 @@ string Node::Iterator::key() const
 
 Node Node::Iterator::value() const
 {
-	return m_node->postprocess_result(Node{m_real_iterator->second});
+	return inlcude_mechanism({m_real_iterator->second, m_node->filename()});
 }
 
 
@@ -127,15 +128,6 @@ bool Node::status() const
 	return m_node.IsDefined();
 }
 
-Node Node::postprocess_result(Node new_node) const
-{
-	if (new_node.yaml_node().Tag() == "!include") {
-		return Load_file(new_node.as<string>());
-	}
-	new_node.m_filename = m_filename;
-	return new_node;
-}
-
 Node Node::get(size_t index) const
 {
 	if (m_node.Type() != YAML::NodeType::Sequence) {
@@ -144,13 +136,12 @@ Node Node::get(size_t index) const
 	if (index >= m_node.size()) {
 		throw Error{PC_NODE_NOT_FOUND, "In %s: Index out of range: %zu (sequence size: %zu)", location().c_str(), index, m_node.size()};
 	}
-	Node result;
 	try {
-		result = m_node[index];
+		return inlcude_mechanism({m_node[index], m_filename});
 	} catch (const exception& e) {
 		throw Error{PC_SYSTEM_ERROR, "In %s: %s", location().c_str(), e.what()};
 	}
-	return postprocess_result(m_node[index]);
+	
 }
 
 Node Node::get(const string& key) const
@@ -158,13 +149,11 @@ Node Node::get(const string& key) const
 	if (m_node.Type() != YAML::NodeType::Map) {
 		throw Error{PC_INVALID_NODE_TYPE, "In %s: Cannot access key `%s' of not map tree", location().c_str(), key.c_str()};
 	}
-	Node result;
 	try {
-		result = m_node[key];
+		return inlcude_mechanism({m_node[key], m_filename});
 	} catch (const exception& e) {
 		throw Error{PC_SYSTEM_ERROR, "In %s: %s", location().c_str(), e.what()};
 	}
-	return postprocess_result(m_node[key]);
 }
 
 Node Node::key(size_t index) const
@@ -179,7 +168,7 @@ Node Node::key(size_t index) const
 	for (size_t i = 0; i < index && it != m_node.end(); i++) {
 		it++;
 	}
-	return postprocess_result(it->first);
+	return inlcude_mechanism({it->first, m_filename});
 }
 
 Node Node::value(size_t index) const
@@ -194,7 +183,7 @@ Node Node::value(size_t index) const
 	for (int i = 0; i < index && it != m_node.end(); i++) {
 		it++;
 	}
-	return postprocess_result(it->second);
+	return inlcude_mechanism({it->second, m_filename});
 }
 
 size_t Node::size() const
