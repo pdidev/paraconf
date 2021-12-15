@@ -66,10 +66,11 @@ function(_yaml_Find_Pkgconfig)
 			set_target_properties(yaml PROPERTIES
 					IMPORTED_LOCATION ${yaml_LIBRARIES})
 			if ( "${yamlpkg_INCLUDE_DIRS}" )
-				set(yaml_INCLUDE_DIRS "${yamlpkg_INCLUDE_DIRS}" PARENT_SCOPE)
+				set(yaml_INCLUDE_DIRS "${yamlpkg_INCLUDE_DIRS}" CACHE STRING "" FORCE)
 				set_target_properties(yaml PROPERTIES
 						INTERFACE_INCLUDE_DIRECTORIES ${yamlpkg_INCLUDE_DIRS})
 			endif()
+			mark_as_advanced(yaml_INCLUDE_DIRS yaml_LIBRARIES)
 			if("${yamlpkg_VERSION}" VERSION_GREATER 0)
 				set(yaml_VERSION "${yamlpkg_VERSION}" PARENT_SCOPE)
 			elseif("${yamlpkg_yaml_VERSION}" VERSION_GREATER 0)
