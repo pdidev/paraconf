@@ -54,8 +54,9 @@ function(_yaml_Find_Pkgconfig)
 	endif()
 	
 	if ( "${yaml_FOUND}" )
-	
-		find_library (yaml_LIBRARIES NAMES ${yaml_LIBRARIES}
+		set(yaml_LIBRARIES_NAMES "${yaml_LIBRARIES}")
+		unset(yaml_LIBRARIES_NAMES CACHE)
+		find_library (yaml_LIBRARIES NAMES ${yaml_LIBRARIES_NAMES}
 			HINTS ${yaml_LIBRARY_DIRS}
 			PATH_SUFFIXES lib
 		)
@@ -63,7 +64,10 @@ function(_yaml_Find_Pkgconfig)
 		if ( EXISTS "${yaml_LIBRARIES}" )
 			add_library(yaml SHARED IMPORTED GLOBAL)
 			set_target_properties(yaml PROPERTIES
-					IMPORTED_LOCATION ${yaml_LIBRARIES}
+					IMPORTED_LOCATION ${yaml_LIBRARIES})
+		endif()
+		if ( "${yaml_INCLUDE_DIRS}" )
+			set_target_properties(yaml PROPERTIES
 					INTERFACE_INCLUDE_DIRECTORIES ${yaml_INCLUDE_DIRS})
 		endif()
 		if("${yaml_VERSION}" VERSION_GREATER 0)
@@ -76,7 +80,6 @@ function(_yaml_Find_Pkgconfig)
 			unset(yaml_VERSION PARENT_SCOPE)
 		endif()
 	endif()
-	
 endfunction(_yaml_Find_Pkgconfig)
 
 unset(yaml_FOUND)
@@ -90,6 +93,12 @@ if ( NOT TARGET yaml )
 endif()
 if ( TARGET yaml AND NOT "${yaml_LIBRARIES}" )
 	set(yaml_LIBRARIES yaml)
+endif()
+if ( NOT TARGET yaml )
+	unset(yaml_LIBRARIES CACHE)
+	unset(yaml_LIBRARIES)
+	unset(yaml_FOUND CACHE)
+	unset(yaml_FOUND)
 endif()
 
 include(FindPackageHandleStandardArgs)
