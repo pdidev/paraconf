@@ -1,4 +1,3 @@
-
 #--------------------------------------------------------------------------------
 # Copyright (c) 2012-2013, Lars Baehren <lbaehren@gmail.com>
 # All rights reserved.
@@ -65,7 +64,7 @@ function(_yaml_Find_Pkgconfig)
 			add_library(yaml SHARED IMPORTED GLOBAL)
 			set_target_properties(yaml PROPERTIES
 					IMPORTED_LOCATION ${yaml_LIBRARIES})
-			if ( "${yamlpkg_INCLUDE_DIRS}" )
+			if ( NOT "${yamlpkg_INCLUDE_DIRS}" STREQUAL "" )
 				set(yaml_INCLUDE_DIRS "${yamlpkg_INCLUDE_DIRS}" CACHE STRING "" FORCE)
 				set_target_properties(yaml PROPERTIES
 						INTERFACE_INCLUDE_DIRECTORIES ${yamlpkg_INCLUDE_DIRS})
