@@ -49,11 +49,14 @@ function(_yaml_Find_Pkgconfig)
 	
 	if( NOT "x${yaml_FIND_VERSION}" STREQUAL "x")
 		pkg_search_module(yaml QUIET yaml>=${yaml_FIND_VERSION} yaml-0.1>=${yaml_FIND_VERSION})
+		if ( NOT "${yaml_FOUND}" )
+			pkg_search_module(yaml QUIET yaml yaml-0.1)
+		endif()
 	else()
 		pkg_search_module(yaml QUIET yaml yaml-0.1)
 	endif()
 	
-	if ( "${yaml_FOUND}" )
+	if ( "${yaml_FOUND}" AND "${yaml_VERSION}" VERSION_GREATER "0${yaml_FIND_VERSION}" )
 		set(yaml_LIBRARIES_NAMES "${yaml_LIBRARIES}")
 		unset(yaml_LIBRARIES_NAMES CACHE)
 		find_library (yaml_LIBRARIES NAMES ${yaml_LIBRARIES_NAMES}
