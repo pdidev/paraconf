@@ -47,8 +47,9 @@ find_dependency(yaml)
 
 # The other targets that were exported from paraconf CMakeLists.txt
 
-include("${CMAKE_CURRENT_LIST_DIR}/paraconf.cmake")
-
+if(TARGET yaml)
+	include("${CMAKE_CURRENT_LIST_DIR}/paraconf.cmake")
+endif()
 
 # check the C component
 
