@@ -1,5 +1,6 @@
 #--------------------------------------------------------------------------------
 # Copyright (c) 2012-2013, Lars Baehren <lbaehren@gmail.com>
+# Copyright (C) 2020-2022 Commissariat a l'energie atomique et aux energies alternatives (CEA)
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -29,10 +30,8 @@ cmake_minimum_required(VERSION 3.5)
 #
 # The following variables are set when YAML is found:
 #  yaml_FOUND      = Set to true, if all components of YAML have been found.
-#  yaml_LIBRARIES  = 
 #
-# In addition, the following imported target is created
-#  yaml = Include path for the header files of YAML
+# In addition, the following imported target is created:  yaml
 
 function(_yaml_Find_Config)
 	find_package(yaml ${yaml_FIND_VERSION} QUIET CONFIG)
@@ -44,21 +43,27 @@ function(_yaml_Find_Config)
 endfunction(_yaml_Find_Config)
 
 function(_yaml_Find_Pkgconfig)
-	find_package(PkgConfig QUIET REQUIRED)
-	
+        find_package(PkgConfig QUIET)
+        if( NOT "${PKG_CONFIG_FOUND}" )
+                if (NOT "${yaml_FIND_QUIETLY}")
+                        message("PkgConfig not found, unable to look for yaml")
+                endif()
+                return()
+        endif()
+        
 	if( NOT "x${yaml_FIND_VERSION}" STREQUAL "x")
 		pkg_search_module(yamlpkg QUIET yaml>=${yaml_FIND_VERSION} yaml-0.1>=${yaml_FIND_VERSION})
-		if ( NOT "${yaml_FOUND}" )
+		if ( NOT "${yamlpkg_FOUND}" )
 			pkg_search_module(yamlpkg QUIET yaml yaml-0.1)
 		endif()
 	else()
-		pkg_search_module(yamlpkg QUIET yaml yaml-0.1)
-	endif()
-	
-	if ( "${yamlpkg_FOUND}" AND "${yamlpkg_VERSION}" VERSION_GREATER "0${yaml_FIND_VERSION}" )
-		find_library (yaml_LIBRARIES NAMES ${yamlpkg_LIBRARIES}
-			HINTS ${yamlpkg_LIBRARY_DIRS}
-			PATH_SUFFIXES lib
+                pkg_search_module(yamlpkg QUIET yaml yaml-0.1)
+        endif()
+        
+        if ( "${yamlpkg_FOUND}" AND NOT "0${yaml_FIND_VERSION}" VERSION_GREATER "0${yamlpkg_VERSION}" )
+                find_library (yaml_LIBRARIES NAMES ${yamlpkg_LIBRARIES}
+                        HINTS ${yamlpkg_LIBRARY_DIRS}
+                        PATH_SUFFIXES lib
 		)
 		if ( EXISTS "${yaml_LIBRARIES}" )
 			add_library(yaml SHARED IMPORTED GLOBAL)
@@ -72,10 +77,7 @@ function(_yaml_Find_Pkgconfig)
 			mark_as_advanced(yaml_INCLUDE_DIRS yaml_LIBRARIES)
 			if("${yamlpkg_VERSION}" VERSION_GREATER 0)
 				set(yaml_VERSION "${yamlpkg_VERSION}" PARENT_SCOPE)
-			elseif("${yamlpkg_yaml_VERSION}" VERSION_GREATER 0)
-				set(yaml_VERSION "${yamlpkg_yaml_VERSION}" PARENT_SCOPE)
-			elseif("${yamlpkg_yaml-0.1_VERSION}" VERSION_GREATER 0)
-				set(yaml_VERSION "${yamlpkg_yaml-0.1_VERSION}" PARENT_SCOPE)
+				set(yaml_VERSION "${yamlpkg_VERSION}" CACHE STRING "" FORCE)
 			else()
 				unset(yaml_VERSION PARENT_SCOPE)
 			endif()
@@ -90,15 +92,17 @@ if ( NOT TARGET yaml )
  	_yaml_Find_Config()
 endif()
 if ( NOT TARGET yaml )
-	_yaml_Find_Pkgconfig()
+        _yaml_Find_Pkgconfig()
 endif()
-if ( TARGET yaml AND NOT "${yaml_LIBRARIES}" )
-	set(yaml_LIBRARIES yaml)
-endif()
-if ( NOT TARGET yaml )
-	unset(yaml_LIBRARIES CACHE)
-	unset(yaml_LIBRARIES)
-	unset(yaml_FOUND CACHE)
+if ( TARGET yaml )
+        get_target_property(yaml_LIBRARIES yaml IMPORTED_LOCATION)
+        get_target_property(yamlpkg_INCLUDE_DIRS yaml INTERFACE_INCLUDE_DIRECTORIES)
+else()
+        unset(yamlpkg_INCLUDE_DIRS CACHE)
+        unset(yamlpkg_INCLUDE_DIRS)
+        unset(yaml_LIBRARIES CACHE)
+        unset(yaml_LIBRARIES)
+        unset(yaml_FOUND CACHE)
 	unset(yaml_FOUND)
 endif()
 
