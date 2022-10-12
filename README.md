@@ -39,7 +39,7 @@ The paraconf distribution depends on:
   * cmake, version >= 3.5
   * a C-99 compiler (gcc-5.4 is tested)
   * a POSIX compatible OS (linux with GNU libc-2.27 is tested)
-  * [libyaml](https://pyyaml.org/wiki/LibYAML) (distributed with Paraconf
+  * [libyaml](https://pyyaml.org/wiki/LibYAML) (included in Paraconf
     distribution)
 
 Paraconf Fortran support depends on:

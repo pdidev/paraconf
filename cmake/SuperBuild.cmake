@@ -24,6 +24,11 @@
 
 cmake_minimum_required(VERSION 3.5)
 
+cmake_policy(PUSH)
+if(POLICY CMP0114)
+	cmake_policy(SET CMP0114 OLD)
+endif()
+
 include(GNUInstallDirs)
 include(ExternalProject)
 
@@ -358,3 +363,5 @@ endif()
 ## Installation
 
 install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/staging/" DESTINATION "." USE_SOURCE_PERMISSIONS)
+
+cmake_policy(POP)
