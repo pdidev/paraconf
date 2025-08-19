@@ -169,21 +169,6 @@ For example:
    generate_export_header(somelib PREFIX_NAME VTK_)
 
 Generates the macros ``VTK_SOMELIB_EXPORT`` etc.
-
-::
-
-   ADD_COMPILER_EXPORT_FLAGS( [<output_variable>] )
-
-The ``ADD_COMPILER_EXPORT_FLAGS`` function adds ``-fvisibility=hidden`` to
-:variable:`CMAKE_CXX_FLAGS <CMAKE_<LANG>_FLAGS>` if supported, and is a no-op
-on Windows which does not need extra compiler flags for exporting support.
-You may optionally pass a single argument to ``ADD_COMPILER_EXPORT_FLAGS``
-that will be populated with the ``CXX_FLAGS`` required to enable visibility
-support for the compiler/architecture in use.
-
-This function is deprecated.  Set the target properties
-:prop_tgt:`CXX_VISIBILITY_PRESET <<LANG>_VISIBILITY_PRESET>` and
-:prop_tgt:`VISIBILITY_INLINES_HIDDEN` instead.
 #]=======================================================================]
 
 include(CheckCCompilerFlag)
@@ -408,36 +393,4 @@ function(GENERATE_EXPORT_HEADER TARGET_LIBRARY)
   _test_compiler_has_deprecated()
   _do_set_macro_values(${TARGET_LIBRARY})
   _do_generate_export_header(${TARGET_LIBRARY} ${ARGN})
-endfunction()
-
-function(add_compiler_export_flags)
-  if(NOT CMAKE_MINIMUM_REQUIRED_VERSION VERSION_LESS 2.8.12)
-    message(DEPRECATION "The add_compiler_export_flags function is obsolete. Use the CXX_VISIBILITY_PRESET and VISIBILITY_INLINES_HIDDEN target properties instead.")
-  endif()
-
-  _test_compiler_hidden_visibility()
-  _test_compiler_has_deprecated()
-
-  option(USE_COMPILER_HIDDEN_VISIBILITY
-    "Use HIDDEN visibility support if available." ON)
-  mark_as_advanced(USE_COMPILER_HIDDEN_VISIBILITY)
-  if(NOT (USE_COMPILER_HIDDEN_VISIBILITY AND COMPILER_HAS_HIDDEN_VISIBILITY))
-    # Just return if there are no flags to add.
-    return()
-  endif()
-
-  set (EXTRA_FLAGS "-fvisibility=hidden")
-
-  if(COMPILER_HAS_HIDDEN_INLINE_VISIBILITY)
-    set (EXTRA_FLAGS "${EXTRA_FLAGS} -fvisibility-inlines-hidden")
-  endif()
-
-  # Either return the extra flags needed in the supplied argument, or to the
-  # CMAKE_CXX_FLAGS if no argument is supplied.
-  if(ARGC GREATER 0)
-    set(${ARGV0} "${EXTRA_FLAGS}" PARENT_SCOPE)
-  else()
-    string(APPEND CMAKE_CXX_FLAGS " ${EXTRA_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
-  endif()
 endfunction()

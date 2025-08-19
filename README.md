@@ -36,7 +36,7 @@ somewhere else than in `/usr/`.
 ## Prerequisites
 
 The paraconf distribution depends on:
-  * cmake, version >= 3.5
+  * cmake, version >= 3.10
   * a C-99 compiler (gcc-5.4 is tested)
   * a POSIX compatible OS (linux with GNU libc-2.27 is tested)
   * [libyaml](https://pyyaml.org/wiki/LibYAML) (included in Paraconf
