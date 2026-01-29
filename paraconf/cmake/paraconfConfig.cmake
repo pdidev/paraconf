@@ -22,7 +22,8 @@
 # THE SOFTWARE.
 ################################################################################
 
-cmake_minimum_required(VERSION 3.10)
+cmake_policy(PUSH)
+cmake_policy(VERSION 3.22...4.2)
 list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}")
 
 include(CMakeFindDependencyMacro)
@@ -80,3 +81,5 @@ endforeach()
 
 unset(_paraconf_FIND_QUIETLY_OPTIONAL)
 unset(_paraconf_ONE_COMPONENT)
+
+cmake_policy(POP)

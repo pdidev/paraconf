@@ -27,7 +27,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #=============================================================================
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.22...4.2)
 project(paraconf LANGUAGES C)
 list(APPEND CMAKE_MODULE_PATH "${PDI_SOURCE_DIR}/cmake")
 
