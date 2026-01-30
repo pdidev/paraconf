@@ -1,136 +1,163 @@
-#=============================================================================
-# Copyright (C) 2015-2019 Commissariat a l'energie atomique et aux energies alternatives (CEA)
+# Copyright (C) The Paraconf development team, see COPYRIGHT.md file at the
+#               root of the project or at https://github.com/pdidev/paraconf
 #
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-# * Redistributions of source code must retain the above copyright notice,
-#   this list of conditions and the following disclaimer.
-# * Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-# * Neither the names of CEA, nor the names of the contributors may be used to
-#   endorse or promote products derived from this software without specific
-#   prior written  permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#=============================================================================
-
-
-
-### Project header
+# SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.22...4.2)
-project(PARACONF_DISTRIB LANGUAGES C CXX)
+project(paraconf LANGUAGES C)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 
+# Includes
 
-### Build options
-
-## Global options
-
-set(DIST_PROFILE "User" CACHE STRING "Profile to use for PDI distribution build. Options are: User, Devel")
-set_property(CACHE DIST_PROFILE PROPERTY STRINGS User Devel)
-
-if("Devel" STREQUAL "${DIST_PROFILE}")
-	set(DEFAULT_BUILD_TYPE "Debug")
-	option(BUILD_TESTING   "Build tests" ON)
-elseif("User" STREQUAL "${DIST_PROFILE}")
-	set(DEFAULT_BUILD_TYPE "Release")
-	option(BUILD_TESTING   "Build tests" OFF)
-else()
-	message(FATAL_ERROR "DIST_PROFILE should be set to one of: User, Devel")
-endif()
-
-set(USE_DEFAULT AUTO CACHE STRING "Default version of libraries to use; this can be 1) EMBEDDED to use the provided version, 2) SYSTEM to use an already installed version (you can use CMAKE_PREFIX_PATH to specify where to look, or 3) AUTO to use SYSTEM if available and EMBEDDED otherwise")
+include(CTest)
+include(CMakePackageConfigHelpers)
+include(GenerateExportHeader)
+include(GNUInstallDirs)
+set(INSTALL_CMAKEDIR "${CMAKE_INSTALL_DATADIR}/paraconf/cmake" CACHE STRING "installation path for cmake files")
+set(PARACONF_INSTALL_CMAKEDIR "${INSTALL_CMAKEDIR}" CACHE STRING "installation path for cmake files of Paraconf") # not provided by GNUInstallDirs
 
 
-# Modules to build
+# Build options
 
 option(BUILD_SHARED_LIBS "Build shared libraries rather than static ones" ON)
+option(BUILD_EXAMPLE     "Build example" ON)
 option(BUILD_FORTRAN     "Enable Fortran support" ON)
+option(PARACONF_BUILD_EXAMPLE "Build Paraconf example" "${BUILD_EXAMPLE}")
+option(PARACONF_BUILD_FORTRAN "Enable Fortran support in Paraconf" "${BUILD_FORTRAN}")
+option(PARACONF_BUILD_TESTING "Enable Tests in Paraconf" "${BUILD_TESTING}")
 
-
-
-### Default build type
-
-if(NOT "${CMAKE_BUILD_TYPE}")
-	set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose the type of build, options are: None Debug Release(default) RelWithDebInfo MinSizeRel ..." FORCE)
-endif()
-message(STATUS " **Profile**: Distribution profile is: `${DIST_PROFILE}' (-DDIST_PROFILE=${DIST_PROFILE})")
-message(STATUS " **Profile**: Build type is: `${CMAKE_BUILD_TYPE}' (-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})")
-message(STATUS " **Profile**: Prefix path is: `${CMAKE_PREFIX_PATH}' (-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH})")
-message(STATUS " **Profile**: Default use is: `${USE_DEFAULT}' (-DUSE_DEFAULT=${USE_DEFAULT})")
-set(FEATURE_ENABLED "DISABLED")
-if("${BUILD_FORTRAN}")
-	set(FEATURE_ENABLED "ENABLED ")
-endif()
-message(STATUS " **Feature**: ${FEATURE_ENABLED} FORTRAN (-DBUILD_FORTRAN=${BUILD_FORTRAN})")
-set(FEATURE_ENABLED "DISABLED")
-if("${BUILD_TESTING}")
-	set(FEATURE_ENABLED "ENABLED ")
-endif()
-message(STATUS " **Feature**: ${FEATURE_ENABLED} TESTING (-DBUILD_TESTING=${BUILD_TESTING})")
-
-
-
-### Include sub-projects find modules
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/paraconf/cmake")
-
-
-
-### Dependencies
-
-include(GNUInstallDirs)
-include(SuperBuild)
-
-
-## Fortran
-
-if("${ENABLE_FORTRAN}")
+if("${PARACONF_BUILD_FORTRAN}")
 	enable_language(Fortran)
 endif()
 
 
-## Yaml
+# Dependencies
 
-sbuild_add_dependency(yaml "${USE_DEFAULT}"
-	EMBEDDED_PATH "vendor/libyaml-0.2.2.tar"
-	CMAKE_CACHE_ARGS
-		"-DBUILD_TESTING:BOOL=OFF"
-		"-DINSTALL_LIB_DIR:STRING=${CMAKE_INSTALL_LIBDIR}"
-		"-DINSTALL_BIN_DIR:STRING=${CMAKE_INSTALL_BINDIR}"
-		"-DINSTALL_INCLUDE_DIR:STRING=${CMAKE_INSTALL_INCLUDEDIR}"
-		"-DINSTALL_CMAKE_DIR:STRING=share/yaml/cmake"
+find_package(Threads REQUIRED)
+find_package(yaml REQUIRED)
+
+
+# Version
+
+file(READ VERSION paraconf_VERSION)
+string(STRIP "${paraconf_VERSION}" paraconf_VERSION)
+string(REGEX MATCH "([0-9A-Za-z]+)\\.([0-9A-Za-z]+)\\.([0-9A-Za-z]+)(-([0-9A-Za-z]+))?" "\\1;\\2;\\3" "${paraconf_VERSION}")
+set(paraconf_VERSION_MAJOR "${CMAKE_MATCH_1}")
+set(paraconf_VERSION_MINOR "${CMAKE_MATCH_2}")
+set(paraconf_VERSION_PATCH "${CMAKE_MATCH_3}")
+set(paraconf_VERSION_MODIF "${CMAKE_MATCH_5}")
+if("git" STREQUAL "${paraconf_VERSION_MODIF}" OR "alpha" STREQUAL "${paraconf_VERSION_MODIF}")
+	execute_process(COMMAND "${paraconf_SOURCE_DIR}/cmake/version-uid" "${paraconf_VERSION_MODIF}" WORKING_DIRECTORY "${paraconf_SOURCE_DIR}" OUTPUT_VARIABLE paraconf_VERSION_MODIF OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
+set(paraconf_VERSION "${paraconf_VERSION_MAJOR}.${paraconf_VERSION_MINOR}.${paraconf_VERSION_PATCH}${paraconf_VERSION_MODIF}")
+
+
+# Libraries
+
+## C version
+
+add_library(paraconf
+	src/api.c
+	src/status.c
+	src/ypath.c
+)
+generate_export_header(paraconf)
+target_link_libraries(paraconf Threads::Threads yaml)
+target_include_directories(paraconf PUBLIC
+	"$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include/>"
+	"$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/>"
+)
+set_property(TARGET paraconf PROPERTY C_STANDARD 99)
+set_property(TARGET paraconf PROPERTY C_STANDARD_REQUIRED TRUE)
+set_property(TARGET paraconf PROPERTY C_VISIBILITY_PRESET hidden)
+set_property(TARGET paraconf PROPERTY VERSION ${paraconf_VERSION})
+set_property(TARGET paraconf PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
+set_property(TARGET paraconf PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
+set_property(TARGET paraconf APPEND PROPERTY COMPATIBLE_INTERFACE_STRING paraconf_MAJOR_VERSION)
+add_library(paraconf::paraconf ALIAS paraconf)
+install(TARGETS paraconf EXPORT PC_export
+	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Development
+	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Runtime NAMELINK_COMPONENT Development
+	INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+install(FILES include/paraconf.h "${paraconf_BINARY_DIR}/paraconf_export.h"
+	DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+	COMPONENT Development
 )
 
 
+## Fortran version
 
-### Own modules
+if("${PARACONF_BUILD_FORTRAN}")
+	add_library(paraconf_f90 src/fortran/paraconf.f90)
+	target_link_libraries(paraconf_f90 PUBLIC paraconf)
+	target_include_directories(paraconf_f90
+		PUBLIC "$<BUILD_INTERFACE:${paraconf_SOURCE_DIR}/include>"
+		INTERFACE "$<BUILD_INTERFACE:${paraconf_BINARY_DIR}/fmoddir/>")
+	set_property(TARGET paraconf_f90 PROPERTY VERSION ${paraconf_VERSION})
+	set_property(TARGET paraconf_f90 PROPERTY SOVERSION ${paraconf_VERSION_MAJOR})
+	set_property(TARGET paraconf_f90 PROPERTY paraconf_MAJOR_VERSION ${paraconf_VERSION_MAJOR})
+	set_property(TARGET paraconf_f90 PROPERTY Fortran_MODULE_DIRECTORY "${paraconf_BINARY_DIR}/fmoddir/")
+	add_library(paraconf::paraconf_f90 ALIAS paraconf_f90)
+	
+	# Expect compilers to provide compatible modules at the minor release level at least
+	string(REGEX REPLACE "^([0-9]*\\.[0-9]*)\\..*$" "\\1" Fortran_COMPILER_MINOR_VERSION "${CMAKE_Fortran_COMPILER_VERSION}")
+	set(INSTALL_FMODDIR
+		"${CMAKE_INSTALL_LIBDIR}/paraconf/finclude/${CMAKE_Fortran_COMPILER_ID}-${Fortran_COMPILER_MINOR_VERSION}"
+		CACHE PATH
+		"Fortran module directory (LIBDIR/paraconf/finclude/${CMAKE_Fortran_COMPILER_ID}-${Fortran_COMPILER_MINOR_VERSION})")
+	install(TARGETS paraconf_f90 EXPORT PC_export
+		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Development
+		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Runtime NAMELINK_COMPONENT Development
+		INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" "${INSTALL_FMODDIR}"
+	)
+	install(DIRECTORY "${paraconf_BINARY_DIR}/fmoddir/"
+		DESTINATION "${INSTALL_FMODDIR}"
+		COMPONENT Development
+	)
+	install(FILES
+		include/paraconf.F90
+		include/paraconff.h
+		include/paraconf_f90_types.h
+		include/paraconf_f90.h
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+		COMPONENT Development
+	)
+endif()
 
-sbuild_add_module(PARACONF
-	SOURCE_DIR "${PARACONF_DISTRIB_SOURCE_DIR}/paraconf"
-	DEPENDS yaml
-	SUBSTEPS test
+
+# Example
+
+if("${PARACONF_BUILD_EXAMPLE}")
+	add_subdirectory(example)
+endif()
+
+
+# Tests
+
+if("${PARACONF_BUILD_TESTING}")
+	add_subdirectory(tests)
+endif()
+
+
+# Installable config
+
+write_basic_package_version_file("${paraconf_BINARY_DIR}/paraconfConfigVersion.cmake"
+	VERSION "${paraconf_VERSION}"
+	COMPATIBILITY AnyNewerVersion
 )
-
-
-sbuild_add_module(EXAMPLE
-	ENABLE_BUILD "${BUILD_TESTING}"
-	SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/example"
-	DEPENDS PARACONF
-	NO_INSTALL
-	SUBSTEPS test
+install(EXPORT PC_export
+	NAMESPACE "paraconf::"
+	DESTINATION "${PARACONF_INSTALL_CMAKEDIR}"
+	FILE paraconf.cmake
+	COMPONENT Development
+)
+install(FILES
+	cmake/paraconfConfig.cmake
+	cmake/Findyaml.cmake
+	"${paraconf_BINARY_DIR}/paraconfConfigVersion.cmake"
+	DESTINATION "${PARACONF_INSTALL_CMAKEDIR}"
+	COMPONENT Development
 )
