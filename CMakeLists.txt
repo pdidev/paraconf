@@ -15,26 +15,29 @@ include(CTest)
 include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(GNUInstallDirs)
-set(INSTALL_CMAKEDIR "${CMAKE_INSTALL_DATADIR}/paraconf/cmake" CACHE STRING "installation path for cmake files")
-set(PARACONF_INSTALL_CMAKEDIR "${INSTALL_CMAKEDIR}" CACHE STRING "installation path for cmake files of Paraconf") # not provided by GNUInstallDirs
 
 
 # Build options
-
-option(BUILD_SHARED_LIBS "Build shared libraries rather than static ones" ON)
-option(BUILD_EXAMPLE     "Build example" ON)
-option(BUILD_FORTRAN     "Enable Fortran support" ON)
-option(PARACONF_BUILD_EXAMPLE "Build Paraconf example" "${BUILD_EXAMPLE}")
-option(PARACONF_BUILD_FORTRAN "Enable Fortran support in Paraconf" "${BUILD_FORTRAN}")
-option(PARACONF_BUILD_TESTING "Enable Tests in Paraconf" "${BUILD_TESTING}")
-
-if("${PARACONF_BUILD_FORTRAN}")
-	enable_language(Fortran)
+if(DEFINED BUILD_EXAMPLE) # Use the non-namespaced BUILD_EXAMPLE as default if provided
+	option(PARACONF_BUILD_EXAMPLE    "Build Paraconf example" "${BUILD_EXAMPLE}")
 endif()
+option(BUILD_SHARED_LIBS "Build shared libraries rather than static ones" ON)
+option(BUILD_EXAMPLE     "Build example" "${BUILD_TESTING}")
+option(BUILD_FORTRAN     "Enable Fortran support" ON)
+set(   INSTALL_CMAKEDIR  "${CMAKE_INSTALL_DATADIR}/paraconf/cmake" CACHE STRING "installation path for cmake files")
+option(PARACONF_BUILD_FORTRAN    "Enable Fortran support in Paraconf" "${BUILD_FORTRAN}")
+option(PARACONF_BUILD_TESTING    "Enable Tests in Paraconf" "${BUILD_TESTING}")
+#else(NOT DEFINED BUILD_EXAMPLE) fallback to PARACONF_BUILD_TESTING as default
+option(PARACONF_BUILD_EXAMPLE    "Build Paraconf example" "${PARACONF_BUILD_TESTING}")
+#endif()
+set(   PARACONF_INSTALL_CMAKEDIR "${INSTALL_CMAKEDIR}" CACHE STRING "installation path for cmake files of Paraconf") # not provided by GNUInstallDirs
 
 
 # Dependencies
 
+if("${PARACONF_BUILD_FORTRAN}")
+	enable_language(Fortran)
+endif()
 find_package(Threads REQUIRED)
 find_package(yaml REQUIRED)
 
