@@ -9,6 +9,6 @@
 
 #include "paraconf.h"
 
-PC_tree_t PARACONF_EXPORT PC_sget(PC_tree_t tree, const char *index);
+PC_tree_t PARACONF_EXPORT PC_sget(PC_tree_t tree, const char* index);
 
 #endif // YPATH_H__

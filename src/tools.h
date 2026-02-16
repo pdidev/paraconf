@@ -8,8 +8,8 @@
 #define TOOLS_H__
 
 #include <assert.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "paraconf.h"
 
@@ -20,11 +20,11 @@ static inline PC_tree_t subtree(PC_tree_t tree, int key)
 	return tree;
 }
 
-static inline int strlzcmp(const char *lstr, const char *zstr, size_t lstr_size)
+static inline int strlzcmp(const char* lstr, const char* zstr, size_t lstr_size)
 {
 	int res = strncmp(lstr, zstr, lstr_size);
-	if ( res ) return res;
-	if ( zstr[lstr_size] ) return -1;
+	if (res) return res;
+	if (zstr[lstr_size]) return -1;
 	return res;
 }
 
