@@ -12,6 +12,7 @@
 #include <yaml.h>
 
 #include "paraconf_export.h"
+#include "paraconf_version.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,6 +56,10 @@ typedef struct PC_errhandler_s {
 
 } PC_errhandler_t;
 
+/** An opaque type describing a yaml document
+ */
+typedef struct PC_document_s PC_document_t;
+
 /** An opaque type describing a yaml tree (possibly a leaf node)
  */
 typedef struct PC_tree_s {
@@ -62,7 +67,7 @@ typedef struct PC_tree_s {
 	PC_status_t status;
 
 	/// The document containing the tree
-	yaml_document_t* document;
+	PC_document_t* pcdoc;
 
 	/// the node inside the tree
 	yaml_node_t* node;
@@ -87,8 +92,27 @@ static inline PC_status_t PC_status(PC_tree_t tree)
 }
 
 /** Return a human-readabe message describing the last error that occured in paraconf
+ *
+ * \return a human-readabe message describing the last error that occured in paraconf
  */
 char PARACONF_EXPORT* PC_errmsg();
+
+/** Return the version of paraconf
+ *
+ * The version is returned as a 64 bit integer where:
+ * - the 16 upper bits represent the major revision number
+ * - the 16 following bits represent the minor revision number
+ * - the 16 following bits represent the patch revision number
+ * - the 16 lower bits can represent a variant such as pre-release
+ *   - 0 for a normal release
+ *   - number of days since Jan. 01 2015 for a git revision
+ *   - 65532 (2^16-24) + alpha number for an alpha release
+ *   - 65532 (2^16-16) + beta number for a beta release
+ *   - 65532 (2^16-8) + rc-number for a release candidate
+ *
+ * \return the version of paraconf
+ */
+uint64_t PARACONF_EXPORT PC_version();
 
 /** Sets the error handler to use
  *
@@ -141,6 +165,11 @@ PC_tree_t PARACONF_EXPORT PC_parse_string(const char* document);
  * \return the tree, valid as long as the containing document is
  */
 PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
+
+/** Returns the path of the file from which the document was loaded
+ * (or `\<string\>' if this was not loaded from a file)
+ */
+const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
 
 /** Looks for a node in a yaml document given a ypath index
  *

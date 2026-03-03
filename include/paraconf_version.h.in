@@ -1,0 +1,43 @@
+/* Copyright (C) The Paraconf development team, see COPYRIGHT.md file at the
+ *               root of the project or at https://github.com/pdidev/paraconf
+ * 
+ * SPDX-License-Identifier: MIT
+ */
+
+#ifndef PARACONF_VERSION_H__
+#define PARACONF_VERSION_H__
+
+#include <stdint.h>
+
+// clang-format off
+/// paraconf major revision number
+#define PARACONF_VERSION_MAJOR @paraconf_VERSION_MAJOR@
+/// paraconf minor revision number
+#define PARACONF_VERSION_MINOR @paraconf_VERSION_MINOR@
+/// paraconf patch revision number
+#define PARACONF_VERSION_PATCH @paraconf_VERSION_PATCH@
+/** paraconf version variant, such as pre-release
+ * - 0 for a normal release
+ * - number of days since Jan. 01 2015 for a git revision
+ * - 65532 (2^16-24) + alpha number for an alpha release
+ * - 65532 (2^16-16) + beta number for a beta release
+ * - 65532 (2^16-8) + rc-number for a release candidate
+ */
+#define PARACONF_VERSION_VARIANT @paraconf_VERSION_VARIANT@
+// clang-format on
+/** The version of paraconf as a 64 bit integer where:
+ * - the 16 upper bits represent the major revision number
+ * - the 16 following bits represent the minor revision number
+ * - the 16 following bits represent the patch revision number
+ * - the 16 lower bits can represent a variant such as pre-release
+ *   - 0 for a normal release
+ *   - number of days since Jan. 01 2015 for a git revision
+ *   - 65512 (2^16-24) + alpha number for an alpha release
+ *   - 65520 (2^16-16) + beta number for a beta release
+ *   - 65528 (2^16-8) + rc-number for a release candidate
+ */
+#define PARACONF_VERSION                                                                                                                             \
+	((((uint64_t)(PARACONF_VERSION_MAJOR)) << 48) | (((uint64_t)(PARACONF_VERSION_MINOR)) << 32) | (((uint64_t)(PARACONF_VERSION_PATCH)) << 16)      \
+	 | ((uint64_t)(PARACONF_VERSION_VARIANT)))
+
+#endif // PARACONF_VERSION_H__

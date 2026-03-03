@@ -12,10 +12,11 @@
 #include <string.h>
 
 #include "paraconf.h"
+#include "ypath.h"
 
 static inline PC_tree_t subtree(PC_tree_t tree, int key)
 {
-	tree.node = yaml_document_get_node(tree.document, key);
+	tree.node = yaml_document_get_node(&tree.pcdoc->document, key);
 	assert(tree.node);
 	return tree;
 }

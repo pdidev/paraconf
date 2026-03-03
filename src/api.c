@@ -22,6 +22,27 @@
 
 static const char* nodetype[4] = {"none", "scalar", "sequence", "mapping"};
 
+static const char* PC_NO_PATH = "<string>";
+
+static inline void pc_path_free(const char* path)
+{
+	if (path != PC_NO_PATH) free((void*)path);
+}
+
+static inline void pc_set_path(PC_tree_t tree, const char* path)
+{
+	pc_path_free(tree.pcdoc->path);
+	size_t pathlen = strlen(path);
+	char* pathcpy = malloc((pathlen + 1) * sizeof(char));
+	strncpy(pathcpy, path, pathlen);
+	tree.pcdoc->path = pathcpy;
+}
+
+uint64_t PC_version()
+{
+	return PARACONF_VERSION;
+}
+
 PC_tree_t PC_parse_path(const char* path)
 {
 	PC_tree_t restree = {PC_OK, NULL, NULL};
@@ -41,6 +62,7 @@ PC_tree_t PC_parse_path(const char* path)
 	}
 
 	fclose(conf_file);
+	pc_set_path(restree, path);
 	return restree;
 
 err1:
@@ -169,8 +191,15 @@ err0:
 
 PC_tree_t PC_root(yaml_document_t* document)
 {
-	PC_tree_t restree = {PC_OK, document, yaml_document_get_root_node(document)};
+	PC_tree_t restree = {PC_OK, malloc(sizeof(PC_document_t)), yaml_document_get_root_node(document)};
+	PC_document_t pcdoc = {*document, PC_NO_PATH};
+	*restree.pcdoc = pcdoc;
 	return restree;
+}
+
+const char* PC_path(PC_tree_t tree)
+{
+	return tree.pcdoc->path;
 }
 
 PC_tree_t PC_get(const PC_tree_t tree, const char* index_fmt, ...)
@@ -364,8 +393,11 @@ err0:
 
 PC_status_t PC_tree_destroy(PC_tree_t* tree)
 {
-	yaml_document_delete(tree->document);
-	free(tree->document);
+	yaml_document_delete(&tree->pcdoc->document);
+	pc_path_free(tree->pcdoc->path);
+	tree->pcdoc->path = NULL;
+	free(tree->pcdoc);
+	tree->pcdoc = NULL;
 	tree->node = NULL;
 	return tree->status;
 }
