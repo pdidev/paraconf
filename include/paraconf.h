@@ -7,8 +7,8 @@
 #ifndef PARACONF_H__
 #define PARACONF_H__
 
-#include <string.h>
 #include <stdarg.h>
+#include <string.h>
 #include <yaml.h>
 
 #include "paraconf_export.h"
@@ -24,7 +24,7 @@ extern "C" {
  */
 typedef enum PC_status_e {
 	/// no error
-	PC_OK=0,
+	PC_OK = 0,
 	/// a parameter value is invalid
 	PC_INVALID_PARAMETER,
 	/// unexpected type found for a node
@@ -42,30 +42,28 @@ typedef enum PC_status_e {
  * \param message the human-readable error message
  * \param context a user-provided context
  */
-typedef void (*PC_errfunc_f)(PC_status_t status, const char *message, void *context);
+typedef void (*PC_errfunc_f)(PC_status_t status, const char* message, void* context);
 
 /** Definition of an error handler
  */
-typedef struct PC_errhandler_s
-{
+typedef struct PC_errhandler_s {
 	/// The function to handle the error (none if NULL)
 	PC_errfunc_f func;
-	
+
 	/// the context that will be provided to the function
-	void *context;
-	
+	void* context;
+
 } PC_errhandler_t;
 
 /** An opaque type describing a yaml tree (possibly a leaf node)
  */
-typedef struct PC_tree_s
-{
+typedef struct PC_tree_s {
 	/// The tree status
 	PC_status_t status;
-	
+
 	/// The document containing the tree
 	yaml_document_t* document;
-	
+
 	/// the node inside the tree
 	yaml_node_t* node;
 
@@ -83,11 +81,14 @@ extern const PARACONF_EXPORT PC_errhandler_t PC_NULL_HANDLER;
  * \param tree the tree to check
  * \return the status
  */
-static inline PC_status_t PC_status(PC_tree_t tree) { return tree.status; }
+static inline PC_status_t PC_status(PC_tree_t tree)
+{
+	return tree.status;
+}
 
 /** Return a human-readabe message describing the last error that occured in paraconf
  */
-char PARACONF_EXPORT *PC_errmsg();
+char PARACONF_EXPORT* PC_errmsg();
 
 /** Sets the error handler to use
  *
@@ -108,7 +109,7 @@ PC_errhandler_t PARACONF_EXPORT PC_errhandler(PC_errhandler_t handler);
  * \param[in] path the file path as a character string
  * \return the tree, valid as long as the containing document is
  */
-PC_tree_t PARACONF_EXPORT PC_parse_path(const char *path);
+PC_tree_t PARACONF_EXPORT PC_parse_path(const char* path);
 
 /** Returns the tree as found in an already open file
  *
@@ -120,7 +121,7 @@ PC_tree_t PARACONF_EXPORT PC_parse_path(const char *path);
  * \param[in] file the file containing the tree
  * \return the tree, valid as long as the containing document is
  */
-PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
+PC_tree_t PARACONF_EXPORT PC_parse_file(FILE* file);
 
 /** Returns the tree contained in a character string
  *
@@ -132,7 +133,7 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE *file);
  * \param[in] document the document as a character string to parse
  * \return the tree, valid as long as the containing document is
  */
-PC_tree_t PARACONF_EXPORT PC_parse_string(const char *document);
+PC_tree_t PARACONF_EXPORT PC_parse_string(const char* document);
 
 /** Returns the tree at the root of a document
  *
@@ -161,7 +162,7 @@ PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
  * \param[in] ... the printf-style values
  * \return the subtree corresponding to the ypath index
  */
-PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char *index_fmt, ...);
+PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char* index_fmt, ...);
 
 /** Looks for a node in a yaml document given a ypath index
  *
@@ -172,7 +173,7 @@ PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char *index_fmt, ...);
  * \param[in] va the printf-style values
  * \return the subtree corresponding to the ypath index
  */
-PC_tree_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char *index_fmt, va_list va);
+PC_tree_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char* index_fmt, va_list va);
 
 /** Returns the length of a node, for a sequence, the number of nodes, for a mapping, the number of pairs, for a scalar, the string length
  *
@@ -182,7 +183,7 @@ PC_tree_t PARACONF_EXPORT PC_vget(PC_tree_t tree, const char *index_fmt, va_list
  * \param[out] value the length
  * \return the status of the execution
  */
-PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int *value);
+PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int* value);
 
 /** Returns the int value of a scalar node
  *
@@ -192,7 +193,7 @@ PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int *value);
  * \param[out] value the int value of the scalar node
  * \return the status of the execution
  */
-PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, long *value);
+PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, long* value);
 
 /** Returns the floating point value of a scalar node
  *
@@ -202,7 +203,7 @@ PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, long *value);
  * \param[out] value the floating point value of the scalar node
  * \return the status of the execution
  */
-PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double *value);
+PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double* value);
 
 /** Returns the string content of a scalar node
  *
@@ -212,7 +213,7 @@ PC_status_t PARACONF_EXPORT PC_double(PC_tree_t tree, double *value);
  * \param[out] value the content of the scalar node as a newly allocated string that must be deallocated using free
  * \return the status of the execution
  */
-PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
+PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char** value);
 
 /** Returns the boolean value of a scalar node
  *
@@ -222,7 +223,7 @@ PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char **value);
  * \param[out] value the logical value (false=0, true=1) of the scalar node
  * \return the status of the execution
  */
-PC_status_t PARACONF_EXPORT PC_bool(PC_tree_t tree, int *value);
+PC_status_t PARACONF_EXPORT PC_bool(PC_tree_t tree, int* value);
 
 /** Destroy the tree.
  * All the trees referring to this tree will become unusable
