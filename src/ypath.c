@@ -108,8 +108,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 			err0
 		);
 	}
-	restree.node = yaml_document_get_node(&tree.pcdoc->document, *(tree.node->data.sequence.items.start + seq_idx));
-	assert(tree.node);
+	restree = subtree(tree, *(tree.node->data.sequence.items.start + seq_idx));
 
 	*req_index = index;
 	return restree;
@@ -186,8 +185,7 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 			err0
 		);
 	}
-	restree.node = yaml_document_get_node(&tree.pcdoc->document, pair->value);
-	assert(tree.node);
+	restree = subtree(tree, pair->value);
 
 	*req_index = index;
 	return restree;
@@ -249,7 +247,6 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 		);
 	}
 	*pair = tree.node->data.mapping.pairs.start + map_idx;
-	assert(*pair);
 
 	*req_index = index;
 	return status;
@@ -300,8 +297,7 @@ static PC_tree_t get_map_idx_key(const PC_tree_t tree, const char** req_index, c
 	++index;
 
 	// handle pair
-	restree.node = yaml_document_get_node(&tree.pcdoc->document, pair->key);
-	assert(tree.node);
+	restree = subtree(tree, pair->key);
 
 	*req_index = index;
 	return restree;
@@ -352,8 +348,7 @@ static PC_tree_t get_map_idx_val(const PC_tree_t tree, const char** req_index, c
 	++index;
 
 	// handle pair
-	restree.node = yaml_document_get_node(&tree.pcdoc->document, pair->value);
-	assert(tree.node);
+	restree = subtree(tree, pair->value);
 
 	*req_index = index;
 	return restree;
