@@ -186,11 +186,11 @@ const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
  * A ypath expression can contain the following
  * * access to a mapping element using the dot syntax:
  *   e.g. .map.key
- * * access to a sequence element using square brackets (indices are 0-based):
+ * * access to a sequence element using square brackets (decimal indices, 0-based):
  *   e.g. .seq[1]
- * * access to a mapping element key using braces (indices are 0-based):
+ * * access to a mapping element key using braces (decimal indices, 0-based):
  *   e.g. .map{1}
- * * access to a mapping element value by index using chevrons:
+ * * access to a mapping element value by index using chevrons (decimal indices, 0-based):
  *   e.g. .map<1>
  *   PC_get(0,map,"<1>"); is similar to k=PC_get(0,map,"{1}"); PC_get(0,map,".%s",k);
  *

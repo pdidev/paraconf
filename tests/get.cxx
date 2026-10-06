@@ -141,6 +141,21 @@ TEST_F(Get, printf_style_format)
 	EXPECT_EQ(21, get_int(PC_get(tree, ".map<%d>", 1), ""));
 }
 
+TEST_F(Get, index_is_decimal_even_with_leading_zeros)
+{
+	// zero-padded, as a format such as "[%02d]" builds them, the indices are still decimal, not octal
+	PC_tree_t steps = parse("[s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11]");
+	EXPECT_EQ("s8", get_string(steps, "[08]"));
+	EXPECT_EQ("s9", get_string(PC_get(steps, "[%02d]", 9), ""));
+	EXPECT_EQ("s10", get_string(steps, "[010]"));
+	PC_tree_t numbers = parse("{n0: 0, n1: 1, n2: 2, n3: 3, n4: 4, n5: 5, n6: 6, n7: 7, n8: 8, n9: 9, n10: 10}");
+	EXPECT_EQ("n8", get_string(numbers, "{08}"));
+	EXPECT_EQ(10, get_int(numbers, "<010>"));
+	// nor hexadecimal
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(steps, "[0x1]")));
+	expect_error(PC_INVALID_PARAMETER, "[0x1]");
+}
+
 TEST_F(Get, format_that_fails_to_format)
 {
 	// in the C locale, which the tests run in, a wide character outside ASCII has no multibyte form, so the formatting fails

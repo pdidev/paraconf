@@ -50,7 +50,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 
 	// read int
 	char* post_index;
-	long seq_idx = strtol(index, &post_index, 0);
+	long seq_idx = strtol(index, &post_index, 10);
 	if (post_index == index) {
 		PC_handle_err_tree(
 			PC_make_err(
@@ -205,7 +205,7 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 
 	// read int
 	char* post_index;
-	long map_idx = strtol(index, &post_index, 0);
+	long map_idx = strtol(index, &post_index, 10);
 	if (post_index == index) {
 		PC_handle_err(
 			PC_make_err(
