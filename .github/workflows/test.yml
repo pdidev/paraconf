@@ -27,6 +27,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Build
+        env: # run the tests under AddressSanitizer, which also reports leaks
+          CFLAGS: -fsanitize=address -fno-omit-frame-pointer
+          CXXFLAGS: -fsanitize=address -fno-omit-frame-pointer
+          FFLAGS: -fsanitize=address -fno-omit-frame-pointer
+          LDFLAGS: -fsanitize=address
         run: |
           cmake -B build -S .
           cmake --build build

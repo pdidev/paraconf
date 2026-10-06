@@ -41,6 +41,7 @@ static void assert_status(PC_status_t status, const char* message, void* context
  */
 static void context_destroy(void* context)
 {
+	free(((errctx_t*)context)->buffer);
 	free(context);
 }
 

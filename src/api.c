@@ -83,12 +83,8 @@ PC_tree_t PC_parse_string(const char* document)
 
 	yaml_parser_set_input_string(&conf_parser, (const unsigned char*)document, strlen(document));
 
-	yaml_document_t* conf_doc = malloc(sizeof(yaml_document_t));
-	if (!conf_doc) {
-		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to allocate memory"), err1);
-	}
-
-	if (!yaml_parser_load(&conf_parser, conf_doc)) {
+	yaml_document_t conf_doc;
+	if (!yaml_parser_load(&conf_parser, &conf_doc)) {
 		if (conf_parser.context) {
 			PC_handle_err_tree(
 				PC_make_err(
@@ -119,7 +115,7 @@ PC_tree_t PC_parse_string(const char* document)
 
 	yaml_parser_delete(&conf_parser);
 
-	restree = PC_root(conf_doc);
+	restree = PC_root(&conf_doc);
 
 	PC_handle_tree(err0);
 
@@ -141,12 +137,8 @@ PC_tree_t PC_parse_file(FILE* conf_file)
 
 	yaml_parser_set_input_file(&conf_parser, conf_file);
 
-	yaml_document_t* conf_doc = malloc(sizeof(yaml_document_t));
-	if (!conf_doc) {
-		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to allocate memory"), err1);
-	}
-
-	if (!yaml_parser_load(&conf_parser, conf_doc)) {
+	yaml_document_t conf_doc;
+	if (!yaml_parser_load(&conf_parser, &conf_doc)) {
 		if (conf_parser.context) {
 			PC_handle_err_tree(
 				PC_make_err(
@@ -177,11 +169,9 @@ PC_tree_t PC_parse_file(FILE* conf_file)
 
 	yaml_parser_delete(&conf_parser);
 
-	restree = PC_root(conf_doc);
+	restree = PC_root(&conf_doc);
 
 	PC_handle_tree(err0);
-
-
 
 	return restree;
 err1:
