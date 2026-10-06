@@ -17,6 +17,15 @@
 
 static const char* nodetype[4] = {"none", "scalar", "sequence", "mapping"};
 
+/** The part of a message describing what was found at a position of a request: the character there, quoted, or the end of the request
+ *
+ * It takes the arguments PC_FOUND_ARGS gives for the position: %.1s prints nothing at the terminating NUL, where %c would cut the message short.
+ */
+#define PC_FOUND_FMT "%s%.1s%s"
+
+/// The arguments of PC_FOUND_FMT for a position of a request
+#define PC_FOUND_ARGS(position) (*(position) ? "`" : "the end of the request"), (position), (*(position) ? "'" : "")
+
 static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const char* full_index)
 {
 	PC_tree_t restree = tree;
@@ -29,10 +38,10 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `[' at char #%ld of `%s', but found `%c'\n",
+				"Expected `[' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -46,10 +55,10 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected integer at char #%ld of `%s', but found `%c'\n",
+				"Expected integer at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -61,10 +70,10 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `]' at char #%ld of `%s', but found `%c'\n",
+				"Expected `]' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -121,10 +130,10 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `.' at char #%ld of `%s', but found `%c'\n",
+				"Expected `.' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -201,10 +210,10 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 		PC_handle_err(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected an integer at char #%ld of `%s', but found `%c'\n",
+				"Expected an integer at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -261,10 +270,10 @@ static PC_tree_t get_map_idx_key(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `{' at char #%ld of `%s', but found `%c'\n",
+				"Expected `{' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -280,10 +289,10 @@ static PC_tree_t get_map_idx_key(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `}' at char #%ld of `%s', but found `%c'\n",
+				"Expected `}' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -313,10 +322,10 @@ static PC_tree_t get_map_idx_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `<' at char #%ld of `%s', but found `%c'\n",
+				"Expected `<' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -332,10 +341,10 @@ static PC_tree_t get_map_idx_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `>' at char #%ld of `%s', but found `%c'\n",
+				"Expected `>' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 				(long int)(index - full_index),
 				full_index,
-				*index
+				PC_FOUND_ARGS(index)
 			),
 			err0
 		);
@@ -386,10 +395,10 @@ PC_tree_t PC_sget(const PC_tree_t tree, const char* index)
 			PC_handle_err_tree(
 				PC_make_err(
 					PC_INVALID_PARAMETER,
-					"Expected `[', `.', `{' or `<' at char #%ld of `%s', but found `%c'\n",
+					"Expected `[', `.', `{' or `<' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
 					(long int)(index - full_index),
 					full_index,
-					*index
+					PC_FOUND_ARGS(index)
 				),
 				err0
 			);
