@@ -99,18 +99,9 @@ char PARACONF_EXPORT* PC_errmsg();
 
 /** Return the version of paraconf
  *
- * The version is returned as a 64 bit integer where:
- * - the 16 upper bits represent the major revision number
- * - the 16 following bits represent the minor revision number
- * - the 16 following bits represent the patch revision number
- * - the 16 lower bits can represent a variant such as pre-release
- *   - 0 for a normal release
- *   - number of days since Jan. 01 2015 for a git revision
- *   - 65532 (2^16-24) + alpha number for an alpha release
- *   - 65532 (2^16-16) + beta number for a beta release
- *   - 65532 (2^16-8) + rc-number for a release candidate
- *
- * \return the version of paraconf
+ * \return the version of the paraconf library in use, as PARACONF_VERSION gives the one of the headers and PARACONF_COMPUTE_VERSION
+ * computes others: the 16 upper bits are the major revision number, the 16 following bits the minor revision number, the 16 following bits
+ * the patch revision number and the 16 lower bits the variant that orders pre-releases, as PARACONF_VERSION_VARIANT describes it
  */
 uint64_t PARACONF_EXPORT PC_version();
 
