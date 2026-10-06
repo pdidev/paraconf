@@ -32,7 +32,13 @@
 		if (status) goto free_stamp;                                                                                                                 \
 	} while (0)
 
-PC_status_t PC_make_err(PC_status_t status, const char* message, ...);
+
+PC_status_t PC_make_err(PC_status_t status, const char* message, ...)
+#if defined(__GNUC__) || defined(__clang__)
+/// Lets the compiler check the arguments of a printf-like function against its format
+__attribute__((format(printf, 2, 3)))
+#endif
+;
 
 /** Reports a failure to allocate memory, as PC_make_err would do with PC_SYSTEM_ERROR, but without allocating memory
  *

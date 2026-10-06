@@ -199,7 +199,12 @@ const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
  * \param[in] ... the printf-style values
  * \return the subtree corresponding to the ypath index
  */
-PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char* index_fmt, ...);
+PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char* index_fmt, ...)
+#if defined(__GNUC__) || defined(__clang__)
+/// Lets the compiler check the arguments of a printf-like function against its format
+__attribute__((format(printf, 2, 3)))
+#endif
+;
 
 /** Looks for a node in a yaml document given a ypath index
  *

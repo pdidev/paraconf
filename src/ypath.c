@@ -178,7 +178,7 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 			PC_make_err(
 				PC_NODE_NOT_FOUND,
 				"Key `%.*s' not found in mapping (request was: `$tree%.*s')\n",
-				key_len,
+				(int)key_len,
 				key,
 				(int)(index - full_index),
 				full_index
