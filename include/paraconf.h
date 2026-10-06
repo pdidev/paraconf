@@ -255,11 +255,13 @@ PC_status_t PARACONF_EXPORT PC_string(PC_tree_t tree, char** value);
 PC_status_t PARACONF_EXPORT PC_bool(PC_tree_t tree, int* value);
 
 /** Destroy the tree.
+ * 
+ * Calling this on anything but the root of the tree is an error and results in undefined behaviour.
  * All the trees referring to this tree will become unusable
  * Does nothing if the provided tree is in error
  *
  * \param[in,out] tree the node
- * \return the status of the tree
+ * \return PC_OK if the tree was destroyed correctly (or if nothing was done for a tree in error)
  */
 PC_status_t PARACONF_EXPORT PC_tree_destroy(PC_tree_t* tree);
 

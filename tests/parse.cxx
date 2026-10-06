@@ -1,0 +1,202 @@
+/* Copyright (C) The Paraconf development team, see COPYRIGHT.md file at the
+ *               root of the project or at https://github.com/pdidev/paraconf
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <string>
+#include <vector>
+
+#include <unistd.h>
+
+#include <gtest/gtest.h>
+
+#include <paraconf.h>
+#include <yaml.h>
+
+#include "paraconf_test.h"
+
+/** Tests of the functions that build a tree from a document and destroy it
+ */
+class Parse: public ParaconfTest
+{
+	/// the files created by the test, to remove at its end
+	std::vector<std::string> m_files;
+
+protected:
+	void TearDown() override
+	{
+		ParaconfTest::TearDown();
+		for (auto&& file: m_files) {
+			std::remove(file.c_str());
+		}
+	}
+
+	/** Creates a file with a given content, removed at the end of the test
+	 *
+	 * \param content the content of the file
+	 * \return the path of the file, unique to this test and process
+	 */
+	std::string make_file(const std::string& content)
+	{
+		std::string path = ::testing::TempDir() + "paraconf_" + ::testing::UnitTest::GetInstance()->current_test_info()->name() + "_"
+		                 + std::to_string(getpid()) + "_" + std::to_string(m_files.size()) + ".yml";
+		std::ofstream(path) << content;
+		m_files.push_back(path);
+		return path;
+	}
+};
+
+TEST_F(Parse, string_scalar)
+{
+	PC_tree_t tree = parse("42");
+	long value = -1;
+	EXPECT_EQ(PC_OK, PC_int(tree, &value));
+	EXPECT_EQ(42, value);
+}
+
+TEST_F(Parse, string_has_no_path)
+{
+	EXPECT_STREQ("<string>", PC_path(parse("a: 1")));
+}
+
+TEST_F(Parse, string_invalid_yaml)
+{
+	PC_tree_t tree = PC_parse_string("a: [1, 2\nb: 3\n");
+	EXPECT_EQ(PC_INVALID_FORMAT, PC_status(tree));
+	expect_error(PC_INVALID_FORMAT, "line 2");
+}
+
+TEST_F(Parse, string_empty_document)
+{
+	PC_tree_t tree = parse("");
+	int len = -1;
+	EXPECT_EQ(PC_INVALID_NODE_TYPE, PC_len(tree, &len));
+	expect_error(PC_INVALID_NODE_TYPE, "empty tree");
+	EXPECT_EQ(-1, len);
+	EXPECT_EQ(PC_INVALID_NODE_TYPE, PC_status(PC_get(tree, ".a")));
+	expect_error(PC_INVALID_NODE_TYPE, "empty tree");
+}
+
+TEST_F(Parse, string_comment_only)
+{
+	PC_tree_t tree = parse("# nothing but a comment\n");
+	EXPECT_EQ(nullptr, tree.node);
+}
+
+TEST_F(Parse, string_with_anchor_and_alias)
+{
+	PC_tree_t tree = parse("a: &anchor {x: 1}\nb: *anchor\n");
+	long value = -1;
+	EXPECT_EQ(PC_OK, PC_int(PC_get(tree, ".b.x"), &value));
+	EXPECT_EQ(1, value);
+}
+
+TEST_F(Parse, string_independent_trees)
+{
+	PC_tree_t tree1 = parse("value: 1");
+	PC_tree_t tree2 = parse("value: 2");
+	long value1 = -1, value2 = -1;
+	EXPECT_EQ(PC_OK, PC_int(PC_get(tree1, ".value"), &value1));
+	EXPECT_EQ(PC_OK, PC_int(PC_get(tree2, ".value"), &value2));
+	EXPECT_EQ(1, value1);
+	EXPECT_EQ(2, value2);
+}
+
+TEST_F(Parse, file)
+{
+	FILE* file = std::tmpfile();
+	ASSERT_NE(nullptr, file);
+	std::fputs("a: 1\nb: [2, 3]\n", file);
+	std::rewind(file);
+	PC_tree_t tree = destroy_at_end(PC_parse_file(file));
+	std::fclose(file);
+	ASSERT_EQ(PC_OK, PC_status(tree));
+	long value = -1;
+	EXPECT_EQ(PC_OK, PC_int(PC_get(tree, ".b[1]"), &value));
+	EXPECT_EQ(3, value);
+}
+
+TEST_F(Parse, file_invalid_yaml)
+{
+	FILE* file = std::tmpfile();
+	ASSERT_NE(nullptr, file);
+	std::fputs("a: [1, 2\nb: 3\n", file);
+	std::rewind(file);
+	PC_tree_t tree = PC_parse_file(file);
+	std::fclose(file);
+	EXPECT_EQ(PC_INVALID_FORMAT, PC_status(tree));
+	expect_error(PC_INVALID_FORMAT);
+}
+
+TEST_F(Parse, path)
+{
+	std::string path = make_file("a: 1\n");
+	PC_tree_t tree = destroy_at_end(PC_parse_path(path.c_str()));
+	ASSERT_EQ(PC_OK, PC_status(tree));
+	long value = -1;
+	EXPECT_EQ(PC_OK, PC_int(PC_get(tree, ".a"), &value));
+	EXPECT_EQ(1, value);
+}
+
+TEST_F(Parse, path_is_recorded)
+{
+	std::string path = make_file("a: 1\n");
+	PC_tree_t tree = destroy_at_end(PC_parse_path(path.c_str()));
+	ASSERT_EQ(PC_OK, PC_status(tree));
+	EXPECT_EQ(path, PC_path(tree));
+	EXPECT_EQ(path, PC_path(PC_get(tree, ".a")));
+}
+
+TEST_F(Parse, path_missing_file)
+{
+	PC_tree_t tree = PC_parse_path("/nonexistent/paraconf/file.yml");
+	EXPECT_EQ(PC_SYSTEM_ERROR, PC_status(tree));
+	expect_error(PC_SYSTEM_ERROR);
+}
+
+TEST_F(Parse, path_invalid_yaml)
+{
+	std::string path = make_file("a: [1, 2\nb: 3\n");
+	PC_tree_t tree = PC_parse_path(path.c_str());
+	EXPECT_EQ(PC_INVALID_FORMAT, PC_status(tree));
+	expect_error(PC_INVALID_FORMAT, path);
+}
+
+TEST_F(Parse, root_of_a_libyaml_document)
+{
+	const char* document = "a: 1\n";
+	yaml_parser_t parser;
+	ASSERT_TRUE(yaml_parser_initialize(&parser));
+	yaml_parser_set_input_string(&parser, reinterpret_cast<const unsigned char*>(document), strlen(document));
+	yaml_document_t yaml_document;
+	ASSERT_TRUE(yaml_parser_load(&parser, &yaml_document));
+	yaml_parser_delete(&parser);
+
+	// the tree takes ownership of the document content
+	PC_tree_t tree = destroy_at_end(PC_root(&yaml_document));
+	ASSERT_EQ(PC_OK, PC_status(tree));
+	long value = -1;
+	EXPECT_EQ(PC_OK, PC_int(PC_get(tree, ".a"), &value));
+	EXPECT_EQ(1, value);
+	EXPECT_STREQ("<string>", PC_path(tree));
+}
+
+TEST_F(Parse, destroy_resets_the_tree)
+{
+	PC_tree_t tree = PC_parse_string("a: 1");
+	ASSERT_EQ(PC_OK, PC_status(tree));
+	EXPECT_EQ(PC_OK, PC_tree_destroy(&tree));
+	EXPECT_EQ(nullptr, tree.node);
+	EXPECT_EQ(nullptr, tree.pcdoc);
+}
+
+TEST_F(Parse, destroy_a_tree_in_error)
+{
+	PC_tree_t tree = PC_parse_path("/nonexistent/paraconf/file.yml");
+	expect_error(PC_SYSTEM_ERROR);
+	EXPECT_EQ(PC_OK, PC_tree_destroy(&tree));
+}

@@ -34,6 +34,7 @@ static inline void pc_set_path(PC_tree_t tree, const char* path)
 	size_t pathlen = strlen(path);
 	char* pathcpy = malloc((pathlen + 1) * sizeof(char));
 	strncpy(pathcpy, path, pathlen);
+	pathcpy[pathlen] = 0;
 	tree.pcdoc->path = pathcpy;
 }
 
@@ -563,11 +564,21 @@ err0:
 
 PC_status_t PC_tree_destroy(PC_tree_t* tree)
 {
-	yaml_document_delete(&tree->pcdoc->document);
-	pc_path_free(tree->pcdoc->path);
-	tree->pcdoc->path = NULL;
-	free(tree->pcdoc);
-	tree->pcdoc = NULL;
+	PC_status_t status = PC_OK;
+
+	if (!tree) PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "no tree passed to PC_tree_destroy"), err0);
+	if (tree->pcdoc) {
+		yaml_document_delete(&tree->pcdoc->document);
+		pc_path_free(tree->pcdoc->path);
+		tree->pcdoc->path = NULL;
+		free(tree->pcdoc);
+		tree->pcdoc = NULL;
+	}
 	tree->node = NULL;
-	return tree->status;
+	tree->status = PC_INVALID_PARAMETER;
+
+	return status;
+
+err0:
+	return status;
 }

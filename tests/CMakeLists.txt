@@ -17,6 +17,7 @@ include(GoogleTest)
 add_executable(paraconf_unit_tests
 	api.cxx
 	get.cxx
+	parse.cxx
 	status.cxx
 	version.cxx
 )
