@@ -202,6 +202,8 @@ err0:
 
 const char* PC_path(PC_tree_t tree)
 {
+	if (PC_status(tree)) return 0;
+	if (!tree.pcdoc) return 0;
 	return tree.pcdoc->path;
 }
 

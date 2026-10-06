@@ -172,6 +172,10 @@ PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
 
 /** Returns the path of the file from which the document was loaded
  * (or `\<string\>' if this was not loaded from a file or `\<file\>' if the file name is unknown)
+ * 
+ * Returns a null pointer for an invalid tree.
+ * 
+ * \return a string description of the tree path, or NULL for an invalid tree
  */
 const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
 

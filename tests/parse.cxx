@@ -110,6 +110,14 @@ TEST_F(Parse, string_has_no_path)
 	EXPECT_STREQ("<string>", PC_path(parse("a: 1")));
 }
 
+TEST_F(Parse, string_invalid_yaml_has_no_path)
+{
+	PC_tree_t tree = PC_parse_string("a: [1\n");
+	expect_error(PC_INVALID_FORMAT);
+	// a tree in error has no document to give the path of
+	EXPECT_EQ(nullptr, PC_path(tree));
+}
+
 TEST_F(Parse, string_invalid_yaml)
 {
 	PC_tree_t tree = PC_parse_string("a: [1, 2\nb: 3\n");
@@ -195,6 +203,18 @@ TEST_F(Parse, file_has_no_path)
 	EXPECT_STREQ("<file>", PC_path(PC_get(tree, ".a")));
 }
 
+TEST_F(Parse, file_invalid_yaml_has_no_path)
+{
+	FILE* file = std::tmpfile();
+	ASSERT_NE(nullptr, file);
+	std::fputs("a: [1\n", file);
+	std::rewind(file);
+	PC_tree_t tree = PC_parse_file(file);
+	std::fclose(file);
+	expect_error(PC_INVALID_FORMAT);
+	EXPECT_EQ(nullptr, PC_path(tree));
+}
+
 TEST_F(Parse, file_invalid_yaml)
 {
 	FILE* file = std::tmpfile();
@@ -239,11 +259,29 @@ TEST_F(Parse, path_is_recorded)
 	EXPECT_EQ(path, PC_path(PC_get(tree, ".a")));
 }
 
+TEST_F(Parse, path_of_a_subtree_in_error)
+{
+	std::string path = make_file("a: 1\n");
+	PC_tree_t tree = destroy_at_end(PC_parse_path(path.c_str()));
+	ASSERT_EQ(PC_OK, PC_status(tree));
+	PC_tree_t missing = PC_get(tree, ".missing");
+	expect_error(PC_NODE_NOT_FOUND);
+	// it still refers to the document, but is in error all the same
+	EXPECT_EQ(nullptr, PC_path(missing));
+}
+
 TEST_F(Parse, path_missing_file)
 {
 	PC_tree_t tree = PC_parse_path("/nonexistent/paraconf/file.yml");
 	EXPECT_EQ(PC_SYSTEM_ERROR, PC_status(tree));
 	expect_error(PC_SYSTEM_ERROR);
+}
+
+TEST_F(Parse, path_missing_file_has_no_path)
+{
+	PC_tree_t tree = PC_parse_path("/nonexistent/paraconf/file.yml");
+	expect_error(PC_SYSTEM_ERROR);
+	EXPECT_EQ(nullptr, PC_path(tree));
 }
 
 TEST_F(Parse, path_missing_file_message)
