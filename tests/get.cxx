@@ -296,3 +296,10 @@ TEST_F(Get, tree_in_error_is_propagated)
 	result = PC_get(missing, "invalid syntax");
 	EXPECT_EQ(PC_NODE_NOT_FOUND, PC_status(result));
 }
+
+TEST_F(Get, null_index)
+{
+	const char* no_index = nullptr; // through a variable, as the compiler rejects a null format written as such
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, no_index)));
+	expect_error(PC_INVALID_PARAMETER, "PC_get");
+}

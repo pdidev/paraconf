@@ -439,3 +439,19 @@ TEST_F(Scalars, bool_of_a_tree_in_error)
 	EXPECT_EQ(PC_NODE_NOT_FOUND, PC_bool(missing, &value));
 	EXPECT_EQ(-1, value);
 }
+
+TEST_F(Scalars, null_output)
+{
+	PC_tree_t value = parse("1");
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_len(value, nullptr));
+	expect_error(PC_INVALID_PARAMETER, "PC_len");
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_int(value, nullptr));
+	expect_error(PC_INVALID_PARAMETER, "PC_int");
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_double(value, nullptr));
+	expect_error(PC_INVALID_PARAMETER, "PC_double");
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_string(value, nullptr));
+	expect_error(PC_INVALID_PARAMETER, "PC_string");
+	PC_tree_t boolean = parse("true");
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_bool(boolean, nullptr));
+	expect_error(PC_INVALID_PARAMETER, "PC_bool");
+}

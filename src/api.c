@@ -136,6 +136,8 @@ PC_tree_t PC_parse_path(const char* path)
 	PC_status_t status = PC_OK;
 	PC_tree_t restree = {PC_OK, NULL, NULL};
 
+	if (!path) PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "no path passed to PC_parse_path"), err0);
+
 	FILE* conf_file = fopen(path, "rb");
 	if (!conf_file) {
 		char errbuf[ERRBUF_SIZE];
@@ -162,7 +164,10 @@ err0:
 
 PC_tree_t PC_parse_file(FILE* conf_file)
 {
-	PC_tree_t restree = pc_parse_file_helper(conf_file, PC_NO_PATH_FILE);
+	PC_tree_t restree = {PC_OK, NULL, NULL};
+	if (!conf_file) PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "no file passed to PC_parse_file"), err0);
+
+	restree = pc_parse_file_helper(conf_file, PC_NO_PATH_FILE);
 	PC_handle_tree(err0);
 
 	restree.pcdoc->path = PC_NO_PATH_FILE;
@@ -176,6 +181,7 @@ err0:
 PC_tree_t PC_parse_string(const char* document)
 {
 	PC_tree_t restree = {PC_OK, NULL, NULL};
+	if (!document) PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "no document passed to PC_parse_string"), err0);
 
 	yaml_parser_t conf_parser;
 	if (!yaml_parser_initialize(&conf_parser)) {
@@ -200,7 +206,10 @@ err0:
 
 PC_tree_t PC_root(yaml_document_t* document)
 {
-	PC_tree_t restree = {PC_OK, malloc(sizeof(PC_document_t)), NULL};
+	PC_tree_t restree = {PC_OK, NULL, NULL};
+	if (!document) PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "no document passed to PC_root"), err0);
+
+	restree.pcdoc = malloc(sizeof(PC_document_t));
 	if (!restree.pcdoc) PC_handle_err_tree(PC_make_malloc_err(), err0);
 
 	restree.node = yaml_document_get_root_node(document);
@@ -232,6 +241,8 @@ PC_tree_t PC_vget(const PC_tree_t tree, const char* index_fmt, va_list va)
 {
 	PC_tree_t restree = tree;
 	PC_handle_tree(err0);
+
+	if (!index_fmt) PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "no index passed to PC_get"), err0);
 
 	va_list va2;
 	va_copy(va2, va);
@@ -267,6 +278,8 @@ PC_status_t PC_len(const PC_tree_t tree, int* res)
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
 
+	if (!res) PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "no value passed to PC_len"), err0);
+
 	// check type
 	if (!tree.node) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree\n"), err0);
@@ -297,6 +310,8 @@ PC_status_t PC_int(const PC_tree_t tree, long* res)
 {
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
+
+	if (!res) PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "no value passed to PC_int"), err0);
 
 	// check type
 	if (!tree.node) {
@@ -342,6 +357,8 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
 
+	if (!value) PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "no value passed to PC_double"), err0);
+
 	// check type
 	if (!tree.node) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree\n"), err0);
@@ -385,6 +402,8 @@ PC_status_t PC_string(const PC_tree_t tree, char** value)
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
 
+	if (!value) PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "no value passed to PC_string"), err0);
+
 	// check type
 	if (!tree.node) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree\n"), err0);
@@ -424,6 +443,8 @@ PC_status_t PC_bool(const PC_tree_t tree, int* res)
 {
 	PC_status_t status = PC_OK;
 	PC_handle_tree_err(tree, err0);
+
+	if (!res) PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "no value passed to PC_bool"), err0);
 
 	// check type
 	if (!tree.node) {

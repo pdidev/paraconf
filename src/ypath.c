@@ -367,6 +367,8 @@ PC_tree_t PC_sget(const PC_tree_t tree, const char* index)
 	PC_tree_t restree = tree;
 	PC_handle_tree(err0);
 
+	if (!index) PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "no index passed to PC_get"), err0);
+
 	// check type
 	if (*index && !tree.node) {
 		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a node, found an empty tree\n"), err0);

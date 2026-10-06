@@ -343,3 +343,27 @@ TEST_F(Parse, destroy_a_tree_in_error)
 	expect_error(PC_SYSTEM_ERROR);
 	EXPECT_EQ(PC_OK, PC_tree_destroy(&tree));
 }
+
+TEST_F(Parse, string_null_document)
+{
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_parse_string(nullptr)));
+	expect_error(PC_INVALID_PARAMETER, "PC_parse_string");
+}
+
+TEST_F(Parse, file_null_file)
+{
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_parse_file(nullptr)));
+	expect_error(PC_INVALID_PARAMETER, "PC_parse_file");
+}
+
+TEST_F(Parse, path_null_path)
+{
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_parse_path(nullptr)));
+	expect_error(PC_INVALID_PARAMETER, "PC_parse_path");
+}
+
+TEST_F(Parse, root_null_document)
+{
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_root(nullptr)));
+	expect_error(PC_INVALID_PARAMETER, "PC_root");
+}
