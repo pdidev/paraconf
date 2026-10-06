@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -280,14 +281,27 @@ PC_status_t PC_int(const PC_tree_t tree, long* res)
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
 	}
 
+	if (!*tree.node->data.scalar.value) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found an empty string\n"), err0);
+	}
+
 	char* endptr;
+	errno = 0;
 	long result = strtol((char*)tree.node->data.scalar.value, &endptr, 0);
+	if (errno == ERANGE) {
+		PC_handle_err(
+			PC_make_err(
+				PC_INVALID_NODE_TYPE,
+				"Integer out of range: `%s' (range is: [%ld, %ld])\n",
+				(char*)tree.node->data.scalar.value,
+				LONG_MIN,
+				LONG_MAX
+			),
+			err0
+		);
+	}
 	if (*endptr) {
-		char* content;
-		PC_handle_err(PC_string(tree, &content), err0);
-		status = PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", content);
-		free(content);
-		PC_handle_err(status, err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", (char*)tree.node->data.scalar.value), err0);
 	}
 
 	*res = result;
@@ -311,14 +325,18 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
 	}
 
+	if (!*tree.node->data.scalar.value) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected floating point, found an empty string\n"), err0);
+	}
+
 	char* endptr;
+	errno = 0;
 	*value = strtod((char*)tree.node->data.scalar.value, &endptr);
+	if (errno == ERANGE) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Floating point out of range: `%s'\n", (char*)tree.node->data.scalar.value), err0);
+	}
 	if (*endptr) {
-		char* content = NULL;
-		PC_handle_err(PC_string(tree, &content), err0);
-		status = PC_make_err(PC_INVALID_PARAMETER, "Expected floating point, found `%s'\n", content);
-		free(content);
-		PC_handle_err(status, err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected floating point, found `%s'\n", (char*)tree.node->data.scalar.value), err0);
 	}
 
 	return status;
@@ -510,9 +528,12 @@ PC_status_t PC_bool(const PC_tree_t tree, int* res)
 	case 'o':
 		switch (strval[1]) {
 		case 'n':
-			if (strval[2] == 0) *res = 1;
+			if (strval[2] == 0) {
+				*res = 1;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
 			break;
-			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
 		case 'f':
 			if (strval[2] == 'f' && strval[3] == 0) {
 				*res = 0;
