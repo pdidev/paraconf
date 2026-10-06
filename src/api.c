@@ -277,7 +277,7 @@ PC_status_t PC_int(const PC_tree_t tree, long* res)
 	}
 
 	if (tree.node->type != YAML_SCALAR_NODE) {
-		return PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
 	}
 
 	char* endptr;
@@ -310,6 +310,7 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 	if (tree.node->type != YAML_SCALAR_NODE) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
 	}
+
 	char* endptr;
 	*value = strtod((char*)tree.node->data.scalar.value, &endptr);
 	if (*endptr) {
@@ -353,6 +354,16 @@ err0:
 	return status;
 }
 
+#define PARACONF_PC_BOOL_NOT_A_BOOLEAN(free_stamp)                                                                                                   \
+	PC_handle_err(                                                                                                                                   \
+		PC_make_err(                                                                                                                                 \
+			PC_INVALID_NODE_TYPE,                                                                                                                    \
+			"expected a boolean (y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF), but got `%s'\n",               \
+			strval                                                                                                                                   \
+		),                                                                                                                                           \
+		free_stamp                                                                                                                                   \
+	)
+
 PC_status_t PC_bool(const PC_tree_t tree, int* res)
 {
 	PC_status_t status = PC_OK;
@@ -367,22 +378,182 @@ PC_status_t PC_bool(const PC_tree_t tree, int* res)
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
 	}
 
-	char* value = (char*)tree.node->data.scalar.value;
+	char* strval = (char*)tree.node->data.scalar.value;
 
-	if (!strcmp(value, "True") || !strcmp(value, "true") || !strcmp(value, "TRUE") || !strcmp(value, "Yes") || !strcmp(value, "yes")
-	    || !strcmp(value, "YES"))
-	{
-		*res = 1;
-	} else if (!strcmp(value, "False") || !strcmp(value, "false") || !strcmp(value, "FALSE") || !strcmp(value, "No") || !strcmp(value, "no")
-	           || !strcmp(value, "NO"))
-	{
-		*res = 0;
-	} else {
-		char* content = NULL;
-		PC_handle_err(PC_string(tree, &content), err0);
-		status = PC_make_err(PC_INVALID_PARAMETER, "Expected logical expression, found `%s'\n", content);
-		free(content);
-		PC_handle_err(status, err0);
+	switch (strval[0]) {
+	case 'y':
+		switch (strval[1]) {
+		case 0:
+			*res = 1;
+			break;
+		case 'e':
+			if (strval[2] == 's' && strval[3] == 0) {
+				*res = 1;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		default:
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 'Y':
+		switch (strval[1]) {
+		case 0:
+			*res = 1;
+			break;
+		case 'e':
+			if (strval[2] == 's' && strval[3] == 0) {
+				*res = 1;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		case 'E':
+			if (strval[2] == 'S' && strval[3] == 0) {
+				*res = 1;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		default:
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 'n':
+		switch (strval[1]) {
+		case 0:
+			*res = 0;
+			break;
+		case 'o':
+			if (strval[2] == 0) {
+				*res = 0;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		default:
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 'N':
+		switch (strval[1]) {
+		case 0:
+			*res = 0;
+			break;
+		case 'o': // same as 'O'
+		case 'O':
+			if (strval[2] == 0) {
+				*res = 0;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		default:
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 't':
+		if (!strcmp(strval + 1, "rue")) {
+			*res = 1;
+		} else {
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 'T':
+		switch (strval[1]) {
+		case 'r':
+			if (!strcmp(strval + 2, "ue")) {
+				*res = 1;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		case 'R':
+			if (!strcmp(strval + 2, "UE")) {
+				*res = 1;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		default:
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 'f':
+		if (!strcmp(strval + 1, "alse")) {
+			*res = 0;
+		} else {
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 'F':
+		switch (strval[1]) {
+		case 'a':
+			if (!strcmp(strval + 2, "lse")) {
+				*res = 0;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		case 'A':
+			if (!strcmp(strval + 2, "LSE")) {
+				*res = 0;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		default:
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 'o':
+		switch (strval[1]) {
+		case 'n':
+			if (strval[2] == 0) *res = 1;
+			break;
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		case 'f':
+			if (strval[2] == 'f' && strval[3] == 0) {
+				*res = 0;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		default:
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	case 'O':
+		switch (strval[1]) {
+		case 'n': // same as 'N'
+		case 'N':
+			if (strval[2] == 0) {
+				*res = 1;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		case 'f':
+			if (strval[2] == 'f' && strval[3] == 0) {
+				*res = 0;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		case 'F':
+			if (strval[2] == 'F' && strval[3] == 0) {
+				*res = 0;
+			} else {
+				PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+			}
+			break;
+		default:
+			PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
+		}
+		break;
+	default:
+		PARACONF_PC_BOOL_NOT_A_BOOLEAN(err0);
 	}
 
 	return status;
