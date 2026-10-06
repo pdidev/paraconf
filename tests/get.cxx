@@ -141,6 +141,13 @@ TEST_F(Get, printf_style_format)
 	EXPECT_EQ(21, get_int(PC_get(tree, ".map<%d>", 1), ""));
 }
 
+TEST_F(Get, format_that_fails_to_format)
+{
+	// in the C locale, which the tests run in, a wide character outside ASCII has no multibyte form, so the formatting fails
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, ".%ls", L"\u00e9")));
+	expect_error(PC_INVALID_PARAMETER, "Invalid formatting in PC_get");
+}
+
 /// a key exactly as long as the buffer PC_vget first formats the index in, and one longer than that
 class GetLongIndex
 	: public ParaconfTest

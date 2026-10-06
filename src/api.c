@@ -22,21 +22,24 @@
 
 static const char* nodetype[4] = {"none", "scalar", "sequence", "mapping"};
 
-static const char* PC_NO_PATH = "<string>";
+static const char* PC_NO_PATH_STRING = "<string>";
+static const char* PC_NO_PATH_FILE = "<file>";
 
 static inline void pc_path_free(const char* path)
 {
-	if (path != PC_NO_PATH) free((void*)path);
+	if (path != PC_NO_PATH_STRING && path != PC_NO_PATH_FILE) free((void*)path);
 }
 
-static inline void pc_set_path(PC_tree_t tree, const char* path)
+static inline PC_status_t pc_set_path(PC_tree_t tree, const char* path)
 {
-	pc_path_free(tree.pcdoc->path);
 	size_t pathlen = strlen(path);
 	char* pathcpy = malloc((pathlen + 1) * sizeof(char));
+	if (!pathcpy) return PC_make_malloc_err();
 	strncpy(pathcpy, path, pathlen);
 	pathcpy[pathlen] = 0;
+	pc_path_free(tree.pcdoc->path);
 	tree.pcdoc->path = pathcpy;
+	return PC_OK;
 }
 
 uint64_t PC_version()
@@ -44,35 +47,7 @@ uint64_t PC_version()
 	return PARACONF_VERSION;
 }
 
-PC_tree_t PC_parse_path(const char* path)
-{
-	PC_tree_t restree = {PC_OK, NULL, NULL};
-
-	FILE* conf_file = fopen(path, "rb");
-	if (!conf_file) {
-		char errbuf[ERRBUF_SIZE];
-		strerror_r(errno, errbuf, ERRBUF_SIZE);
-		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "can not open file `%s': %s", path, errbuf), err0);
-	}
-
-	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER); // aka PC_try
-	restree = PC_parse_file(conf_file);
-	PC_errhandler(handler);
-	if (PC_status(restree)) { // aka PC_catch
-		PC_handle_err_tree(PC_make_err(restree.status, "can not parse file `%s'\n%s", path, PC_errmsg()), err1);
-	}
-
-	fclose(conf_file);
-	pc_set_path(restree, path);
-	return restree;
-
-err1:
-	fclose(conf_file);
-err0:
-	return restree;
-}
-
-static PC_tree_t parse(yaml_parser_t* conf_parser)
+static PC_tree_t pc_parse(const char* filename, yaml_parser_t* conf_parser)
 {
 	PC_tree_t restree = {PC_OK, NULL, NULL};
 
@@ -82,13 +57,15 @@ static PC_tree_t parse(yaml_parser_t* conf_parser)
 			PC_handle_err_tree(
 				PC_make_err(
 					PC_INVALID_FORMAT,
-					"(%lu:%lu -> %lu:%lu): %s, %s",
-					(unsigned long)conf_parser->context_mark.line + 1,
-					(unsigned long)conf_parser->context_mark.column + 1,
+					"%s:%lu:%lu: error: %s\n%s:%lu:%lu: note: %s",
+					filename,
 					(unsigned long)conf_parser->problem_mark.line + 1,
 					(unsigned long)conf_parser->problem_mark.column + 1,
-					conf_parser->context,
-					conf_parser->problem
+					conf_parser->problem,
+					filename,
+					(unsigned long)conf_parser->context_mark.line + 1,
+					(unsigned long)conf_parser->context_mark.column + 1,
+					conf_parser->context
 				),
 				err0
 			);
@@ -96,7 +73,8 @@ static PC_tree_t parse(yaml_parser_t* conf_parser)
 			PC_handle_err_tree(
 				PC_make_err(
 					PC_INVALID_FORMAT,
-					"(%lu:%lu): %s",
+					"%s:%lu:%lu: error: %s",
+					filename,
 					(unsigned long)conf_parser->problem_mark.line + 1,
 					(unsigned long)conf_parser->problem_mark.column + 1,
 					conf_parser->problem
@@ -107,6 +85,75 @@ static PC_tree_t parse(yaml_parser_t* conf_parser)
 	}
 
 	restree = PC_root(&conf_doc);
+	PC_handle_tree(err1);
+
+	return restree;
+
+err1:
+	yaml_document_delete(&conf_doc);
+err0:
+	return restree;
+}
+
+static PC_tree_t pc_parse_file_helper(FILE* conf_file, const char* filename)
+{
+	PC_tree_t restree = {PC_OK, NULL, NULL};
+
+	yaml_parser_t conf_parser;
+	if (!yaml_parser_initialize(&conf_parser)) {
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to initialize yaml library"), err0);
+	}
+
+	yaml_parser_set_input_file(&conf_parser, conf_file);
+
+	restree = pc_parse(filename, &conf_parser);
+	PC_handle_tree(err1);
+
+	yaml_parser_delete(&conf_parser);
+
+	return restree;
+
+err1:
+	yaml_parser_delete(&conf_parser);
+err0:
+	return restree;
+}
+
+PC_tree_t PC_parse_path(const char* path)
+{
+	PC_status_t status = PC_OK;
+	PC_tree_t restree = {PC_OK, NULL, NULL};
+
+	FILE* conf_file = fopen(path, "rb");
+	if (!conf_file) {
+		char errbuf[ERRBUF_SIZE];
+		strerror_r(errno, errbuf, ERRBUF_SIZE);
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "can not open file `%s': %s", path, errbuf), err0);
+	}
+
+	restree = pc_parse_file_helper(conf_file, path);
+	PC_handle_tree(err1);
+
+	PC_handle_err(pc_set_path(restree, path), err2);
+
+	fclose(conf_file);
+	return restree;
+
+err2:
+	PC_tree_destroy(&restree);
+	restree.status = status;
+err1:
+	fclose(conf_file);
+err0:
+	return restree;
+}
+
+PC_tree_t PC_parse_file(FILE* conf_file)
+{
+	PC_tree_t restree = pc_parse_file_helper(conf_file, PC_NO_PATH_FILE);
+	PC_handle_tree(err0);
+
+	restree.pcdoc->path = PC_NO_PATH_FILE;
 
 	return restree;
 
@@ -120,37 +167,12 @@ PC_tree_t PC_parse_string(const char* document)
 
 	yaml_parser_t conf_parser;
 	if (!yaml_parser_initialize(&conf_parser)) {
-		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to load yaml library"), err0);
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to initialize yaml library"), err0);
 	}
 
 	yaml_parser_set_input_string(&conf_parser, (const unsigned char*)document, strlen(document));
 
-	restree = parse(&conf_parser);
-
-	PC_handle_tree(err1);
-
-	yaml_parser_delete(&conf_parser);
-
-	return restree;
-
-err1:
-	yaml_parser_delete(&conf_parser);
-err0:
-	return restree;
-}
-
-PC_tree_t PC_parse_file(FILE* conf_file)
-{
-	PC_tree_t restree = {PC_OK, NULL, NULL};
-
-	yaml_parser_t conf_parser;
-	if (!yaml_parser_initialize(&conf_parser)) {
-		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "unable to load yaml library"), err0);
-	}
-
-	yaml_parser_set_input_file(&conf_parser, conf_file);
-
-	restree = parse(&conf_parser);
+	restree = pc_parse(PC_NO_PATH_STRING, &conf_parser);
 
 	PC_handle_tree(err1);
 
@@ -166,9 +188,15 @@ err0:
 
 PC_tree_t PC_root(yaml_document_t* document)
 {
-	PC_tree_t restree = {PC_OK, malloc(sizeof(PC_document_t)), yaml_document_get_root_node(document)};
-	PC_document_t pcdoc = {*document, PC_NO_PATH};
+	PC_tree_t restree = {PC_OK, malloc(sizeof(PC_document_t)), NULL};
+	if (!restree.pcdoc) PC_handle_err_tree(PC_make_malloc_err(), err0);
+
+	restree.node = yaml_document_get_root_node(document);
+	PC_document_t pcdoc = {*document, PC_NO_PATH_STRING};
 	*restree.pcdoc = pcdoc;
+	return restree;
+
+err0:
 	return restree;
 }
 
@@ -195,8 +223,18 @@ PC_tree_t PC_vget(const PC_tree_t tree, const char* index_fmt, va_list va)
 	va_copy(va2, va);
 	int index_size = vsnprintf(NULL, 0, index_fmt, va2) + 1;
 	va_end(va2);
+	if (index_size <= 0) {
+		char errbuf[ERRBUF_SIZE];
+		strerror_r(errno, errbuf, ERRBUF_SIZE);
+		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "Invalid formatting in PC_get `%s': %s", index_fmt, errbuf), err0);
+	}
 	char* index = malloc(index_size);
-	vsnprintf(index, index_size, index_fmt, va);
+	if (!index) PC_handle_err_tree(PC_make_malloc_err(), err0);
+	if (vsnprintf(index, index_size, index_fmt, va) < 0) {
+		char errbuf[ERRBUF_SIZE];
+		strerror_r(errno, errbuf, ERRBUF_SIZE);
+		PC_handle_err_tree(PC_make_err(PC_INVALID_PARAMETER, "Invalid formatting in PC_get `%s': %s", index_fmt, errbuf), err1);
+	}
 
 	restree = PC_sget(tree, index);
 	PC_handle_tree(err1);
@@ -305,7 +343,7 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 
 	char* endptr;
 	errno = 0;
-	*value = strtod((char*)tree.node->data.scalar.value, &endptr);
+	double result = strtod((char*)tree.node->data.scalar.value, &endptr);
 	if (errno == ERANGE) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Floating point out of range: `%s'\n", (char*)tree.node->data.scalar.value), err0);
 	}
@@ -313,6 +351,7 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected floating point, found `%s'\n", (char*)tree.node->data.scalar.value), err0);
 	}
 
+	*value = result;
 	return status;
 
 err0:
@@ -336,9 +375,12 @@ PC_status_t PC_string(const PC_tree_t tree, char** value)
 	int len = 0;
 	PC_handle_err(PC_len(tree, &len), err0);
 
-	*value = malloc(len + 1);
-	strncpy(*value, (char*)tree.node->data.scalar.value, len + 1);
-	assert((*value)[len] == 0);
+	char* result_value = malloc(len + 1);
+	if (!result_value) PC_handle_err(PC_make_malloc_err(), err0);
+	strncpy(result_value, (char*)tree.node->data.scalar.value, len + 1);
+	assert(result_value[len] == 0);
+
+	*value = result_value;
 
 	return status;
 

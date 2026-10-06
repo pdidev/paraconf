@@ -202,6 +202,7 @@ TEST_P(InvalidDouble, is_an_error)
 	PC_status_t status = PC_double(parse(GetParam()), &value);
 	EXPECT_NE(PC_OK, status);
 	expect_error(status);
+	EXPECT_EQ(-1, value);
 }
 
 INSTANTIATE_TEST_SUITE_P(Value, InvalidDouble, ::testing::Values("abc", "1.5x", "1.2.3", "\"\"", "1e999"));

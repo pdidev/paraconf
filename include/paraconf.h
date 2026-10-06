@@ -159,15 +159,19 @@ PC_tree_t PARACONF_EXPORT PC_parse_file(FILE* file);
  */
 PC_tree_t PARACONF_EXPORT PC_parse_string(const char* document);
 
-/** Returns the tree at the root of a document
+/** Transforms a raw yaml_document_t into a PC_tree_t
  *
+ * On success, the document becomes owned by the returned tree and its destruction will be handled by paraconf.
+ *
+ * The tree created must be destroyed with PC_tree_destroy at the end.
+ * 
  * \param[in] document the yaml document
- * \return the tree, valid as long as the containing document is
+ * \return the new tree that now owns the document
  */
 PC_tree_t PARACONF_EXPORT PC_root(yaml_document_t* document);
 
 /** Returns the path of the file from which the document was loaded
- * (or `\<string\>' if this was not loaded from a file)
+ * (or `\<string\>' if this was not loaded from a file or `\<file\>' if the file name is unknown)
  */
 const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
 
@@ -257,11 +261,10 @@ PC_status_t PARACONF_EXPORT PC_bool(PC_tree_t tree, int* value);
 /** Destroy the tree.
  * 
  * Calling this on anything but the root of the tree is an error and results in undefined behaviour.
- * All the trees referring to this tree will become unusable
- * Does nothing if the provided tree is in error
+ * All the subtrees of this tree will become unusable.
  *
  * \param[in,out] tree the node
- * \return PC_OK if the tree was destroyed correctly (or if nothing was done for a tree in error)
+ * \return PC_OK if the tree was destroyed correctly, an error otherwise
  */
 PC_status_t PARACONF_EXPORT PC_tree_destroy(PC_tree_t* tree);
 

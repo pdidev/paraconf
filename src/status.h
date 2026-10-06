@@ -34,4 +34,10 @@
 
 PC_status_t PC_make_err(PC_status_t status, const char* message, ...);
 
+/** Reports a failure to allocate memory, as PC_make_err would do with PC_SYSTEM_ERROR, but without allocating memory
+ *
+ * \return PC_SYSTEM_ERROR
+ */
+PC_status_t PC_make_malloc_err();
+
 #endif // STATUS_H__

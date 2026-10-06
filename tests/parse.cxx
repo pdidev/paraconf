@@ -68,6 +68,35 @@ protected:
 /// column 2
 static const char* const UNCLOSED_FLOW_SEQUENCE = "a: 1\nb: [1, 2\nc: 3\n";
 
+/** Finds the line of a message that starts with a given prefix
+ *
+ * \param message the message to look into
+ * \param prefix the start of the line to look for
+ * \return the position of the line in the message, std::string::npos if there is none
+ */
+static std::size_t find_line(const std::string& message, const std::string& prefix)
+{
+	if (message.compare(0, prefix.size(), prefix) == 0) return 0;
+	std::size_t position = message.find('\n' + prefix);
+	return position == std::string::npos ? position : position + 1;
+}
+
+/** Checks that a message reports the error of UNCLOSED_FLOW_SEQUENCE in the format of compilers, that text editors parse
+ *
+ * The problem comes first, as an error, then its context, as a note, each on a line of its own that starts with `file:line:column: `.
+ *
+ * \param message the message to check
+ * \param file the name the message gives to the document
+ */
+static void expect_unclosed_flow_sequence(const std::string& message, const std::string& file)
+{
+	std::size_t error = find_line(message, file + ":3:2: error: ");
+	std::size_t note = find_line(message, file + ":2:4: note: ");
+	EXPECT_NE(std::string::npos, error) << "no `" << file << ":3:2: error: ' line in \"" << message << '"';
+	EXPECT_NE(std::string::npos, note) << "no `" << file << ":2:4: note: ' line in \"" << message << '"';
+	EXPECT_LT(error, note) << "the error should come before its note in \"" << message << '"';
+}
+
 TEST_F(Parse, string_scalar)
 {
 	PC_tree_t tree = parse("42");
@@ -90,19 +119,16 @@ TEST_F(Parse, string_invalid_yaml)
 
 TEST_F(Parse, string_invalid_yaml_position)
 {
-	std::string message = string_error(UNCLOSED_FLOW_SEQUENCE);
-	// positions count from 1, as in every editor, and the context comes before the problem
-	EXPECT_THAT(message, ::testing::HasSubstr("2:4"));
-	EXPECT_THAT(message, ::testing::HasSubstr("3:2"));
-	EXPECT_LT(message.find("2:4"), message.find("3:2")) << "context should come before the problem in \"" << message << '"';
+	// positions count from 1, as in every editor
+	expect_unclosed_flow_sequence(string_error(UNCLOSED_FLOW_SEQUENCE), "<string>");
 }
 
 TEST_F(Parse, string_invalid_yaml_without_context_position)
 {
 	// libyaml reports an undefined alias with the position of the problem only, there is no context to give a position for
 	std::string message = string_error("a: 1\nb: 2\nc: *undefined\n");
-	EXPECT_THAT(message, ::testing::HasSubstr("3:4"));
-	EXPECT_THAT(message, ::testing::Not(::testing::HasSubstr("1:1"))) << "no position should be given for the missing context";
+	EXPECT_EQ(0u, find_line(message, "<string>:3:4: error: ")) << "\"" << message << '"';
+	EXPECT_EQ(std::string::npos, message.find('\n')) << "no note should be given for the missing context in \"" << message << '"';
 }
 
 TEST_F(Parse, string_empty_document)
@@ -155,6 +181,20 @@ TEST_F(Parse, file)
 	EXPECT_EQ(3, value);
 }
 
+TEST_F(Parse, file_has_no_path)
+{
+	FILE* file = std::tmpfile();
+	ASSERT_NE(nullptr, file);
+	std::fputs("a: 1\n", file);
+	std::rewind(file);
+	PC_tree_t tree = destroy_at_end(PC_parse_file(file));
+	std::fclose(file);
+	ASSERT_EQ(PC_OK, PC_status(tree));
+	// a FILE* has no name
+	EXPECT_STREQ("<file>", PC_path(tree));
+	EXPECT_STREQ("<file>", PC_path(PC_get(tree, ".a")));
+}
+
 TEST_F(Parse, file_invalid_yaml)
 {
 	FILE* file = std::tmpfile();
@@ -169,14 +209,14 @@ TEST_F(Parse, file_invalid_yaml)
 
 TEST_F(Parse, file_invalid_yaml_position)
 {
-	std::string expected = string_error(UNCLOSED_FLOW_SEQUENCE);
 	FILE* file = std::tmpfile();
 	ASSERT_NE(nullptr, file);
 	std::fputs(UNCLOSED_FLOW_SEQUENCE, file);
 	std::rewind(file);
 	PC_parse_file(file);
 	std::fclose(file);
-	EXPECT_EQ(expected, PC_errmsg());
+	// a FILE* has no name
+	expect_unclosed_flow_sequence(PC_errmsg(), "<file>");
 	expect_error(PC_INVALID_FORMAT);
 }
 
@@ -225,11 +265,10 @@ TEST_F(Parse, path_invalid_yaml)
 
 TEST_F(Parse, path_invalid_yaml_position)
 {
-	std::string expected = string_error(UNCLOSED_FLOW_SEQUENCE);
 	std::string path = make_file(UNCLOSED_FLOW_SEQUENCE);
 	PC_parse_path(path.c_str());
-	// the message names the file, then gives the error as PC_parse_string does
-	expect_error(PC_INVALID_FORMAT, expected);
+	expect_unclosed_flow_sequence(PC_errmsg(), path);
+	expect_error(PC_INVALID_FORMAT);
 }
 
 TEST_F(Parse, root_of_a_libyaml_document)
