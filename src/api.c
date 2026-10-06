@@ -4,11 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-#define _POSIX_C_SOURCE 200112L
+#define _POSIX_C_SOURCE 200809L
 
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <locale.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +26,16 @@ static const char* nodetype[4] = {"none", "scalar", "sequence", "mapping"};
 
 static const char* PC_NO_PATH_STRING = "<string>";
 static const char* PC_NO_PATH_FILE = "<file>";
+
+/// a numeric locale that reads numbers as YAML writes them, whatever the locale of the program, (locale_t)0 if it could not be created
+static locale_t c_numeric_locale = (locale_t)0;
+
+static pthread_once_t c_numeric_locale_once = PTHREAD_ONCE_INIT;
+
+static void c_numeric_locale_init(void)
+{
+	c_numeric_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+}
 
 static inline void pc_path_free(const char* path)
 {
@@ -343,10 +355,18 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected floating point, found an empty string\n"), err0);
 	}
 
+	// strtod follows the locale of the calling thread, so it reads in the C one
+	pthread_once(&c_numeric_locale_once, c_numeric_locale_init);
+	if (c_numeric_locale == (locale_t)0) {
+		PC_handle_err(PC_make_malloc_err(), err0);
+	}
+	locale_t thread_locale = uselocale(c_numeric_locale);
 	char* endptr;
 	errno = 0;
 	double result = strtod((char*)tree.node->data.scalar.value, &endptr);
-	if (errno == ERANGE) {
+	int strtod_errno = errno;
+	uselocale(thread_locale);
+	if (strtod_errno == ERANGE) {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Floating point out of range: `%s'\n", (char*)tree.node->data.scalar.value), err0);
 	}
 	if (*endptr) {

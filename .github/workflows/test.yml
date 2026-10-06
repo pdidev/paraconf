@@ -26,6 +26,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Install a locale with a decimal comma
+        # for the tests that check numbers do not depend on the locale, regenerated harmlessly if already there
+        run: sudo locale-gen fr_FR.UTF-8
       - name: Build
         env: # run the tests under AddressSanitizer, which also reports leaks
           CFLAGS: -fsanitize=address -fno-omit-frame-pointer

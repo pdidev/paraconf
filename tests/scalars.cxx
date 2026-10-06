@@ -5,6 +5,7 @@
  */
 
 #include <climits>
+#include <clocale>
 #include <cstdlib>
 #include <ostream>
 #include <string>
@@ -206,6 +207,39 @@ TEST_P(InvalidDouble, is_an_error)
 }
 
 INSTANTIATE_TEST_SUITE_P(Value, InvalidDouble, ::testing::Values("abc", "1.5x", "1.2.3", "\"\"", "1e999"));
+
+TEST_F(Scalars, double_ignores_the_decimal_comma_of_the_locale)
+{
+	// a locale whose decimal separator is a comma, as an application calling setlocale(LC_ALL, "") gets in France or Germany
+	std::string previous = std::setlocale(LC_NUMERIC, nullptr);
+	bool found = false;
+	for (const char* name: {"fr_FR.UTF-8", "fr_FR.utf8", "fr_FR", "de_DE.UTF-8", "de_DE.utf8", "de_DE"}) {
+		if (std::setlocale(LC_NUMERIC, name) && std::string(",") == std::localeconv()->decimal_point) {
+			found = true;
+			break;
+		}
+	}
+	if (!found) {
+		std::setlocale(LC_NUMERIC, previous.c_str());
+		GTEST_SKIP() << "no locale with a decimal comma is installed";
+	}
+
+	// YAML numbers have a decimal point whatever the locale
+	double value = -1;
+	PC_status_t point_status = PC_double(parse("1.5"), &value);
+	double comma_value = -1;
+	PC_status_t comma_status = PC_double(parse("1,5"), &comma_value);
+	// and the program keeps its own locale
+	std::string decimal_point = std::localeconv()->decimal_point;
+	std::setlocale(LC_NUMERIC, previous.c_str());
+
+	EXPECT_EQ(PC_OK, point_status);
+	EXPECT_DOUBLE_EQ(1.5, value);
+	EXPECT_EQ(PC_INVALID_NODE_TYPE, comma_status);
+	expect_error(PC_INVALID_NODE_TYPE, "1,5");
+	EXPECT_EQ(-1, comma_value);
+	EXPECT_EQ(",", decimal_point);
+}
 
 TEST_F(Scalars, double_of_a_non_scalar)
 {
