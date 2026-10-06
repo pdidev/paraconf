@@ -24,11 +24,11 @@ Paraconf depends on:
 Paraconf Fortran support depends on:
   * a Fortran-2003 compiler
 
-For example, you can get release 1.0.4, compile & install it with:
+For example, you can get release 1.1.1, compile & install it with:
 ```bash
-wget https://github.com/pdidev/paraconf/archive/1.0.4.tar.gz
-tar -xzf 1.0.4.tar.gz
-cmake -DCMAKE_INSTALL_PREFIX=/usr/ -B paraconf-build -S paraconf-1.0.4
+wget https://github.com/pdidev/paraconf/archive/1.1.1.tar.gz
+tar -xzf 1.1.1.tar.gz
+cmake -DCMAKE_INSTALL_PREFIX=/usr/ -B paraconf-build -S paraconf-1.1.1
 cmake --build paraconf-build
 ```
 
@@ -83,15 +83,16 @@ mandatory).
 
 #### Using its position on a tree
 
-The nodes of a parent tree are accessed using the `{number}` or `<number>`
-syntax:
+The nodes of a parent tree are accessed using the `<number>` syntax, and their
+keys using the `{number}` syntax:
 
 ```
-PC_get(PC_tree_t some_tree, ".parent_name{%d}", number);
+PC_get(PC_tree_t some_tree, ".parent_name<%d>", number);
 ```
 
-For instance, to access the first element at on the above illustration (the
-`.node0`), the syntax is `PC_get( a_parsed_config, ".{0}");`
+For instance, to access the first element of the above illustration (the
+`.node0`), the syntax is `PC_get(a_parsed_config, "<0>");`, and its key
+(`node0`) is `PC_get(a_parsed_config, "{0}");`
 
 ### Counting elements
 
@@ -105,14 +106,14 @@ PC_len( PC_tree_t node, int *nb_of_element);
 
 To recover a value depending on its type use: 
 ```
-PC_<type>(PC_tree_t some_node, <type> *value);̀
+PC_<type>(PC_tree_t some_node, <type> *value);
 ```
 
 Where `type` can be either: int, double, string, bool
 
 ### More
 
-One can access each element of a list using the ̀`.list_name[<number>]` syntax
+One can access each element of a list using the `.list_name[<number>]` syntax
 and the PC_get function.
 
 For more details have a look at the example.

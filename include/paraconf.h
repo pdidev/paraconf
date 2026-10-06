@@ -183,7 +183,7 @@ const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
  *   e.g. .map{1}
  * * access to a mapping element value by index using chevrons (decimal indices, 0-based):
  *   e.g. .map<1>
- *   PC_get(0,map,"<1>"); is similar to k=PC_get(0,map,"{1}"); PC_get(0,map,".%s",k);
+ *   PC_get(map, "<1>") gives the same node as reading the key k of PC_get(map, "{1}") with PC_string, then PC_get(map, ".%s", k)
  *
  * \param[in] tree a yaml tree
  * \param[in] index_fmt the ypath index, can be a printf-style format string
