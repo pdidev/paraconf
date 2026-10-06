@@ -60,6 +60,28 @@ TEST_F(Scalars, len_of_a_tree_in_error)
 	EXPECT_EQ(-1, len);
 }
 
+TEST_F(Scalars, len_beyond_int)
+{
+	// a scalar of more than INT_MAX bytes would need a document of more than 2 GiB, so its node is given that length instead
+	PC_tree_t value = parse("x");
+	size_t length = value.node->data.scalar.length;
+	value.node->data.scalar.length = (size_t)INT_MAX + 1;
+
+	int len = -1;
+	EXPECT_EQ(PC_INVALID_NODE_TYPE, PC_len(value, &len));
+	expect_error(PC_INVALID_NODE_TYPE, "does not fit");
+	EXPECT_EQ(-1, len);
+
+	// PC_string sizes its copy with PC_len
+	char* copy = nullptr;
+	EXPECT_EQ(PC_INVALID_NODE_TYPE, PC_string(value, &copy));
+	expect_error(PC_INVALID_NODE_TYPE, "does not fit");
+	EXPECT_EQ(nullptr, copy);
+	free(copy);
+
+	value.node->data.scalar.length = length;
+}
+
 // PC_int
 
 /// a YAML value and the integer it holds

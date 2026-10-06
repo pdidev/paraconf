@@ -285,21 +285,26 @@ PC_status_t PC_len(const PC_tree_t tree, int* res)
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree"), err0);
 	}
 
+	size_t len = 0;
 	switch (tree.node->type) {
 	case YAML_SEQUENCE_NODE: {
-		*res = tree.node->data.sequence.items.top - tree.node->data.sequence.items.start;
+		len = (size_t)(tree.node->data.sequence.items.top - tree.node->data.sequence.items.start);
 	} break;
 	case YAML_MAPPING_NODE: {
-		*res = tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start;
+		len = (size_t)(tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start);
 	} break;
 	case YAML_SCALAR_NODE: {
-		*res = tree.node->data.scalar.length;
+		len = tree.node->data.scalar.length;
 	} break;
 	default: {
 		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Unknown yaml node type: #%d", tree.node->type), err0);
 	} break;
 	}
+	if (len > INT_MAX) {
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Length %zu does not fit an int (range is: [0, %d])", len, INT_MAX), err0);
+	}
 
+	*res = (int)len;
 	return status;
 
 err0:
