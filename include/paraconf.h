@@ -91,9 +91,12 @@ static inline PC_status_t PC_status(PC_tree_t tree)
 	return tree.status;
 }
 
-/** Return a human-readabe message describing the last error that occured in paraconf
+/** Return a human-readable message describing the last error that occurred in paraconf in the calling thread
  *
- * \return a human-readabe message describing the last error that occured in paraconf
+ * The message is per thread: an error in one thread does not change the message of the others.
+ * It is valid until the next error of the same thread, and must not be freed.
+ *
+ * \return a human-readable message describing the last error that occurred in paraconf in the calling thread, NULL before its first error
  */
 char PARACONF_EXPORT* PC_errmsg();
 
@@ -105,9 +108,13 @@ char PARACONF_EXPORT* PC_errmsg();
  */
 uint64_t PARACONF_EXPORT PC_version();
 
-/** Sets the error handler to use
+/** Sets the error handler to use in the calling thread
  *
- * PC_assert is the default handler before this function is called
+ * The handler is per thread: it applies to the errors of the calling thread only, and every thread starts with PC_ASSERT_HANDLER, which
+ * aborts on the first error, until it sets its own.
+ *
+ * If paraconf cannot allocate the per-thread record of a thread, the handler can not be recorded: PC_ASSERT_HANDLER then reports that
+ * memory could not be allocated.
  *
  * \param handler the new handler to set
  * \return the previous handler
