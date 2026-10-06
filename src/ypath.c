@@ -230,7 +230,7 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 		PC_handle_err(
 			PC_make_err(
 				PC_NODE_NOT_FOUND,
-				"Index %ld out of range [0...%ld] in mapping (request was: $tree%.*s)\n",
+				"Index %ld out of range [0...%ld) in mapping (request was: $tree%.*s)\n",
 				map_idx,
 				(long)(tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start),
 				(int)(index - full_index),
