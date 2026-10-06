@@ -118,6 +118,62 @@ err0:
 	return restree;
 }
 
+/// How many merges are followed at most, so that a mapping merging itself through an alias does not loop forever
+#define PC_MAX_MERGE_DEPTH 64
+
+/** Looks a key up in a mapping, then in the mappings it merges with `<<' keys
+ *
+ * As YAML specifies merge keys, the keys of the mapping itself take precedence over the merged ones, and of several merged mappings, the first one
+ * holding the key does.
+ *
+ * \param mapping the mapping to look the key up in
+ * \param key the key, not NUL-terminated
+ * \param key_len the length of the key
+ * \param depth the number of merges followed to reach this mapping
+ * \param[out] value the id of the value of the key, 0 if it is not found
+ * \return the status of the execution
+ */
+static PC_status_t find_key(const PC_tree_t mapping, const char* key, size_t key_len, int depth, int* value)
+{
+	PC_status_t status = PC_OK;
+	*value = 0;
+
+	int merges = 0;
+	for (yaml_node_pair_t* pair = mapping.node->data.mapping.pairs.start; pair != mapping.node->data.mapping.pairs.top; ++pair) {
+		char* found_key;
+		PC_handle_err(PC_string(subtree(mapping, pair->key), &found_key), err0);
+		int cmp = strlzcmp(key, found_key, key_len);
+		merges |= !strcmp(found_key, "<<");
+		free(found_key);
+		if (!cmp) {
+			*value = pair->value;
+			return status;
+		}
+	}
+	if (!merges || depth >= PC_MAX_MERGE_DEPTH) return status;
+
+	for (yaml_node_pair_t* pair = mapping.node->data.mapping.pairs.start; pair != mapping.node->data.mapping.pairs.top; ++pair) {
+		yaml_node_t* merge_key = subtree(mapping, pair->key).node;
+		if (strcmp((char*)merge_key->data.scalar.value, "<<")) continue;
+		PC_tree_t merged = subtree(mapping, pair->value);
+		if (merged.node->type == YAML_MAPPING_NODE) {
+			PC_handle_err(find_key(merged, key, key_len, depth + 1, value), err0);
+		} else if (merged.node->type == YAML_SEQUENCE_NODE) {
+			for (yaml_node_item_t* item = merged.node->data.sequence.items.start; !*value && item != merged.node->data.sequence.items.top; ++item) {
+				PC_tree_t one_merged = subtree(merged, *item);
+				if (one_merged.node->type == YAML_MAPPING_NODE) {
+					PC_handle_err(find_key(one_merged, key, key_len, depth + 1, value), err0);
+				}
+			}
+		}
+		if (*value) return status;
+	}
+	return status;
+
+err0:
+	return status;
+}
+
 static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, const char* full_index)
 {
 	PC_tree_t restree = tree;
@@ -163,18 +219,9 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 	}
 
 	// handle key
-	yaml_node_pair_t* pair;
-	for (pair = tree.node->data.mapping.pairs.start; pair != tree.node->data.mapping.pairs.top; ++pair) {
-		// get the key string
-		char* found_key;
-		PC_handle_err_tree(PC_string(subtree(tree, pair->key), &found_key), err0);
-
-		// check if we found the key, in that case, leave
-		int cmp = strlzcmp(key, found_key, key_len);
-		free(found_key);
-		if (!cmp) break;
-	}
-	if (pair == tree.node->data.mapping.pairs.top) {
+	int value = 0;
+	PC_handle_err_tree(find_key(tree, key, key_len, 0, &value), err0);
+	if (!value) {
 		PC_handle_err_tree(
 			PC_make_node_err(
 				PC_NODE_NOT_FOUND,
@@ -188,7 +235,7 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 			err0
 		);
 	}
-	restree = subtree(tree, pair->value);
+	restree = subtree(tree, value);
 
 	*req_index = index;
 	return restree;

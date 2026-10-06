@@ -6,6 +6,7 @@
 
 #include <climits>
 #include <clocale>
+#include <cmath>
 #include <cstdlib>
 #include <ostream>
 #include <string>
@@ -129,6 +130,15 @@ TEST_P(InvalidInt, is_an_error)
 
 INSTANTIATE_TEST_SUITE_P(Value, InvalidInt, ::testing::Values("abc", "1.5", "12abc", "1e3", "\"\"", ""));
 
+// the octal of YAML 1.2, and the digits YAML 1.1 lets underscores separate
+INSTANTIATE_TEST_SUITE_P(
+	YamlSpelling,
+	Int,
+	::testing::Values(IntCase{"0o17", 15}, IntCase{"-0o17", -15}, IntCase{"+0o17", 15}, IntCase{"1_000", 1000}, IntCase{"-1_000_000", -1000000})
+);
+
+INSTANTIATE_TEST_SUITE_P(YamlSpelling, InvalidInt, ::testing::Values("0o", "0o8", "0o1.5", "_1", "1_x", "0o-1"));
+
 TEST_F(Scalars, int_limits)
 {
 	long value = -1;
@@ -229,6 +239,32 @@ TEST_P(InvalidDouble, is_an_error)
 }
 
 INSTANTIATE_TEST_SUITE_P(Value, InvalidDouble, ::testing::Values("abc", "1.5x", "1.2.3", "\"\"", "1e999"));
+
+// the infinities of YAML, and the digits YAML 1.1 lets underscores separate
+INSTANTIATE_TEST_SUITE_P(
+	YamlSpelling,
+	Double,
+	::testing::Values(
+		DoubleCase{".inf", INFINITY},
+		DoubleCase{".Inf", INFINITY},
+		DoubleCase{".INF", INFINITY},
+		DoubleCase{"+.inf", INFINITY},
+		DoubleCase{"-.inf", -INFINITY},
+		DoubleCase{"1_000.5", 1000.5},
+		DoubleCase{"-1_000.2_5", -1000.25}
+	)
+);
+
+INSTANTIATE_TEST_SUITE_P(YamlSpelling, InvalidDouble, ::testing::Values(".infinity", ".iNf", "_1.5", "1_x", "-.nan", ".nan5"));
+
+TEST_F(Scalars, double_nan)
+{
+	for (const char* yaml: {".nan", ".NaN", ".NAN"}) {
+		double value = -1;
+		EXPECT_EQ(PC_OK, PC_double(parse(yaml), &value)) << yaml;
+		EXPECT_TRUE(std::isnan(value)) << yaml;
+	}
+}
 
 TEST_F(Scalars, double_ignores_the_decimal_comma_of_the_locale)
 {

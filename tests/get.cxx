@@ -141,6 +141,34 @@ TEST_F(Get, printf_style_format)
 	EXPECT_EQ(21, get_int(PC_get(tree, ".map<%d>", 1), ""));
 }
 
+TEST_F(Get, merge_key)
+{
+	// the keys of the mapping itself take precedence over those it merges
+	PC_tree_t doc = parse("base: &base {x: 1, y: 2}\nderived:\n  <<: *base\n  y: 3\n");
+	EXPECT_EQ(1, get_int(doc, ".derived.x"));
+	EXPECT_EQ(3, get_int(doc, ".derived.y"));
+	EXPECT_EQ(PC_NODE_NOT_FOUND, PC_status(PC_get(doc, ".derived.z")));
+	expect_error(PC_NODE_NOT_FOUND, "Key `z' not found");
+}
+
+TEST_F(Get, merge_key_of_several_mappings)
+{
+	// of several merged mappings, the first one holding the key takes precedence, and merges are followed through
+	PC_tree_t doc = parse("a: &a {x: 1}\nb: &b {x: 2, z: 5}\nc: &c {<<: *b, w: 6}\nd:\n  <<: [*a, *c]\n");
+	EXPECT_EQ(1, get_int(doc, ".d.x"));
+	EXPECT_EQ(5, get_int(doc, ".d.z"));
+	EXPECT_EQ(6, get_int(doc, ".d.w"));
+}
+
+TEST_F(Get, merge_key_of_itself)
+{
+	// a mapping merging itself through an alias, which libyaml accepts, ends the search rather than looping forever
+	PC_tree_t doc = parse("a: &x\n  b: 1\n  <<: *x\n");
+	EXPECT_EQ(1, get_int(doc, ".a.b"));
+	EXPECT_EQ(PC_NODE_NOT_FOUND, PC_status(PC_get(doc, ".a.c")));
+	expect_error(PC_NODE_NOT_FOUND, "Key `c' not found");
+}
+
 TEST_F(Get, index_is_decimal_even_with_leading_zeros)
 {
 	// zero-padded, as a format such as "[%02d]" builds them, the indices are still decimal, not octal

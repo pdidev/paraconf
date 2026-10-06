@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <locale.h>
+#include <math.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -311,6 +312,34 @@ err0:
 	return status;
 }
 
+/** Copies a number without the underscores YAML 1.1 lets separate its digits, which strtol and strtod do not read
+ *
+ * An underscore is dropped only after a digit, or after another dropped underscore, so that one anywhere else still makes the number invalid.
+ *
+ * \param text the number as written
+ * \param[out] digits the number without its underscores, to free, or NULL when it has none and text can be read as it is
+ * \return the status of the execution
+ */
+static PC_status_t pc_number_digits(const char* text, char** digits)
+{
+	*digits = NULL;
+	if (!strchr(text, '_')) return PC_OK;
+
+	char* copy = malloc(strlen(text) + 1);
+	if (!copy) return PC_make_malloc_err();
+	char* out = copy;
+	int after_digit = 0;
+	for (const char* in = text; *in; ++in) {
+		if (*in == '_' && after_digit) continue;
+		after_digit = (*in >= '0' && *in <= '9');
+		*out++ = *in;
+	}
+	*out = 0;
+
+	*digits = copy;
+	return PC_OK;
+}
+
 PC_status_t PC_int(const PC_tree_t tree, long* res)
 {
 	PC_status_t status = PC_OK;
@@ -331,9 +360,24 @@ PC_status_t PC_int(const PC_tree_t tree, long* res)
 		PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Expected integer, found an empty string"), err0);
 	}
 
+	char* digits = NULL;
+	PC_handle_err(pc_number_digits((char*)tree.node->data.scalar.value, &digits), err0);
+	const char* text = digits ? digits : (char*)tree.node->data.scalar.value;
+
 	char* endptr;
 	errno = 0;
-	long result = strtol((char*)tree.node->data.scalar.value, &endptr, 0);
+	long result;
+	const char* unsigned_text = text + (text[0] == '+' || text[0] == '-');
+	if (unsigned_text[0] == '0' && unsigned_text[1] == 'o') {
+		// the octal of YAML 1.2, that strtol does not read
+		if (unsigned_text[2] < '0' || unsigned_text[2] > '7') {
+			PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Expected integer, found `%s'", (char*)tree.node->data.scalar.value), err1);
+		}
+		result = strtol(unsigned_text + 2, &endptr, 8);
+		if (text[0] == '-') result = -result;
+	} else {
+		result = strtol(text, &endptr, 0);
+	}
 	if (errno == ERANGE) {
 		PC_handle_err(
 			PC_make_node_err(
@@ -344,16 +388,19 @@ PC_status_t PC_int(const PC_tree_t tree, long* res)
 				LONG_MIN,
 				LONG_MAX
 			),
-			err0
+			err1
 		);
 	}
 	if (*endptr) {
-		PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Expected integer, found `%s'", (char*)tree.node->data.scalar.value), err0);
+		PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Expected integer, found `%s'", (char*)tree.node->data.scalar.value), err1);
 	}
 
+	free(digits);
 	*res = result;
 	return status;
 
+err1:
+	free(digits);
 err0:
 	return status;
 }
@@ -378,27 +425,45 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 		PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Expected floating point, found an empty string"), err0);
 	}
 
+	// the infinities and not-a-number of YAML, that strtod does not read
+	const char* yaml_value = (char*)tree.node->data.scalar.value;
+	const char* unsigned_value = yaml_value + (yaml_value[0] == '+' || yaml_value[0] == '-');
+	if (!strcmp(unsigned_value, ".inf") || !strcmp(unsigned_value, ".Inf") || !strcmp(unsigned_value, ".INF")) {
+		*value = yaml_value[0] == '-' ? -INFINITY : INFINITY;
+		return status;
+	}
+	if (!strcmp(yaml_value, ".nan") || !strcmp(yaml_value, ".NaN") || !strcmp(yaml_value, ".NAN")) {
+		*value = NAN;
+		return status;
+	}
+
+	char* digits = NULL;
+	PC_handle_err(pc_number_digits(yaml_value, &digits), err0);
+
 	// strtod follows the locale of the calling thread, so it reads in the C one
 	pthread_once(&c_numeric_locale_once, c_numeric_locale_init);
 	if (c_numeric_locale == (locale_t)0) {
-		PC_handle_err(PC_make_malloc_err(), err0);
+		PC_handle_err(PC_make_malloc_err(), err1);
 	}
 	locale_t thread_locale = uselocale(c_numeric_locale);
 	char* endptr;
 	errno = 0;
-	double result = strtod((char*)tree.node->data.scalar.value, &endptr);
+	double result = strtod(digits ? digits : yaml_value, &endptr);
 	int strtod_errno = errno;
 	uselocale(thread_locale);
 	if (strtod_errno == ERANGE) {
-		PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Floating point out of range: `%s'", (char*)tree.node->data.scalar.value), err0);
+		PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Floating point out of range: `%s'", yaml_value), err1);
 	}
 	if (*endptr) {
-		PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Expected floating point, found `%s'", (char*)tree.node->data.scalar.value), err0);
+		PC_handle_err(PC_make_node_err(PC_INVALID_NODE_TYPE, tree, "Expected floating point, found `%s'", yaml_value), err1);
 	}
 
+	free(digits);
 	*value = result;
 	return status;
 
+err1:
+	free(digits);
 err0:
 	return status;
 }

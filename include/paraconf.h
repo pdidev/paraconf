@@ -177,6 +177,7 @@ const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
  * A ypath expression can contain the following
  * * access to a mapping element using the dot syntax:
  *   e.g. .map.key
+ *   the mappings merged with `<<' merge keys are searched too, after the keys of the mapping itself
  * * access to a sequence element using square brackets (decimal indices, 0-based):
  *   e.g. .seq[1]
  * * access to a mapping element key using braces (decimal indices, 0-based):
@@ -222,6 +223,8 @@ PC_status_t PARACONF_EXPORT PC_len(PC_tree_t tree, int* value);
  *
  * Does nothing if the provided tree is in error
  *
+ * Reads decimal, hexadecimal (0x1F) and octal (017 or 0o17) integers, with underscores between their digits if any (1_000).
+ *
  * \param[in] tree the int-valued node
  * \param[out] value the int value of the scalar node
  * \return the status of the execution
@@ -231,6 +234,8 @@ PC_status_t PARACONF_EXPORT PC_int(PC_tree_t tree, long* value);
 /** Returns the floating point value of a scalar node
  *
  * Does nothing if the provided tree is in error
+ *
+ * Reads the floating point numbers of YAML, .inf, -.inf and .nan included, with underscores between their digits if any (1_000.5).
  *
  * \param[in] tree the floating-point-valued node
  * \param[out] value the floating point value of the scalar node
