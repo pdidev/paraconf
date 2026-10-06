@@ -57,9 +57,9 @@ PROGRAM example
     some_key = PC_get(conf, ".some_key");
   call PC_errhandler(errh)
   if ( PC_status(some_key) > 0 ) then
-    print '("config contains `some_key`")'
+    print '("config contains `some_key''")'
   else
-    print '("config does not contain `some_key`")'
+    print '("config does not contain `some_key''")'
   endif
   
   call PC_tree_destroy(conf)

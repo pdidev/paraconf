@@ -29,7 +29,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `[` at char #%ld of `%s', but found `%c'\n",
+				"Expected `[' at char #%ld of `%s', but found `%c'\n",
 				(long int)(index - full_index),
 				full_index,
 				*index
@@ -61,7 +61,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `]` at char #%ld of `%s', but found `%c'\n",
+				"Expected `]' at char #%ld of `%s', but found `%c'\n",
 				(long int)(index - full_index),
 				full_index,
 				*index
@@ -76,7 +76,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_NODE_TYPE,
-				"Expected a sequence, found a %s (request was: $tree%.*s)\n",
+				"Expected a sequence, found a %s (request was: `$tree%.*s')\n",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
 				full_index
@@ -90,7 +90,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_NODE_NOT_FOUND,
-				"Index %ld out of range [0...%ld) in sequence (request was: $tree%.*s)\n",
+				"Index %ld out of range [0...%ld) in sequence (request was: `$tree%.*s')\n",
 				seq_idx,
 				(long)(tree.node->data.sequence.items.top - tree.node->data.sequence.items.start),
 				(int)(index - full_index),
@@ -143,7 +143,7 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_NODE_TYPE,
-				"Expected a mapping, found a %s (request was: $tree%.*s)\n",
+				"Expected a mapping, found a %s (request was: `$tree%.*s')\n",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
 				full_index
@@ -168,7 +168,7 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_NODE_NOT_FOUND,
-				"Key `%.*s' not found in mapping (request was: $tree%.*s)\n",
+				"Key `%.*s' not found in mapping (request was: `$tree%.*s')\n",
 				key_len,
 				key,
 				(int)(index - full_index),
@@ -216,7 +216,7 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 		PC_handle_err(
 			PC_make_err(
 				PC_INVALID_NODE_TYPE,
-				"Expected a mapping, found a %s (request was: $tree%.*s)\n",
+				"Expected a mapping, found a %s (request was: `$tree%.*s')\n",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
 				full_index
@@ -230,7 +230,7 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 		PC_handle_err(
 			PC_make_err(
 				PC_NODE_NOT_FOUND,
-				"Index %ld out of range [0...%ld) in mapping (request was: $tree%.*s)\n",
+				"Index %ld out of range [0...%ld) in mapping (request was: `$tree%.*s')\n",
 				map_idx,
 				(long)(tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start),
 				(int)(index - full_index),

@@ -52,14 +52,14 @@ PC_tree_t PC_parse_path(const char* path)
 	if (!conf_file) {
 		char errbuf[ERRBUF_SIZE];
 		strerror_r(errno, errbuf, ERRBUF_SIZE);
-		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, errbuf), err0);
+		PC_handle_err_tree(PC_make_err(PC_SYSTEM_ERROR, "can not open file `%s': %s", path, errbuf), err0);
 	}
 
 	PC_errhandler_t handler = PC_errhandler(PC_NULL_HANDLER); // aka PC_try
 	restree = PC_parse_file(conf_file);
 	PC_errhandler(handler);
 	if (PC_status(restree)) { // aka PC_catch
-		PC_handle_err_tree(PC_make_err(restree.status, "can not parse file `%s`\n%s", path, PC_errmsg()), err1);
+		PC_handle_err_tree(PC_make_err(restree.status, "can not parse file `%s'\n%s", path, PC_errmsg()), err1);
 	}
 
 	fclose(conf_file);

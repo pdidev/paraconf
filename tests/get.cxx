@@ -171,7 +171,7 @@ TEST_F(Get, missing_key)
 {
 	PC_tree_t result = PC_get(tree, ".map.third");
 	EXPECT_EQ(PC_NODE_NOT_FOUND, PC_status(result));
-	expect_error(PC_NODE_NOT_FOUND, "Key `third' not found in mapping (request was: $tree.map.third)");
+	expect_error(PC_NODE_NOT_FOUND, "Key `third' not found in mapping (request was: `$tree.map.third')");
 }
 
 TEST_F(Get, seq_index_out_of_range)

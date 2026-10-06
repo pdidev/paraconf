@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -203,6 +204,15 @@ TEST_F(Parse, path_missing_file)
 	PC_tree_t tree = PC_parse_path("/nonexistent/paraconf/file.yml");
 	EXPECT_EQ(PC_SYSTEM_ERROR, PC_status(tree));
 	expect_error(PC_SYSTEM_ERROR);
+}
+
+TEST_F(Parse, path_missing_file_message)
+{
+	const char* path = "/nonexistent/paraconf/file.yml";
+	PC_parse_path(path);
+	// the message names the file, and keeps the reason the system gives
+	EXPECT_THAT(PC_errmsg(), ::testing::HasSubstr(std::strerror(ENOENT)));
+	expect_error(PC_SYSTEM_ERROR, path);
 }
 
 TEST_F(Parse, path_invalid_yaml)
