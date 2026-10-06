@@ -150,6 +150,15 @@ TEST_F(Parse, string_empty_document)
 	expect_error(PC_INVALID_NODE_TYPE, "empty tree");
 }
 
+TEST_F(Parse, string_empty_document_empty_request)
+{
+	// an empty request returns the tree as it is, empty or not, as a prefix built at run time can be at the top level
+	PC_tree_t tree = parse("# every key commented out\n");
+	PC_tree_t same = PC_get(tree, "%s", "");
+	EXPECT_EQ(PC_OK, PC_status(same));
+	EXPECT_EQ(nullptr, same.node);
+}
+
 TEST_F(Parse, string_comment_only)
 {
 	PC_tree_t tree = parse("# nothing but a comment\n");

@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -386,7 +385,6 @@ PC_tree_t PC_sget(const PC_tree_t tree, const char* index)
 			restree = get_map_idx_val(restree, &index, full_index);
 			break;
 		case 0:
-			assert(restree.node);
 			goto brake_out_of_while;
 		default:
 			PC_handle_err_tree(
