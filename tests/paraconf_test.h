@@ -61,6 +61,8 @@ protected:
 
 	/** Checks that paraconf reported exactly one error since the last check, and consumes it
 	 *
+	 * Every message is also checked to end without a newline, which is left to whoever prints it.
+	 *
 	 * \param status the expected status of the error
 	 * \param excerpt a string the error message is expected to contain
 	 */
@@ -69,6 +71,7 @@ protected:
 		ASSERT_EQ(1, m_errors.size()) << "expected exactly one error reported to the handler";
 		EXPECT_EQ(status, m_errors[0].status) << m_errors[0].message;
 		EXPECT_THAT(m_errors[0].message, ::testing::HasSubstr(excerpt));
+		EXPECT_THAT(m_errors[0].message, ::testing::Not(::testing::EndsWith("\n"))) << "messages end without a newline";
 		m_errors.clear();
 	}
 

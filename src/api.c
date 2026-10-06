@@ -282,7 +282,7 @@ PC_status_t PC_len(const PC_tree_t tree, int* res)
 
 	// check type
 	if (!tree.node) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree\n"), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree"), err0);
 	}
 
 	switch (tree.node->type) {
@@ -315,15 +315,15 @@ PC_status_t PC_int(const PC_tree_t tree, long* res)
 
 	// check type
 	if (!tree.node) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree\n"), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree"), err0);
 	}
 
 	if (tree.node->type != YAML_SCALAR_NODE) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s", nodetype[tree.node->type]), err0);
 	}
 
 	if (!*tree.node->data.scalar.value) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found an empty string\n"), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found an empty string"), err0);
 	}
 
 	char* endptr;
@@ -333,7 +333,7 @@ PC_status_t PC_int(const PC_tree_t tree, long* res)
 		PC_handle_err(
 			PC_make_err(
 				PC_INVALID_NODE_TYPE,
-				"Integer out of range: `%s' (range is: [%ld, %ld])\n",
+				"Integer out of range: `%s' (range is: [%ld, %ld])",
 				(char*)tree.node->data.scalar.value,
 				LONG_MIN,
 				LONG_MAX
@@ -342,7 +342,7 @@ PC_status_t PC_int(const PC_tree_t tree, long* res)
 		);
 	}
 	if (*endptr) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'\n", (char*)tree.node->data.scalar.value), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected integer, found `%s'", (char*)tree.node->data.scalar.value), err0);
 	}
 
 	*res = result;
@@ -361,15 +361,15 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 
 	// check type
 	if (!tree.node) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree\n"), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree"), err0);
 	}
 
 	if (tree.node->type != YAML_SCALAR_NODE) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s", nodetype[tree.node->type]), err0);
 	}
 
 	if (!*tree.node->data.scalar.value) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected floating point, found an empty string\n"), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected floating point, found an empty string"), err0);
 	}
 
 	// strtod follows the locale of the calling thread, so it reads in the C one
@@ -384,10 +384,10 @@ PC_status_t PC_double(const PC_tree_t tree, double* value)
 	int strtod_errno = errno;
 	uselocale(thread_locale);
 	if (strtod_errno == ERANGE) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Floating point out of range: `%s'\n", (char*)tree.node->data.scalar.value), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Floating point out of range: `%s'", (char*)tree.node->data.scalar.value), err0);
 	}
 	if (*endptr) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected floating point, found `%s'\n", (char*)tree.node->data.scalar.value), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected floating point, found `%s'", (char*)tree.node->data.scalar.value), err0);
 	}
 
 	*value = result;
@@ -406,11 +406,11 @@ PC_status_t PC_string(const PC_tree_t tree, char** value)
 
 	// check type
 	if (!tree.node) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree\n"), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree"), err0);
 	}
 
 	if (tree.node->type != YAML_SCALAR_NODE) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s", nodetype[tree.node->type]), err0);
 	}
 
 	int len = 0;
@@ -433,7 +433,7 @@ err0:
 	PC_handle_err(                                                                                                                                   \
 		PC_make_err(                                                                                                                                 \
 			PC_INVALID_NODE_TYPE,                                                                                                                    \
-			"expected a boolean (y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF), but got `%s'\n",               \
+			"expected a boolean (y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF), but got `%s'",                 \
 			strval                                                                                                                                   \
 		),                                                                                                                                           \
 		free_stamp                                                                                                                                   \
@@ -448,11 +448,11 @@ PC_status_t PC_bool(const PC_tree_t tree, int* res)
 
 	// check type
 	if (!tree.node) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree\n"), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected node, found empty tree"), err0);
 	}
 
 	if (tree.node->type != YAML_SCALAR_NODE) {
-		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s\n", nodetype[tree.node->type]), err0);
+		PC_handle_err(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a scalar, found %s", nodetype[tree.node->type]), err0);
 	}
 
 	char* strval = (char*)tree.node->data.scalar.value;

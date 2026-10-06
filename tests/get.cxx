@@ -272,7 +272,7 @@ TEST_P(GetUnfinished, says_the_request_ended)
 	PC_tree_t tree = parse("{map: {key: 1}, seq: [1, 2]}");
 	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, GetParam())));
 	// the whole message, not cut short at the end of the request
-	expect_error(PC_INVALID_PARAMETER, "but found the end of the request\n");
+	expect_error(PC_INVALID_PARAMETER, "but found the end of the request");
 }
 
 INSTANTIATE_TEST_SUITE_P(Index, GetUnfinished, ::testing::Values(".seq[", ".seq[0", ".map{", ".map{0", ".map<", ".map<0"));
@@ -280,7 +280,7 @@ INSTANTIATE_TEST_SUITE_P(Index, GetUnfinished, ::testing::Values(".seq[", ".seq[
 TEST_F(Get, syntax_error_quotes_the_character_found)
 {
 	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, ".seq[x]")));
-	expect_error(PC_INVALID_PARAMETER, "but found `x'\n");
+	expect_error(PC_INVALID_PARAMETER, "but found `x'");
 }
 
 TEST_F(Get, tree_in_error_is_propagated)

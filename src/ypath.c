@@ -38,7 +38,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `[' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected `[' at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -55,7 +55,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected integer at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected integer at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -70,7 +70,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `]' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected `]' at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -85,7 +85,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_NODE_TYPE,
-				"Expected a sequence, found a %s (request was: `$tree%.*s')\n",
+				"Expected a sequence, found a %s (request was: `$tree%.*s')",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
 				full_index
@@ -99,7 +99,7 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_NODE_NOT_FOUND,
-				"Index %ld out of range [0...%ld) in sequence (request was: `$tree%.*s')\n",
+				"Index %ld out of range [0...%ld) in sequence (request was: `$tree%.*s')",
 				seq_idx,
 				(long)(tree.node->data.sequence.items.top - tree.node->data.sequence.items.start),
 				(int)(index - full_index),
@@ -129,7 +129,7 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `.' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected `.' at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -151,7 +151,7 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_NODE_TYPE,
-				"Expected a mapping, found a %s (request was: `$tree%.*s')\n",
+				"Expected a mapping, found a %s (request was: `$tree%.*s')",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
 				full_index
@@ -176,7 +176,7 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_NODE_NOT_FOUND,
-				"Key `%.*s' not found in mapping (request was: `$tree%.*s')\n",
+				"Key `%.*s' not found in mapping (request was: `$tree%.*s')",
 				(int)key_len,
 				key,
 				(int)(index - full_index),
@@ -208,7 +208,7 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 		PC_handle_err(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected an integer at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected an integer at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -223,7 +223,7 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 		PC_handle_err(
 			PC_make_err(
 				PC_INVALID_NODE_TYPE,
-				"Expected a mapping, found a %s (request was: `$tree%.*s')\n",
+				"Expected a mapping, found a %s (request was: `$tree%.*s')",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
 				full_index
@@ -237,7 +237,7 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 		PC_handle_err(
 			PC_make_err(
 				PC_NODE_NOT_FOUND,
-				"Index %ld out of range [0...%ld) in mapping (request was: `$tree%.*s')\n",
+				"Index %ld out of range [0...%ld) in mapping (request was: `$tree%.*s')",
 				map_idx,
 				(long)(tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start),
 				(int)(index - full_index),
@@ -267,7 +267,7 @@ static PC_tree_t get_map_idx_key(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `{' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected `{' at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -286,7 +286,7 @@ static PC_tree_t get_map_idx_key(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `}' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected `}' at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -318,7 +318,7 @@ static PC_tree_t get_map_idx_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `<' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected `<' at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -337,7 +337,7 @@ static PC_tree_t get_map_idx_val(const PC_tree_t tree, const char** req_index, c
 		PC_handle_err_tree(
 			PC_make_err(
 				PC_INVALID_PARAMETER,
-				"Expected `>' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+				"Expected `>' at char #%ld of `%s', but found " PC_FOUND_FMT,
 				(long int)(index - full_index),
 				full_index,
 				PC_FOUND_ARGS(index)
@@ -366,7 +366,7 @@ PC_tree_t PC_sget(const PC_tree_t tree, const char* index)
 
 	// check type
 	if (*index && !tree.node) {
-		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a node, found an empty tree\n"), err0);
+		PC_handle_err_tree(PC_make_err(PC_INVALID_NODE_TYPE, "Expected a node, found an empty tree"), err0);
 	}
 
 	const char* full_index = index;
@@ -392,7 +392,7 @@ PC_tree_t PC_sget(const PC_tree_t tree, const char* index)
 			PC_handle_err_tree(
 				PC_make_err(
 					PC_INVALID_PARAMETER,
-					"Expected `[', `.', `{' or `<' at char #%ld of `%s', but found " PC_FOUND_FMT "\n",
+					"Expected `[', `.', `{' or `<' at char #%ld of `%s', but found " PC_FOUND_FMT,
 					(long int)(index - full_index),
 					full_index,
 					PC_FOUND_ARGS(index)
