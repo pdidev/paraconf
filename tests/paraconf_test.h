@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <paraconf.h>
@@ -67,7 +68,7 @@ protected:
 	{
 		ASSERT_EQ(1, m_errors.size()) << "expected exactly one error reported to the handler";
 		EXPECT_EQ(status, m_errors[0].status) << m_errors[0].message;
-		EXPECT_NE(std::string::npos, m_errors[0].message.find(excerpt)) << "`" << m_errors[0].message << "' lacks `" << excerpt << "'";
+		EXPECT_THAT(m_errors[0].message, ::testing::HasSubstr(excerpt));
 		m_errors.clear();
 	}
 

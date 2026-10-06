@@ -72,6 +72,48 @@ err0:
 	return restree;
 }
 
+static PC_tree_t parse(yaml_parser_t* conf_parser)
+{
+	PC_tree_t restree = {PC_OK, NULL, NULL};
+
+	yaml_document_t conf_doc;
+	if (!yaml_parser_load(conf_parser, &conf_doc)) {
+		if (conf_parser->context) {
+			PC_handle_err_tree(
+				PC_make_err(
+					PC_INVALID_FORMAT,
+					"(%lu:%lu -> %lu:%lu): %s, %s",
+					(unsigned long)conf_parser->context_mark.line + 1,
+					(unsigned long)conf_parser->context_mark.column + 1,
+					(unsigned long)conf_parser->problem_mark.line + 1,
+					(unsigned long)conf_parser->problem_mark.column + 1,
+					conf_parser->context,
+					conf_parser->problem
+				),
+				err0
+			);
+		} else {
+			PC_handle_err_tree(
+				PC_make_err(
+					PC_INVALID_FORMAT,
+					"(%lu:%lu): %s",
+					(unsigned long)conf_parser->problem_mark.line + 1,
+					(unsigned long)conf_parser->problem_mark.column + 1,
+					conf_parser->problem
+				),
+				err0
+			);
+		}
+	}
+
+	restree = PC_root(&conf_doc);
+
+	return restree;
+
+err0:
+	return restree;
+}
+
 PC_tree_t PC_parse_string(const char* document)
 {
 	PC_tree_t restree = {PC_OK, NULL, NULL};
@@ -83,43 +125,14 @@ PC_tree_t PC_parse_string(const char* document)
 
 	yaml_parser_set_input_string(&conf_parser, (const unsigned char*)document, strlen(document));
 
-	yaml_document_t conf_doc;
-	if (!yaml_parser_load(&conf_parser, &conf_doc)) {
-		if (conf_parser.context) {
-			PC_handle_err_tree(
-				PC_make_err(
-					PC_INVALID_FORMAT,
-					"%s\n  line %lu, column %lu\n%s\n  line %lu, column %lu",
-					conf_parser.context,
-					(unsigned long)conf_parser.context_mark.line + 1,
-					(unsigned long)conf_parser.context_mark.column + 1,
-					conf_parser.problem,
-					(unsigned long)conf_parser.problem_mark.line + 1,
-					(unsigned long)conf_parser.problem_mark.column + 1
-				),
-				err1
-			);
-		} else {
-			PC_handle_err_tree(
-				PC_make_err(
-					PC_INVALID_FORMAT,
-					"%s\n  line %lu, column %lu",
-					conf_parser.problem,
-					(unsigned long)conf_parser.problem_mark.line + 1,
-					(unsigned long)conf_parser.problem_mark.column + 1
-				),
-				err1
-			);
-		}
-	}
+	restree = parse(&conf_parser);
+
+	PC_handle_tree(err1);
 
 	yaml_parser_delete(&conf_parser);
 
-	restree = PC_root(&conf_doc);
-
-	PC_handle_tree(err0);
-
 	return restree;
+
 err1:
 	yaml_parser_delete(&conf_parser);
 err0:
@@ -137,43 +150,14 @@ PC_tree_t PC_parse_file(FILE* conf_file)
 
 	yaml_parser_set_input_file(&conf_parser, conf_file);
 
-	yaml_document_t conf_doc;
-	if (!yaml_parser_load(&conf_parser, &conf_doc)) {
-		if (conf_parser.context) {
-			PC_handle_err_tree(
-				PC_make_err(
-					PC_INVALID_FORMAT,
-					"%lu:%lu: Error: %s \n%lu:%lu: Error: %s",
-					(unsigned long)conf_parser.problem_mark.line,
-					(unsigned long)conf_parser.problem_mark.column,
-					conf_parser.problem,
-					(unsigned long)conf_parser.context_mark.line,
-					(unsigned long)conf_parser.context_mark.column,
-					conf_parser.context
-				),
-				err1
-			);
-		} else {
-			PC_handle_err_tree(
-				PC_make_err(
-					PC_INVALID_FORMAT,
-					"%lu:%lu: Error: %s",
-					(unsigned long)conf_parser.problem_mark.line,
-					(unsigned long)conf_parser.problem_mark.column,
-					conf_parser.problem
-				),
-				err1
-			);
-		}
-	}
+	restree = parse(&conf_parser);
+
+	PC_handle_tree(err1);
 
 	yaml_parser_delete(&conf_parser);
 
-	restree = PC_root(&conf_doc);
-
-	PC_handle_tree(err0);
-
 	return restree;
+
 err1:
 	yaml_parser_delete(&conf_parser);
 err0:

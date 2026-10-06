@@ -48,7 +48,24 @@ protected:
 		m_files.push_back(path);
 		return path;
 	}
+
+	/** Parses a document that is expected to be invalid with PC_parse_string, and consumes the error
+	 *
+	 * \param document the invalid document
+	 * \return the message of the error, the reference for the other parsing functions
+	 */
+	std::string string_error(const char* document)
+	{
+		PC_parse_string(document);
+		std::string message = PC_errmsg();
+		expect_error(PC_INVALID_FORMAT);
+		return message;
+	}
 };
+
+/// invalid YAML whose context and problem have distinct lines and columns: the flow sequence opened on line 2, column 4 is still open on line 3,
+/// column 2
+static const char* const UNCLOSED_FLOW_SEQUENCE = "a: 1\nb: [1, 2\nc: 3\n";
 
 TEST_F(Parse, string_scalar)
 {
@@ -67,7 +84,24 @@ TEST_F(Parse, string_invalid_yaml)
 {
 	PC_tree_t tree = PC_parse_string("a: [1, 2\nb: 3\n");
 	EXPECT_EQ(PC_INVALID_FORMAT, PC_status(tree));
-	expect_error(PC_INVALID_FORMAT, "line 2");
+	expect_error(PC_INVALID_FORMAT, "1:4");
+}
+
+TEST_F(Parse, string_invalid_yaml_position)
+{
+	std::string message = string_error(UNCLOSED_FLOW_SEQUENCE);
+	// positions count from 1, as in every editor, and the context comes before the problem
+	EXPECT_THAT(message, ::testing::HasSubstr("2:4"));
+	EXPECT_THAT(message, ::testing::HasSubstr("3:2"));
+	EXPECT_LT(message.find("2:4"), message.find("3:2")) << "context should come before the problem in \"" << message << '"';
+}
+
+TEST_F(Parse, string_invalid_yaml_without_context_position)
+{
+	// libyaml reports an undefined alias with the position of the problem only, there is no context to give a position for
+	std::string message = string_error("a: 1\nb: 2\nc: *undefined\n");
+	EXPECT_THAT(message, ::testing::HasSubstr("3:4"));
+	EXPECT_THAT(message, ::testing::Not(::testing::HasSubstr("1:1"))) << "no position should be given for the missing context";
 }
 
 TEST_F(Parse, string_empty_document)
@@ -132,6 +166,19 @@ TEST_F(Parse, file_invalid_yaml)
 	expect_error(PC_INVALID_FORMAT);
 }
 
+TEST_F(Parse, file_invalid_yaml_position)
+{
+	std::string expected = string_error(UNCLOSED_FLOW_SEQUENCE);
+	FILE* file = std::tmpfile();
+	ASSERT_NE(nullptr, file);
+	std::fputs(UNCLOSED_FLOW_SEQUENCE, file);
+	std::rewind(file);
+	PC_parse_file(file);
+	std::fclose(file);
+	EXPECT_EQ(expected, PC_errmsg());
+	expect_error(PC_INVALID_FORMAT);
+}
+
 TEST_F(Parse, path)
 {
 	std::string path = make_file("a: 1\n");
@@ -164,6 +211,15 @@ TEST_F(Parse, path_invalid_yaml)
 	PC_tree_t tree = PC_parse_path(path.c_str());
 	EXPECT_EQ(PC_INVALID_FORMAT, PC_status(tree));
 	expect_error(PC_INVALID_FORMAT, path);
+}
+
+TEST_F(Parse, path_invalid_yaml_position)
+{
+	std::string expected = string_error(UNCLOSED_FLOW_SEQUENCE);
+	std::string path = make_file(UNCLOSED_FLOW_SEQUENCE);
+	PC_parse_path(path.c_str());
+	// the message names the file, then gives the error as PC_parse_string does
+	expect_error(PC_INVALID_FORMAT, expected);
 }
 
 TEST_F(Parse, root_of_a_libyaml_document)
