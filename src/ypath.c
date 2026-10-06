@@ -82,8 +82,9 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 	// check type
 	if (tree.node->type != YAML_SEQUENCE_NODE) {
 		PC_handle_err_tree(
-			PC_make_err(
+			PC_make_node_err(
 				PC_INVALID_NODE_TYPE,
+				tree,
 				"Expected a sequence, found a %s (request was: `$tree%.*s')",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
@@ -96,8 +97,9 @@ static PC_tree_t get_seq_idx(const PC_tree_t tree, const char** req_index, const
 	// handle index
 	if (seq_idx < 0 || seq_idx >= (tree.node->data.sequence.items.top - tree.node->data.sequence.items.start)) {
 		PC_handle_err_tree(
-			PC_make_err(
+			PC_make_node_err(
 				PC_NODE_NOT_FOUND,
+				tree,
 				"Index %ld out of range [0...%ld) in sequence (request was: `$tree%.*s')",
 				seq_idx,
 				(long)(tree.node->data.sequence.items.top - tree.node->data.sequence.items.start),
@@ -148,8 +150,9 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 	// check type
 	if (tree.node->type != YAML_MAPPING_NODE) {
 		PC_handle_err_tree(
-			PC_make_err(
+			PC_make_node_err(
 				PC_INVALID_NODE_TYPE,
+				tree,
 				"Expected a mapping, found a %s (request was: `$tree%.*s')",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
@@ -173,8 +176,9 @@ static PC_tree_t get_map_key_val(const PC_tree_t tree, const char** req_index, c
 	}
 	if (pair == tree.node->data.mapping.pairs.top) {
 		PC_handle_err_tree(
-			PC_make_err(
+			PC_make_node_err(
 				PC_NODE_NOT_FOUND,
+				tree,
 				"Key `%.*s' not found in mapping (request was: `$tree%.*s')",
 				(int)key_len,
 				key,
@@ -220,8 +224,9 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 	// check type
 	if (tree.node->type != YAML_MAPPING_NODE) {
 		PC_handle_err(
-			PC_make_err(
+			PC_make_node_err(
 				PC_INVALID_NODE_TYPE,
+				tree,
 				"Expected a mapping, found a %s (request was: `$tree%.*s')",
 				nodetype[tree.node->type],
 				(int)(index - full_index),
@@ -234,8 +239,9 @@ static PC_status_t get_map_idx_pair(const PC_tree_t tree, const char** req_index
 	// handle index
 	if (map_idx < 0 || map_idx >= (tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start)) {
 		PC_handle_err(
-			PC_make_err(
+			PC_make_node_err(
 				PC_NODE_NOT_FOUND,
+				tree,
 				"Index %ld out of range [0...%ld) in mapping (request was: `$tree%.*s')",
 				map_idx,
 				(long)(tree.node->data.mapping.pairs.top - tree.node->data.mapping.pairs.start),

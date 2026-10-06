@@ -68,7 +68,7 @@ TEST(ErrorHandlerDeathTest, assert_aborts_with_the_message)
 			PC_errhandler(PC_ASSERT_HANDLER);
 			PC_get(tree, ".missing");
 		},
-		"Error in paraconf: Key `missing' not found"
+		"Error in paraconf: <string>:1:1: error: Key `missing' not found"
 	);
 	PC_tree_destroy(&tree);
 }
@@ -92,7 +92,7 @@ TEST(Status, receives_status_message_and_context)
 	PC_get(tree, ".missing");
 	ASSERT_EQ(1u, recorder.statuses.size());
 	EXPECT_EQ(PC_NODE_NOT_FOUND, recorder.statuses[0]);
-	EXPECT_EQ("Key `missing' not found in mapping (request was: `$tree.missing')", recorder.messages[0]);
+	EXPECT_EQ("<string>:1:1: error: Key `missing' not found in mapping (request was: `$tree.missing')", recorder.messages[0]);
 	PC_tree_destroy(&tree);
 }
 
@@ -122,9 +122,9 @@ TEST(Status, errmsg_is_the_last_message)
 	HandlerGuard guard(PC_NULL_HANDLER);
 	PC_tree_t tree = parse_doc();
 	PC_get(tree, ".first");
-	EXPECT_STREQ("Key `first' not found in mapping (request was: `$tree.first')", PC_errmsg());
+	EXPECT_STREQ("<string>:1:1: error: Key `first' not found in mapping (request was: `$tree.first')", PC_errmsg());
 	PC_get(tree, ".second");
-	EXPECT_STREQ("Key `second' not found in mapping (request was: `$tree.second')", PC_errmsg());
+	EXPECT_STREQ("<string>:1:1: error: Key `second' not found in mapping (request was: `$tree.second')", PC_errmsg());
 	PC_tree_destroy(&tree);
 }
 
@@ -135,7 +135,7 @@ TEST(Status, errmsg_is_kept_by_success)
 	PC_get(tree, ".missing");
 	long value;
 	EXPECT_EQ(PC_OK, PC_int(PC_get(tree, ".a"), &value));
-	EXPECT_STREQ("Key `missing' not found in mapping (request was: `$tree.missing')", PC_errmsg());
+	EXPECT_STREQ("<string>:1:1: error: Key `missing' not found in mapping (request was: `$tree.missing')", PC_errmsg());
 	PC_tree_destroy(&tree);
 }
 

@@ -187,7 +187,8 @@ program example
     error stop
   endif
   call PC_errmsg(errmsg)
-  if (trim(errmsg) /= ("Key `invalid_node' not found in mapping (request was: `$tree.invalid_node')")) then
+  if (trim(errmsg) /= (trim(infile)//":7:1: error: " &
+      //"Key `invalid_node' not found in mapping (request was: `$tree.invalid_node')")) then
     print *, "error with error message, got `", trim(errmsg),"'"
     error stop
   endif
@@ -198,7 +199,8 @@ program example
     error stop
   endif
   call PC_errmsg(errmsg)
-  if (trim(errmsg) /= ("Key `invalid_node' not found in mapping (request was: `$tree.invalid_node')")) then
+  if (trim(errmsg) /= (trim(infile)//":7:1: error: " &
+      //"Key `invalid_node' not found in mapping (request was: `$tree.invalid_node')")) then
     print *, "error with error message, got `", trim(errmsg),"'"
     error stop
   endif
