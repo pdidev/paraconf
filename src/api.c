@@ -17,7 +17,6 @@
 #include "status.h"
 #include "ypath.h"
 
-#define PC_BUFFER_SIZE 256
 #define ERRBUF_SIZE 512
 
 static const char* nodetype[4] = {"none", "scalar", "sequence", "mapping"};
@@ -216,12 +215,12 @@ PC_tree_t PC_vget(const PC_tree_t tree, const char* index_fmt, va_list va)
 	PC_tree_t restree = tree;
 	PC_handle_tree(err0);
 
-	int index_size = PC_BUFFER_SIZE;
+	va_list va2;
+	va_copy(va2, va);
+	int index_size = vsnprintf(NULL, 0, index_fmt, va2) + 1;
+	va_end(va2);
 	char* index = malloc(index_size);
-	while (vsnprintf(index, index_size, index_fmt, va) > index_size) {
-		index_size *= 2;
-		index = realloc(index, index_size);
-	}
+	vsnprintf(index, index_size, index_fmt, va);
 
 	restree = PC_sget(tree, index);
 	PC_handle_tree(err1);
