@@ -24,9 +24,9 @@ endif()
 
 if(NOT TARGET paraconf::paraconf)
 	if("${PARACONF_EXAMPLE_BUILD_FORTRAN}")
-		find_package(paraconf REQUIRED COMPONENTS C)
-	else()
 		find_package(paraconf REQUIRED COMPONENTS C f90)
+	else()
+		find_package(paraconf REQUIRED COMPONENTS C)
 	endif()
 endif()
 
