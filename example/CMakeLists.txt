@@ -5,6 +5,7 @@
 
 cmake_minimum_required(VERSION 3.22...4.2)
 project(paraconf_examples LANGUAGES C)
+enable_testing()
 
 # The Fortran example follows paraconf's Fortran support when built with it; built on its own, the unprefixed BUILD_FORTRAN of a top-level
 # user still provides the default, as for paraconf itself (see cmake/ParaconfOptions.cmake)
