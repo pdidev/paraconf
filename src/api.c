@@ -405,6 +405,34 @@ err0:
 	return status;
 }
 
+PC_status_t PC_int_range(const PC_tree_t tree, long* value, long min, long max)
+{
+	PC_status_t status = PC_OK;
+	if (!value) PC_handle_err(PC_make_err(PC_INVALID_PARAMETER, "no value passed to PC_int"), err0);
+
+	long result;
+	PC_handle_err(PC_int(tree, &result), err0);
+	if (result < min || result > max) {
+		PC_handle_err(
+			PC_make_node_err(
+				PC_INVALID_NODE_TYPE,
+				tree,
+				"Integer out of range: `%s' (range is: [%ld, %ld])",
+				(char*)tree.node->data.scalar.value,
+				min,
+				max
+			),
+			err0
+		);
+	}
+
+	*value = result;
+	return status;
+
+err0:
+	return status;
+}
+
 PC_status_t PC_double(const PC_tree_t tree, double* value)
 {
 	PC_status_t status = PC_OK;

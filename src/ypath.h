@@ -18,4 +18,16 @@ struct PC_document_s {
 
 PC_tree_t PARACONF_EXPORT PC_sget(PC_tree_t tree, const char* index);
 
+/** Returns the int value of a scalar node, as PC_int does, and reports one outside a range as an error
+ *
+ * Exported for the Fortran interface, whose integers are narrower than a long.
+ *
+ * \param[in] tree the int-valued node
+ * \param[out] value the int value of the scalar node, left as it was on failure
+ * \param[in] min the smallest value accepted
+ * \param[in] max the largest value accepted
+ * \return the status of the execution
+ */
+PC_status_t PARACONF_EXPORT PC_int_range(PC_tree_t tree, long* value, long min, long max);
+
 #endif // YPATH_H__

@@ -50,15 +50,17 @@ interface
     integer(C_int) :: PC_len_C
   end function PC_len_C
 
-  function PC_int_C(tree, value) &
-    bind(C, name="PC_int")
+  function PC_int_range_C(tree, value, min, max) &
+    bind(C, name="PC_int_range")
     use ISO_C_binding
     implicit none
     include 'paraconf_f90_types.h'
     type(PC_tree_t), value :: tree
     type(C_ptr), value :: value
-    integer(C_int) :: PC_int_C
-  end function PC_int_C
+    integer(C_long), value :: min
+    integer(C_long), value :: max
+    integer(C_int) :: PC_int_range_C
+  end function PC_int_range_C
 
   function PC_double_C(tree, value) &
     bind(C, name="PC_double")

@@ -276,6 +276,21 @@ program example
     error stop
   endif
 
+  ! An integer outside the range of a default integer is an error rather than a wrapped value
+  if (huge(a_int) == 2147483647) then
+    call PC_int(PC_get(tree1,".a_largest_int"), a_int, ierr)
+    if (ierr /= PC_OK .or. a_int /= 2147483647) then
+      print *, "error with PC_int at the largest integer, got ", ierr, a_int
+      error stop
+    endif
+    a_int = 42
+    call PC_int(PC_get(tree1,".a_too_large_int"), a_int, ierr)
+    if (ierr /= PC_INVALID_NODE_TYPE .or. a_int /= 42) then
+      print *, "error with PC_int past the largest integer, got ", ierr, a_int
+      error stop
+    endif
+  endif
+
   call PC_tree_destroy(tree1)
 
 end program example

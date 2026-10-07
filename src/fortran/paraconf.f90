@@ -175,7 +175,8 @@ subroutine PC_int(tree_in, value, status)
   integer :: tmp
   integer(C_long), target :: longvalue
 
-  tmp = int(PC_int_C(tree_in, c_loc(longvalue)))
+  ! a long, that the C library reads, can hold values a default integer cannot
+  tmp = int(PC_int_range_C(tree_in, c_loc(longvalue), int(-huge(value)-1, C_long), int(huge(value), C_long)))
   if (present(status)) status = tmp
 
   ! left as it was on failure

@@ -36,3 +36,7 @@ a_no: no
 a_No: No
 a_NO: NO
 a_badlog: toto
+
+# integers at the limit of a default Fortran integer, and past it
+a_largest_int: 2147483647
+a_too_large_int: 3000000000
