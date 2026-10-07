@@ -121,7 +121,7 @@ subroutine PC_len(tree_in, value, status)
   include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
-  integer, intent(OUT), target :: value
+  integer, intent(INOUT), target :: value
   integer, intent(OUT), optional :: status
 
   integer :: tmp
@@ -169,22 +169,21 @@ subroutine PC_int(tree_in, value, status)
   implicit none
 
   include 'paraconf_f90_types.h'
+  include 'paraconf_f90_consts.h'
   include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
-  integer, intent(OUT) :: value
+  integer, intent(INOUT) :: value
   integer, intent(OUT), optional :: status
 
   integer :: tmp
   integer(C_long), target :: longvalue
 
-  if(present(status)) then
-    status = int(PC_int_C(tree_in, c_loc(longvalue)))
-  else
-    tmp = int(PC_int_C(tree_in, c_loc(longvalue)))
-  end if
+  tmp = int(PC_int_C(tree_in, c_loc(longvalue)))
+  if (present(status)) status = tmp
 
-  value = int(longvalue)
+  ! left as it was on failure
+  if (tmp == PC_OK) value = int(longvalue)
 
 end subroutine PC_int
 
@@ -196,22 +195,21 @@ subroutine PC_double(tree_in, value, status)
   implicit none
 
   include 'paraconf_f90_types.h'
+  include 'paraconf_f90_consts.h'
   include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
-  real(8), intent(OUT) :: value
+  real(8), intent(INOUT) :: value
   integer, intent(OUT), optional :: status
 
   integer :: tmp
   real(C_double), target :: doublevalue
 
-  if(present(status)) then
-    status = int(PC_double_C(tree_in, c_loc(doublevalue)))
-  else
-    tmp = int(PC_double_C(tree_in, c_loc(doublevalue)))
-  end if
+  tmp = int(PC_double_C(tree_in, c_loc(doublevalue)))
+  if (present(status)) status = tmp
 
-  value = real(doublevalue, 8)
+  ! left as it was on failure
+  if (tmp == PC_OK) value = real(doublevalue, 8)
 
 end subroutine PC_double
 
@@ -227,7 +225,7 @@ subroutine PC_string(tree_in, value, status)
   include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
-  character(len = *), intent(OUT) :: value
+  character(len = *), intent(INOUT) :: value
   integer, intent(OUT), optional :: status
 
   integer :: i, tmp
@@ -235,7 +233,7 @@ subroutine PC_string(tree_in, value, status)
   type(C_ptr), target :: C_pointer
   CHARACTER, dimension(:), pointer :: F_pointer
 
-  value = ""
+  ! left as it was on failure
   tmp = int(PC_string_C(tree_in, c_loc(C_pointer)))
   if (present(status)) status = tmp
 
@@ -264,27 +262,21 @@ subroutine PC_log(tree_in, value, status)
   implicit none
 
   include 'paraconf_f90_types.h'
+  include 'paraconf_f90_consts.h'
   include 'paraconf_f90_c.h'
 
   type(PC_tree_t), intent(IN) :: tree_in
-  logical, intent(OUT) :: value
+  logical, intent(INOUT) :: value
   integer, intent(OUT), optional :: status
 
   integer :: tmp
   integer, target :: ilog
 
-  ilog = 0
-  if(present(status)) then
-    status = int(PC_bool_C(tree_in, c_loc(ilog)))
-  else
-    tmp = int(PC_bool_C(tree_in, c_loc(ilog)))
-  end if
+  tmp = int(PC_bool_C(tree_in, c_loc(ilog)))
+  if (present(status)) status = tmp
 
-  if (ilog ==  0) then
-    value = .false.
-  else
-    value = .true.
-  end if
+  ! left as it was on failure
+  if (tmp == PC_OK) value = (ilog /= 0)
 
 end subroutine PC_log
 

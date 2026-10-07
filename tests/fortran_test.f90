@@ -205,9 +205,43 @@ program example
     error stop
   endif
 
+  ! A read that fails leaves its output as it was, so that a default set before the call survives
+  a_int = 42
+  call PC_int(PC_get(tree1,".invalid_node"), a_int, ierr)
+  if (ierr /= PC_NODE_NOT_FOUND .or. a_int /= 42) then
+    print *, "error with PC_int on a missing key, got ", ierr, a_int
+    error stop
+  endif
+  call PC_int(PC_get(tree1,".a_string"), a_int, ierr)
+  if (ierr /= PC_INVALID_NODE_TYPE .or. a_int /= 42) then
+    print *, "error with PC_int on a string, got ", ierr, a_int
+    error stop
+  endif
+  a_float = 4.5d0
+  call PC_double(PC_get(tree1,".invalid_node"), a_float, ierr)
+  if (ierr /= PC_NODE_NOT_FOUND .or. a_float /= 4.5d0) then
+    print *, "error with PC_double on a missing key, got ", ierr, a_float
+    error stop
+  endif
+  a_string = "default"
+  call PC_string(PC_get(tree1,".a_list"), a_string, ierr)
+  if (ierr /= PC_INVALID_NODE_TYPE .or. a_string /= "default") then
+    print *, "error with PC_string on a list, got ", ierr, a_string
+    error stop
+  endif
+  a_log = .true.
+  call PC_log(PC_get(tree1,".a_badlog"), a_log, ierr)
+  if (ierr /= PC_INVALID_NODE_TYPE .or. .not. a_log) then
+    print *, "error with PC_log on an invalid boolean, got ", ierr, a_log
+    error stop
+  endif
+  a_int = 42
+  call PC_len(PC_get(tree1,".invalid_node"), a_int, ierr)
+  if (ierr /= PC_NODE_NOT_FOUND .or. a_int /= 42) then
+    print *, "error with PC_len on a missing key, got ", ierr, a_int
+    error stop
+  endif
 
-
-  
   call PC_tree_destroy(tree1)
 
 end program example

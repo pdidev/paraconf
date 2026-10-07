@@ -43,7 +43,7 @@ interface
     use ISO_C_binding
     include 'paraconf_f90_types.h'
     type(PC_tree_t), intent(IN) :: tree_in
-    integer, intent(OUT), target :: value
+    integer, intent(INOUT), target :: value
     integer, intent(OUT), optional :: status
   end subroutine PC_len
   
@@ -61,7 +61,7 @@ interface
     use ISO_C_binding
     include 'paraconf_f90_types.h'
     type(PC_tree_t), intent(IN) :: tree_in
-    integer, intent(OUT) :: value
+    integer, intent(INOUT) :: value
     integer, intent(OUT), optional :: status
   end subroutine PC_int
   
@@ -70,7 +70,7 @@ interface
     use ISO_C_binding
     include 'paraconf_f90_types.h'
     type(PC_tree_t), intent(IN) :: tree_in
-    real(8), intent(OUT) :: value
+    real(8), intent(INOUT) :: value
     integer, intent(OUT), optional :: status
   end subroutine PC_double
   
@@ -79,7 +79,7 @@ interface
     use ISO_C_binding
     include 'paraconf_f90_types.h'
     type(PC_tree_t), intent(IN) :: tree_in
-    character(len = *), intent(OUT) :: value
+    character(len = *), intent(INOUT) :: value
     integer, intent(OUT), optional :: status
   end subroutine PC_string
   
@@ -88,7 +88,7 @@ interface
     use ISO_C_binding
     include 'paraconf_f90_types.h'
     type(PC_tree_t), intent(IN) :: tree_in
-    logical, intent(OUT) :: value
+    logical, intent(INOUT) :: value
     integer, intent(OUT), optional :: status
   end subroutine PC_log
   
