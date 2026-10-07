@@ -242,7 +242,8 @@ subroutine PC_string(tree_in, value, status)
     tmp = int(PC_len_C(tree_in, C_loc(tab_lengh(1))))
 
     call C_F_pointer(C_pointer, F_pointer, tab_lengh)
-    do i = 1, tab_lengh(1)
+    ! truncated to the variable, as a Fortran assignment would
+    do i = 1, min(tab_lengh(1), len(value))
       value(i:i) = F_pointer(i)
     end do
 

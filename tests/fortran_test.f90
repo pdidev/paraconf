@@ -6,7 +6,15 @@
 program example
   use paraconf
 
+  !> a variable followed by another, to see whether writing to the first spills over into the second
+  type :: guarded_string
+    sequence
+    character(len=8) :: value
+    character(len=8) :: guard
+  end type guarded_string
+
   type(pc_tree_t) :: tree1
+  type(guarded_string) :: short_string
   integer :: a_int
   character(20) :: a_string
   real(8) :: a_float
@@ -239,6 +247,14 @@ program example
   call PC_len(PC_get(tree1,".invalid_node"), a_int, ierr)
   if (ierr /= PC_NODE_NOT_FOUND .or. a_int /= 42) then
     print *, "error with PC_len on a missing key, got ", ierr, a_int
+    error stop
+  endif
+
+  ! A string longer than its variable is truncated, as a Fortran assignment would, without writing past the variable
+  short_string%guard = "GUARD"
+  call PC_string(PC_get(tree1,".a_string"), short_string%value, ierr)
+  if (ierr /= PC_OK .or. short_string%value /= "this is " .or. short_string%guard /= "GUARD") then
+    print *, "error with PC_string into a short variable, got ", ierr, " [", short_string%value, "] [", short_string%guard, "]"
     error stop
   endif
 
