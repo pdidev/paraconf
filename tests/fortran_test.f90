@@ -15,6 +15,15 @@ program example
 
   type(pc_tree_t) :: tree1
   type(guarded_string) :: short_string
+
+  !> the same for an error message
+  type :: guarded_message
+    sequence
+    character(len=16) :: value
+    character(len=8) :: guard
+  end type guarded_message
+
+  type(guarded_message) :: short_message
   integer :: a_int
   character(20) :: a_string
   real(8) :: a_float
@@ -255,6 +264,15 @@ program example
   call PC_string(PC_get(tree1,".a_string"), short_string%value, ierr)
   if (ierr /= PC_OK .or. short_string%value /= "this is " .or. short_string%guard /= "GUARD") then
     print *, "error with PC_string into a short variable, got ", ierr, " [", short_string%value, "] [", short_string%guard, "]"
+    error stop
+  endif
+
+  ! A message longer than its variable is truncated too, without writing past the variable
+  ierr = PC_status(PC_get(tree1,".invalid_node"))
+  short_message%guard = "GUARD"
+  call PC_errmsg(short_message%value)
+  if (short_message%value /= infile(1:16) .or. short_message%guard /= "GUARD") then
+    print *, "error with PC_errmsg into a short variable, got [", short_message%value, "] [", short_message%guard, "]"
     error stop
   endif
 

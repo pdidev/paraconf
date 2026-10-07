@@ -49,15 +49,11 @@ subroutine PC_errmsg(errmsg)
   call C_F_pointer(PC_errmsg_C(), errmsg_array, [errmsg_length])
   if (associated(errmsg_array)) then
 
+    ! truncated to the variable, as a Fortran assignment would
     do I = 1, errmsg_length
-      if (errmsg_array(i) ==  C_NULL_CHAR) exit
-      errmsg(i:i+1) = errmsg_array(i)
+      if (errmsg_array(I) == C_NULL_CHAR) exit
+      errmsg(I:I) = errmsg_array(I)
     end do
-
-    ! remove new line character at the end of the string
-    if (errmsg(I-1:I) ==  achar(10)) then
-      errmsg(I-1:I) = ""
-    end if
   end if
 
 end subroutine PC_errmsg
