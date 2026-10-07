@@ -19,6 +19,7 @@ PROGRAM example
   CHARACTER(LEN=PC_ERRMSG_MAXLENGTH) :: errmsg
   TYPE(PC_errhandler_t) :: errh
   CHARACTER(LEN=4096) :: infile
+  CHARACTER(LEN=32) :: idx
 
   if (command_argument_count() /= 1) then
     print *, "Error: expected 1 argument!"
@@ -39,7 +40,8 @@ PROGRAM example
   print '("a_list=[")'
   call PC_len(PC_get(conf,".a_list"), a_list_len)
   do ii = 0, a_list_len-1
-!     call PC_int(PC_get(PC_get(conf,".a_int"), ii), a_int)
+    write(idx, '(".a_list[",I0,"]")') ii
+    call PC_int(PC_get(conf, trim(idx)), a_int)
     print '("  ", I5)', a_int
   enddo
   print '("]")'
@@ -47,8 +49,10 @@ PROGRAM example
   print '("a_map={")'
   call PC_len(PC_get(conf,".a_map"), a_map_len)
   do ii = 0, a_map_len-1
-!     call PC_int(PC_key(PC_get(conf,".a_int"), ii), a_string)
-!     call PC_int(PC_get(PC_get(conf,".a_int"), ii), a_int)
+    write(idx, '(".a_map{",I0,"}")') ii
+    call PC_string(PC_get(conf, trim(idx)), a_string)
+    write(idx, '(".a_map<",I0,">")') ii
+    call PC_int(PC_get(conf, trim(idx)), a_int)
     print '("  ", A30,"=> ", I5)', a_string, a_int
   enddo
   print '("}")'
@@ -56,10 +60,10 @@ PROGRAM example
   call PC_errhandler(PC_NULL_HANDLER, errh)
     some_key = PC_get(conf, ".some_key");
   call PC_errhandler(errh)
-  if ( PC_status(some_key) > 0 ) then
-    print '("config contains `some_key''")'
-  else
+  if ( PC_status(some_key) /= 0 ) then
     print '("config does not contain `some_key''")'
+  else
+    print '("config contains `some_key''")'
   endif
   
   call PC_tree_destroy(conf)
