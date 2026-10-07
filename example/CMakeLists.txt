@@ -6,9 +6,17 @@
 cmake_minimum_required(VERSION 3.22...4.2)
 project(paraconf_examples LANGUAGES C)
 
-option(BUILD_FORTRAN "Enable Fortran support" ON)
-option(PARACONF_BUILD_FORTRAN "Enable Fortran support in Paraconf" "${BUILD_FORTRAN}")
-option(PARACONF_EXAMPLE_BUILD_FORTRAN "Enable Fortran support in Paraconf" "${PARACONF_BUILD_FORTRAN}")
+# The Fortran example follows paraconf's Fortran support when built with it; built on its own, the unprefixed BUILD_FORTRAN of a top-level
+# user still provides the default, as for paraconf itself (see cmake/ParaconfOptions.cmake)
+if(DEFINED PARACONF_BUILD_FORTRAN)
+	set(_paraconf_example_build_fortran "${PARACONF_BUILD_FORTRAN}")
+elseif("${PROJECT_IS_TOP_LEVEL}" AND DEFINED BUILD_FORTRAN)
+	set(_paraconf_example_build_fortran "${BUILD_FORTRAN}")
+else()
+	set(_paraconf_example_build_fortran ON)
+endif()
+option(PARACONF_EXAMPLE_BUILD_FORTRAN "Build the Fortran example of Paraconf" "${_paraconf_example_build_fortran}")
+unset(_paraconf_example_build_fortran)
 
 if("${PARACONF_EXAMPLE_BUILD_FORTRAN}")
 	enable_language(Fortran)

@@ -40,7 +40,7 @@ add_executable(paraconf_alloc_failure_tests alloc_failures.cxx)
 target_link_libraries(paraconf_alloc_failure_tests paraconf_failing_alloc GTest::gmock GTest::gtest GTest::gtest_main Threads::Threads)
 gtest_discover_tests(paraconf_alloc_failure_tests)
 
-if("${BUILD_FORTRAN}")
+if("${PARACONF_BUILD_FORTRAN}")
 	add_executable(fortran_test fortran_test.f90)
 	target_link_libraries(fortran_test paraconf::paraconf_f90)
 	add_test(NAME fortran_test COMMAND fortran_test "${CMAKE_CURRENT_SOURCE_DIR}/fortran_data.yml")
