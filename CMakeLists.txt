@@ -132,6 +132,7 @@ if("${PARACONF_BUILD_FORTRAN}")
 		include/paraconff.h
 		include/paraconf_f90_types.h
 		include/paraconf_f90.h
+		include/paraconf_f90_consts.h
 		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 		COMPONENT Development
 	)
