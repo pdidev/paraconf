@@ -75,14 +75,14 @@ protected:
 	long get_int(const char* index)
 	{
 		long result = -1;
-		EXPECT_EQ(PC_OK, PC_int(PC_get(conf, index), &result)) << index;
+		EXPECT_EQ(PC_OK, PC_int(PC_get(conf, "%s", index), &result)) << index;
 		return result;
 	}
 
 	std::string get_string(const char* index)
 	{
 		char* result = nullptr;
-		EXPECT_EQ(PC_OK, PC_string(PC_get(conf, index), &result)) << index;
+		EXPECT_EQ(PC_OK, PC_string(PC_get(conf, "%s", index), &result)) << index;
 		std::string result_str = result ? result : "";
 		free(result);
 		return result_str;
@@ -91,14 +91,14 @@ protected:
 	int get_bool(const char* index)
 	{
 		int result = -1;
-		EXPECT_EQ(PC_OK, PC_bool(PC_get(conf, index), &result)) << index;
+		EXPECT_EQ(PC_OK, PC_bool(PC_get(conf, "%s", index), &result)) << index;
 		return result;
 	}
 
 	int get_len(const char* index)
 	{
 		int result = -1;
-		EXPECT_EQ(PC_OK, PC_len(PC_get(conf, index), &result)) << index;
+		EXPECT_EQ(PC_OK, PC_len(PC_get(conf, "%s", index), &result)) << index;
 		return result;
 	}
 };

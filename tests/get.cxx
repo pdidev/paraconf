@@ -45,14 +45,14 @@ empty_map: {}
 	long get_int(PC_tree_t from, const char* index)
 	{
 		long result = -1;
-		EXPECT_EQ(PC_OK, PC_int(PC_get(from, index), &result)) << index;
+		EXPECT_EQ(PC_OK, PC_int(PC_get(from, "%s", index), &result)) << index;
 		return result;
 	}
 
 	std::string get_string(PC_tree_t from, const char* index)
 	{
 		char* result = nullptr;
-		EXPECT_EQ(PC_OK, PC_string(PC_get(from, index), &result)) << index;
+		EXPECT_EQ(PC_OK, PC_string(PC_get(from, "%s", index), &result)) << index;
 		std::string result_str = result ? result : "";
 		free(result);
 		return result_str;
@@ -61,7 +61,7 @@ empty_map: {}
 
 TEST_F(Get, empty_index_returns_the_tree)
 {
-	PC_tree_t result = PC_get(tree, "");
+	PC_tree_t result = PC_get(tree, "%s", "");
 	EXPECT_EQ(PC_OK, PC_status(result));
 	EXPECT_EQ(tree.node, result.node);
 	EXPECT_EQ(tree.pcdoc, result.pcdoc);
@@ -211,7 +211,11 @@ TEST_P(GetLongIndex, without_format_argument)
 	std::string key(GetParam(), 'k');
 	PC_tree_t tree = parse((key + ": 1").c_str());
 	long value = -1;
+	// the request is the format itself, which is what this test is about
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
 	EXPECT_EQ(PC_OK, PC_int(PC_get(tree, ("." + key).c_str()), &value));
+#pragma GCC diagnostic pop
 	EXPECT_EQ(1, value);
 }
 
@@ -279,7 +283,7 @@ class GetSyntaxError
 TEST_P(GetSyntaxError, is_an_invalid_parameter)
 {
 	PC_tree_t tree = parse("{map: {key: 1}, seq: [1, 2]}");
-	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, GetParam())));
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, "%s", GetParam())));
 	expect_error(PC_INVALID_PARAMETER);
 }
 
@@ -298,7 +302,7 @@ class GetUnfinished
 TEST_P(GetUnfinished, says_the_request_ended)
 {
 	PC_tree_t tree = parse("{map: {key: 1}, seq: [1, 2]}");
-	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, GetParam())));
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, "%s", GetParam())));
 	// the whole message, not cut short at the end of the request
 	expect_error(PC_INVALID_PARAMETER, "but found the end of the request");
 }
@@ -328,6 +332,9 @@ TEST_F(Get, tree_in_error_is_propagated)
 TEST_F(Get, null_index)
 {
 	const char* no_index = nullptr; // through a variable, as the compiler rejects a null format written as such
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
 	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, no_index)));
+#pragma GCC diagnostic pop
 	expect_error(PC_INVALID_PARAMETER, "PC_get");
 }
