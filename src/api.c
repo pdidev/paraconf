@@ -48,8 +48,7 @@ static inline PC_status_t pc_set_path(PC_tree_t tree, const char* path)
 	size_t pathlen = strlen(path);
 	char* pathcpy = malloc((pathlen + 1) * sizeof(char));
 	if (!pathcpy) return PC_make_malloc_err();
-	strncpy(pathcpy, path, pathlen);
-	pathcpy[pathlen] = 0;
+	memcpy(pathcpy, path, pathlen + 1);
 	pc_path_free(tree.pcdoc->path);
 	tree.pcdoc->path = pathcpy;
 	return PC_OK;
