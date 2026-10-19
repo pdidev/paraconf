@@ -4,6 +4,7 @@
 ! SPDX-License-Identifier: MIT
 
 program example
+  use ISO_C_binding
   use paraconf
 
   !> a variable followed by another, to see whether writing to the first spills over into the second
@@ -14,6 +15,7 @@ program example
   end type guarded_string
 
   type(pc_tree_t) :: tree1
+  type(PC_errhandler_t) :: old_handler
   type(guarded_string) :: short_string
 
   !> the same for an error message
@@ -178,7 +180,21 @@ program example
   
   ! First we need to pass the NULL_HANDLER
   ! The default handler is the PC_ASSERT_HANDLER which aborts on error
-  call PC_errhandler(PC_NULL_HANDLER)
+  call PC_errhandler(PC_NULL_HANDLER, old_handler)
+  if ( .not. c_associated(old_handler%func) ) then
+    print *, "the default handler is not the one of PC_ASSERT_HANDLER"
+    error stop
+  endif
+  call PC_errhandler(PC_ASSERT_HANDLER, old_handler)
+  if ( c_associated(old_handler%func) ) then
+    print *, "the previous handler is not PC_NULL_HANDLER"
+    error stop
+  endif
+  call PC_errhandler(PC_NULL_HANDLER, old_handler)
+  if ( .not. c_associated(old_handler%func) ) then
+    print *, "PC_ASSERT_HANDLER did not set the handler of the C library"
+    error stop
+  endif
 
   call PC_string(PC_get(tree1,".a_string"), a_string, ierr)
   if (ierr /= PC_OK) then

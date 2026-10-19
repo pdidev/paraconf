@@ -182,6 +182,12 @@ const PC_errhandler_t PC_ASSERT_HANDLER = {assert_status, NULL};
 
 const PC_errhandler_t PC_NULL_HANDLER = {NULL, NULL};
 
+/// Exported for the Fortran interface, which can not refer to the PC_ASSERT_HANDLER variable without defining it itself: not part of the C API
+PC_errhandler_t PARACONF_EXPORT PC_assert_handler(void)
+{
+	return PC_ASSERT_HANDLER;
+}
+
 PC_errhandler_t PC_errhandler(PC_errhandler_t new_handler)
 {
 	errctx_t* ctx = get_context();

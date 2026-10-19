@@ -21,6 +21,14 @@ interface
     type(PC_errhandler_t) :: PC_errhandler_C
   end function PC_errhandler_C
 
+  function PC_assert_handler_C() &
+    bind(C, name="PC_assert_handler")
+    use ISO_C_binding
+    implicit none
+    include 'paraconf_f90_types.h'
+    type(PC_errhandler_t) :: PC_assert_handler_C
+  end function PC_assert_handler_C
+
   function PC_parse_path_C(path) &
     bind(C, name="PC_parse_path")
     use ISO_C_binding

@@ -66,17 +66,24 @@ subroutine PC_errhandler(new_handler, old_handler)
   implicit none
 
   include 'paraconf_f90_types.h'
+  include 'paraconf_f90_consts.h'
   include 'paraconf_f90_c.h'
 
   type(PC_errhandler_t), intent(IN) :: new_handler
   type(PC_errhandler_t), intent(OUT), optional :: old_handler
 
   type(PC_errhandler_t) :: tmp_handler
+  type(PC_errhandler_t) :: handler
+
+  handler = new_handler
+  if (.not. c_associated(handler%func) .and. transfer(handler%context, 1_c_intptr_t) == 1_c_intptr_t) then
+    handler = PC_assert_handler_C()
+  end if
 
   if (present(old_handler)) then
-    old_handler = PC_errhandler_C(new_handler)
+    old_handler = PC_errhandler_C(handler)
   else
-    tmp_handler = PC_errhandler_C(new_handler)
+    tmp_handler = PC_errhandler_C(handler)
   end if
 
 end subroutine PC_errhandler

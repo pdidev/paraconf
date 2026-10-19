@@ -18,11 +18,9 @@ integer, parameter :: PC_ERRMSG_MAXLENGTH = 1024
 
 
 !> Error handlers
+!! They are constants and not the variables of the C library, which Fortran would have to define as common blocks aligned differently.
+!! PC_ASSERT_HANDLER is a placeholder (no function, context 1) that PC_errhandler replaces by the handler of the C library.
 !! \{
-type(PC_errhandler_t) :: PC_ASSERT_HANDLER
-common /PC_ASSERT_HANDLER/ PC_ASSERT_HANDLER
-bind(C, name = "PC_ASSERT_HANDLER") :: /PC_ASSERT_HANDLER/
-type(PC_errhandler_t) ::   PC_NULL_HANDLER
-common /PC_NULL_HANDLER/ PC_NULL_HANDLER
-bind(C, name = "PC_NULL_HANDLER") :: /PC_NULL_HANDLER/
+type(PC_errhandler_t), parameter :: PC_ASSERT_HANDLER = PC_errhandler_t(c_null_funptr, transfer(1_c_intptr_t, c_null_ptr))
+type(PC_errhandler_t), parameter :: PC_NULL_HANDLER = PC_errhandler_t(c_null_funptr, c_null_ptr)
 !! \}
