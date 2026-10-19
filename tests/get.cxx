@@ -5,6 +5,7 @@
  */
 
 #include <cstdlib>
+#include <ostream>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -274,16 +275,43 @@ TEST_F(Get, map_index_in_a_non_mapping)
 	expect_error(PC_INVALID_NODE_TYPE, "Expected a mapping, found a sequence");
 }
 
+/** A ypath expression, as a test parameter
+ *
+ * It prints as a C string with its square brackets escaped in octal, `".seq\1330"` for `.seq[0`.
+ * CMake before 3.23 splits the output of `--gtest_list_tests`, which shows the parameters, into lines everywhere but inside square brackets:
+ * an unbalanced one would merge all the tests that follow into a single one.
+ */
+struct Ypath {
+	const char* expression;
+
+	explicit Ypath(const char* expression)
+		: expression(expression)
+	{}
+};
+
+void PrintTo(const Ypath& param, std::ostream* os)
+{
+	for (char c: ::testing::PrintToString(param.expression)) {
+		if (c == '[') {
+			*os << "\\133";
+		} else if (c == ']') {
+			*os << "\\135";
+		} else {
+			*os << c;
+		}
+	}
+}
+
 /// an ill-formed ypath expression
 class GetSyntaxError
 	: public ParaconfTest
-	, public ::testing::WithParamInterface<const char*>
+	, public ::testing::WithParamInterface<Ypath>
 {};
 
 TEST_P(GetSyntaxError, is_an_invalid_parameter)
 {
 	PC_tree_t tree = parse("{map: {key: 1}, seq: [1, 2]}");
-	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, "%s", GetParam())));
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, "%s", GetParam().expression)));
 	expect_error(PC_INVALID_PARAMETER);
 }
 
@@ -296,13 +324,13 @@ INSTANTIATE_TEST_SUITE_P(
 /// a ypath expression that ends in the middle of an index
 class GetUnfinished
 	: public ParaconfTest
-	, public ::testing::WithParamInterface<const char*>
+	, public ::testing::WithParamInterface<Ypath>
 {};
 
 TEST_P(GetUnfinished, says_the_request_ended)
 {
 	PC_tree_t tree = parse("{map: {key: 1}, seq: [1, 2]}");
-	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, "%s", GetParam())));
+	EXPECT_EQ(PC_INVALID_PARAMETER, PC_status(PC_get(tree, "%s", GetParam().expression)));
 	// the whole message, not cut short at the end of the request
 	expect_error(PC_INVALID_PARAMETER, "but found the end of the request");
 }
