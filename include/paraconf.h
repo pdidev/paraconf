@@ -193,6 +193,10 @@ const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
  *   e.g. .map<1>
  *   PC_get(map, "<1>") gives the same node as reading the key k of PC_get(map, "{1}") with PC_string, then PC_get(map, ".%s", k)
  *
+ * The index is a printf-style format, that GCC and clang check as they do printf's:
+ * an index computed at runtime is passed as an argument, as in PC_get(tree, "%s", index), so that a `%' it contains is not interpreted.
+ * Defining PARACONF_NO_FORMAT_ATTRIBUTE before including paraconf.h turns this check off.
+ *
  * \param[in] tree a yaml tree
  * \param[in] index_fmt the ypath index, can be a printf-style format string
  * \param[in] ... the printf-style values
@@ -200,7 +204,7 @@ const char PARACONF_EXPORT* PC_path(PC_tree_t tree);
  */
 // clang-format off
 PC_tree_t PARACONF_EXPORT PC_get(PC_tree_t tree, const char* index_fmt, ...)
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(PARACONF_NO_FORMAT_ATTRIBUTE)
 /// Lets the compiler check the arguments of a printf-like function against its format
 __attribute__((format(printf, 2, 3)))
 #endif

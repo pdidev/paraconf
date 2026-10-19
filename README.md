@@ -75,11 +75,17 @@ Creates a tree that contains all the parsed data of the file located at 'path'.
 #### Using its name
 
 ```
-PC_get(PC_tree_t some_tree, char *name_of_a_node);
+PC_get(PC_tree_t some_tree, ".name");
 ```
 
 If found, `PC_get` return the sub-tree under the node ".name" (the dot is
 mandatory).
+
+The index is a printf-style format, that GCC and clang check as they do
+`printf`'s: a name computed at runtime is passed as its argument, as in
+`PC_get(some_tree, ".%s", name)`, so that a `%` in the name is not interpreted.
+Defining `PARACONF_NO_FORMAT_ATTRIBUTE` before including `paraconf.h` turns this
+check off.
 
 #### Using its position on a tree
 
