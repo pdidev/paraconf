@@ -40,6 +40,13 @@ add_executable(paraconf_alloc_failure_tests alloc_failures.cxx)
 target_link_libraries(paraconf_alloc_failure_tests paraconf_failing_alloc GTest::gmock GTest::gtest GTest::gtest_main Threads::Threads)
 gtest_discover_tests(paraconf_alloc_failure_tests)
 
+# paraconf.h has to be usable from C code compiled with strict warnings
+add_library(paraconf_header_c OBJECT header_c.c)
+target_link_libraries(paraconf_header_c PRIVATE paraconf::paraconf)
+set_property(TARGET paraconf_header_c PROPERTY C_STANDARD 99)
+set_property(TARGET paraconf_header_c PROPERTY C_STANDARD_REQUIRED TRUE)
+target_compile_options(paraconf_header_c PRIVATE -Wall -Wextra -Wstrict-prototypes -pedantic -Werror)
+
 if("${PARACONF_BUILD_FORTRAN}")
 	add_executable(fortran_test fortran_test.f90)
 	target_link_libraries(fortran_test paraconf::paraconf_f90)

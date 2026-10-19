@@ -98,7 +98,7 @@ static inline PC_status_t PC_status(PC_tree_t tree)
  *
  * \return a human-readable message describing the last error that occurred in paraconf in the calling thread, NULL before its first error
  */
-char PARACONF_EXPORT* PC_errmsg();
+char PARACONF_EXPORT* PC_errmsg(void);
 
 /** Return the version of paraconf
  *
@@ -106,7 +106,7 @@ char PARACONF_EXPORT* PC_errmsg();
  * computes others: the 16 upper bits are the major revision number, the 16 following bits the minor revision number, the 16 following bits
  * the patch revision number and the 16 lower bits the variant that orders pre-releases, as PARACONF_VERSION_VARIANT describes it
  */
-uint64_t PARACONF_EXPORT PC_version();
+uint64_t PARACONF_EXPORT PC_version(void);
 
 /** Sets the error handler to use in the calling thread
  *

@@ -54,7 +54,7 @@ static inline PC_status_t pc_set_path(PC_tree_t tree, const char* path)
 	return PC_OK;
 }
 
-uint64_t PC_version()
+uint64_t PC_version(void)
 {
 	return PARACONF_VERSION;
 }
